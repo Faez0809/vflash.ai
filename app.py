@@ -156,7 +156,30 @@ def dashboard():
         .order_by(UserWord.added_date.desc(), Word.word.asc())
         .all()
     )
-    return render_template("dashboard.html", user_words=user_words)
+    total_words = UserWord.query.filter_by(user_id=current_user.id).count()
+    learned_words = UserWord.query.filter_by(
+        user_id=current_user.id,
+        learned=True,
+    ).count()
+    unlearned_words = UserWord.query.filter_by(
+        user_id=current_user.id,
+        learned=False,
+    ).count()
+    words_added_today = UserWord.query.filter_by(
+        user_id=current_user.id,
+        added_date=date.today(),
+    ).count()
+    progress_percentage = round((learned_words / total_words) * 100) if total_words else 0
+
+    return render_template(
+        "dashboard.html",
+        user_words=user_words,
+        total_words=total_words,
+        learned_words=learned_words,
+        unlearned_words=unlearned_words,
+        words_added_today=words_added_today,
+        progress_percentage=progress_percentage,
+    )
 
 
 @app.route("/generate-words", methods=["POST"])

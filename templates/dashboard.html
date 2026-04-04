@@ -3,60 +3,97 @@
 {% block title %}Dashboard | VocabAI{% endblock %}
 
 {% block content %}
-<section class="dashboard-grid">
-    <div class="panel">
-        <h1>Your vocabulary</h1>
-        <p class="muted">Add words and keep track of each study record.</p>
-        <div class="dashboard-actions">
-            <a class="button-link" href="{{ url_for('flashcards') }}">Study Flashcards</a>
-            <form method="post" action="{{ url_for('generate_words') }}">
-                <button type="submit">Generate 10 Words</button>
+<section class="dashboard-shell">
+    <div class="panel dashboard-summary">
+        <div class="panel-heading">
+            <h1>Your vocabulary</h1>
+            <span class="badge">{{ total_words }} total</span>
+        </div>
+        <p class="muted">Track your study progress and keep building your word bank.</p>
+        <div class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-label">Total words</span>
+                <strong class="stat-value">{{ total_words }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Learned</span>
+                <strong class="stat-value">{{ learned_words }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Unlearned</span>
+                <strong class="stat-value">{{ unlearned_words }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Added today</span>
+                <strong class="stat-value">{{ words_added_today }}</strong>
+            </article>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-meta">
+                <span>Learning progress</span>
+                <strong>{{ progress_percentage }}%</strong>
+            </div>
+            <div class="progress-bar" aria-label="Learning progress">
+                <div class="progress-fill" style="width: {{ progress_percentage }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <section class="dashboard-grid">
+        <div class="panel">
+            <h2>Add a word</h2>
+            <p class="muted">Add words manually or jump straight into study mode.</p>
+            <div class="dashboard-actions">
+                <a class="button-link" href="{{ url_for('flashcards') }}">Study Flashcards</a>
+                <form method="post" action="{{ url_for('generate_words') }}">
+                    <button type="submit">Generate 10 Words</button>
+                </form>
+            </div>
+            <form method="post" class="form-grid">
+                <label for="word">Word</label>
+                <input id="word" name="word" type="text" required>
+
+                <label for="meaning">Meaning</label>
+                <textarea id="meaning" name="meaning" rows="3" required></textarea>
+
+                <label for="bangla_meaning">Bangla meaning</label>
+                <textarea id="bangla_meaning" name="bangla_meaning" rows="3"></textarea>
+
+                <label for="sentence">Sentence</label>
+                <textarea id="sentence" name="sentence" rows="3"></textarea>
+
+                <button type="submit">Add word</button>
             </form>
         </div>
-        <form method="post" class="form-grid">
-            <label for="word">Word</label>
-            <input id="word" name="word" type="text" required>
 
-            <label for="meaning">Meaning</label>
-            <textarea id="meaning" name="meaning" rows="3" required></textarea>
-
-            <label for="bangla_meaning">Bangla meaning</label>
-            <textarea id="bangla_meaning" name="bangla_meaning" rows="3"></textarea>
-
-            <label for="sentence">Sentence</label>
-            <textarea id="sentence" name="sentence" rows="3"></textarea>
-
-            <button type="submit">Add word</button>
-        </form>
-    </div>
-
-    <div class="panel">
-        <div class="panel-heading">
-            <h2>Saved words</h2>
-            <span class="badge">{{ user_words|length }} total</span>
-        </div>
-
-        {% if user_words %}
-            <div class="word-list">
-                {% for item in user_words %}
-                    <article class="word-card">
-                        <div class="word-card-heading">
-                            <h3>{{ item.word_entry.word }}</h3>
-                            <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
-                                {{ 'Learned' if item.learned else 'Learning' }}
-                            </span>
-                        </div>
-                        <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
-                        <p><strong>Meaning (Bangla):</strong> {{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</p>
-                        <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
-                        <p><strong>Added:</strong> {{ item.added_date.strftime('%Y-%m-%d') }}</p>
-                        <p><strong>Last reviewed:</strong> {{ item.last_reviewed.strftime('%Y-%m-%d') if item.last_reviewed else 'Not reviewed yet' }}</p>
-                    </article>
-                {% endfor %}
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>Saved words</h2>
+                <span class="badge">{{ user_words|length }} listed</span>
             </div>
-        {% else %}
-            <p class="empty-state">No words added yet. Use the form to create your first entry.</p>
-        {% endif %}
-    </div>
+
+            {% if user_words %}
+                <div class="word-list">
+                    {% for item in user_words %}
+                        <article class="word-card">
+                            <div class="word-card-heading">
+                                <h3>{{ item.word_entry.word }}</h3>
+                                <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
+                                    {{ 'Learned' if item.learned else 'Learning' }}
+                                </span>
+                            </div>
+                            <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
+                            <p><strong>Meaning (Bangla):</strong> {{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</p>
+                            <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
+                            <p><strong>Added:</strong> {{ item.added_date.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>Last reviewed:</strong> {{ item.last_reviewed.strftime('%Y-%m-%d') if item.last_reviewed else 'Not reviewed yet' }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">No words added yet. Use the form to create your first entry.</p>
+            {% endif %}
+        </div>
+    </section>
 </section>
 {% endblock %}
