@@ -7,9 +7,12 @@
     <div class="panel">
         <h1>Your vocabulary</h1>
         <p class="muted">Add words and keep track of each study record.</p>
-        <p>
+        <div class="dashboard-actions">
             <a class="button-link" href="{{ url_for('flashcards') }}">Study Flashcards</a>
-        </p>
+            <form method="post" action="{{ url_for('generate_words') }}">
+                <button type="submit">Generate 10 Words</button>
+            </form>
+        </div>
         <form method="post" class="form-grid">
             <label for="word">Word</label>
             <input id="word" name="word" type="text" required>

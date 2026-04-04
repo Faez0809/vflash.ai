@@ -13,6 +13,7 @@ from flask_login import (
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from ai_generator import generate_vocabulary_words
 from models import User, UserWord, Word, db
 
 
@@ -140,6 +141,52 @@ def dashboard():
         .all()
     )
     return render_template("dashboard.html", user_words=user_words)
+
+
+@app.route("/generate-words", methods=["POST"])
+@login_required
+def generate_words():
+    generated_words = generate_vocabulary_words()
+    added_count = 0
+
+    for item in generated_words:
+        normalized_word = item["word"].strip().lower()
+        if not normalized_word:
+            continue
+
+        word = Word.query.filter_by(word=normalized_word).first()
+        if word is None:
+            word = Word(
+                word=normalized_word,
+                meaning=item["meaning"].strip(),
+                sentence=item["sentence"].strip(),
+            )
+            db.session.add(word)
+            db.session.flush()
+
+        existing_user_word = UserWord.query.filter_by(
+            user_id=current_user.id,
+            word_id=word.id,
+        ).first()
+        if existing_user_word:
+            continue
+
+        db.session.add(
+            UserWord(
+                user_id=current_user.id,
+                word_id=word.id,
+                added_date=date.today(),
+                learned=False,
+            )
+        )
+        added_count += 1
+
+    db.session.commit()
+    if added_count:
+        flash(f"{added_count} new words generated for your study list.", "success")
+    else:
+        flash("No new words were added because they already exist in your study list.", "info")
+    return redirect(url_for("flashcards"))
 
 
 @app.route("/flashcards")
