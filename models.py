@@ -20,6 +20,7 @@ class Word(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     word = db.Column(db.String(120), unique=True, nullable=False)
     meaning = db.Column(db.Text, nullable=False)
+    bangla_meaning = db.Column(db.Text, nullable=True)
     sentence = db.Column(db.Text, nullable=True)
     user_words = db.relationship(
         "UserWord",

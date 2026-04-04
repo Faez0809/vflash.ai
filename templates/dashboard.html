@@ -20,6 +20,9 @@
             <label for="meaning">Meaning</label>
             <textarea id="meaning" name="meaning" rows="3" required></textarea>
 
+            <label for="bangla_meaning">Bangla meaning</label>
+            <textarea id="bangla_meaning" name="bangla_meaning" rows="3"></textarea>
+
             <label for="sentence">Sentence</label>
             <textarea id="sentence" name="sentence" rows="3"></textarea>
 
@@ -44,6 +47,7 @@
                             </span>
                         </div>
                         <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
+                        <p><strong>Meaning (Bangla):</strong> {{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</p>
                         <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
                         <p><strong>Added:</strong> {{ item.added_date.strftime('%Y-%m-%d') }}</p>
                         <p><strong>Last reviewed:</strong> {{ item.last_reviewed.strftime('%Y-%m-%d') if item.last_reviewed else 'Not reviewed yet' }}</p>

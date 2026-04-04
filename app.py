@@ -10,6 +10,7 @@ from flask_login import (
     login_user,
     logout_user,
 )
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -45,6 +46,15 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+def ensure_word_bangla_meaning_column():
+    """Add the bangla_meaning column for existing SQLite databases."""
+    inspector = inspect(db.engine)
+    columns = {column["name"] for column in inspector.get_columns("word")}
+    if "bangla_meaning" not in columns:
+        db.session.execute(text("ALTER TABLE word ADD COLUMN bangla_meaning TEXT"))
+        db.session.commit()
 
 
 @app.route("/")
@@ -106,6 +116,7 @@ def dashboard():
     if request.method == "POST":
         word_text = request.form.get("word", "").strip()
         meaning = request.form.get("meaning", "").strip()
+        bangla_meaning = request.form.get("bangla_meaning", "").strip()
         sentence = request.form.get("sentence", "").strip()
 
         if not word_text or not meaning:
@@ -118,7 +129,12 @@ def dashboard():
 
             try:
                 if is_new_word:
-                    word = Word(word=normalized_word, meaning=meaning, sentence=sentence)
+                    word = Word(
+                        word=normalized_word,
+                        meaning=meaning,
+                        bangla_meaning=bangla_meaning or None,
+                        sentence=sentence,
+                    )
                     db.session.add(word)
                     db.session.flush()
 
@@ -159,6 +175,7 @@ def generate_words():
             word = Word(
                 word=normalized_word,
                 meaning=item["meaning"].strip(),
+                bangla_meaning=item.get("bangla_meaning", "").strip() or None,
                 sentence=item["sentence"].strip(),
             )
             db.session.add(word)
@@ -228,6 +245,7 @@ def logout():
 with app.app_context():
     # Create tables after the app, database, and models are fully configured.
     db.create_all()
+    ensure_word_bangla_meaning_column()
 
 
 if __name__ == "__main__":

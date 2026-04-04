@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const wordEl = document.querySelector("#flashcard-word");
     const flipCardEl = document.querySelector("#flashcard-flip");
     const meaningEl = document.querySelector("#flashcard-meaning");
+    const banglaMeaningEl = document.querySelector("#flashcard-bangla-meaning");
     const sentenceEl = document.querySelector("#flashcard-sentence");
     const statusEl = document.querySelector("#flashcard-status");
     const markLearnedBtn = document.querySelector("#mark-learned-btn");
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
             countEl.textContent = "Study complete";
             wordEl.textContent = "No more words to study";
             meaningEl.textContent = "";
+            banglaMeaningEl.textContent = "";
             sentenceEl.textContent = "";
             flipCardEl.classList.remove("is-flipped");
             statusEl.textContent = "";
@@ -43,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
         countEl.textContent = `Word ${currentIndex + 1} of ${cards.length}`;
         wordEl.textContent = card.word;
         meaningEl.textContent = card.meaning;
+        banglaMeaningEl.textContent = card.bangla_meaning;
         sentenceEl.textContent = card.sentence;
         flipCardEl.classList.remove("is-flipped");
         statusEl.textContent = "";

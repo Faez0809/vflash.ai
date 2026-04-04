@@ -18,6 +18,7 @@
                     "id": {{ item.id }},
                     "word": {{ item.word_entry.word|tojson }},
                     "meaning": {{ item.word_entry.meaning|tojson }},
+                    "bangla_meaning": {{ (item.word_entry.bangla_meaning or "No Bangla meaning yet.")|tojson }},
                     "sentence": {{ (item.word_entry.sentence or "No example yet.")|tojson }}
                 }{{ "," if not loop.last }}
             {% endfor %}
@@ -33,7 +34,8 @@
                         </div>
                         <div class="flashcard-face flashcard-back">
                             <span class="flashcard-kicker">Meaning and example</span>
-                            <p><strong>Meaning:</strong> <span id="flashcard-meaning"></span></p>
+                            <p><strong>Meaning (English):</strong> <span id="flashcard-meaning"></span></p>
+                            <p><strong>Meaning (Bangla):</strong> <span id="flashcard-bangla-meaning"></span></p>
                             <p><strong>Sentence:</strong> <span id="flashcard-sentence"></span></p>
                             <div class="flashcard-actions">
                                 <button type="button" id="mark-learned-btn">Mark as Learned</button>
