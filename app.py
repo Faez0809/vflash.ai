@@ -93,9 +93,8 @@ def signup():
             user = User(email=email, password=generate_password_hash(password))
             db.session.add(user)
             db.session.commit()
-            login_user(user)
-            flash("Account created successfully.", "success")
-            return redirect(url_for("dashboard"))
+            flash("Account created successfully. Please log in.", "success")
+            return redirect(url_for("login"))
 
     return render_template("signup.html")
 
@@ -141,6 +140,18 @@ def dashboard():
         .all()
     )
     return render_template("dashboard.html", user_words=user_words)
+
+
+@app.route("/flashcards")
+@login_required
+def flashcards():
+    user_words = (
+        UserWord.query.filter_by(user_id=current_user.id)
+        .join(Word)
+        .order_by(Word.word.asc())
+        .all()
+    )
+    return render_template("flashcards.html", user_words=user_words)
 
 
 @app.route("/logout")

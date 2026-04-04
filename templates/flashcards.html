@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Flashcards | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-heading">
+        <h1>Flashcards</h1>
+        <span class="badge">{{ user_words|length }} cards</span>
+    </div>
+
+    {% if user_words %}
+        <div class="word-list">
+            {% for item in user_words %}
+                <article class="word-card">
+                    <div class="word-card-heading">
+                        <h3>{{ item.word_entry.word }}</h3>
+                        <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
+                            {{ 'Learned' if item.learned else 'Learning' }}
+                        </span>
+                    </div>
+                    <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
+                    <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No flashcards yet. Add words from your dashboard first.</p>
+    {% endif %}
+</section>
+{% endblock %}
