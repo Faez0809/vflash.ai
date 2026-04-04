@@ -12,27 +12,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const cards = JSON.parse(flashcardApp.dataset.cards || "[]");
     const countEl = document.querySelector("#flashcard-count");
     const wordEl = document.querySelector("#flashcard-word");
-    const detailsEl = document.querySelector("#flashcard-details");
+    const flipCardEl = document.querySelector("#flashcard-flip");
     const meaningEl = document.querySelector("#flashcard-meaning");
     const sentenceEl = document.querySelector("#flashcard-sentence");
     const statusEl = document.querySelector("#flashcard-status");
-    const showMeaningBtn = document.querySelector("#show-meaning-btn");
     const markLearnedBtn = document.querySelector("#mark-learned-btn");
     const nextWordBtn = document.querySelector("#next-word-btn");
 
     let currentIndex = 0;
 
     function setButtonsDisabled(disabled) {
-        showMeaningBtn.disabled = disabled;
         markLearnedBtn.disabled = disabled;
         nextWordBtn.disabled = disabled;
+        flipCardEl.disabled = disabled;
     }
 
     function renderCard() {
         if (!cards.length || currentIndex >= cards.length) {
             countEl.textContent = "Study complete";
             wordEl.textContent = "No more words to study";
-            detailsEl.classList.add("is-hidden");
+            meaningEl.textContent = "";
+            sentenceEl.textContent = "";
+            flipCardEl.classList.remove("is-flipped");
             statusEl.textContent = "";
             setButtonsDisabled(true);
             return;
@@ -43,13 +44,21 @@ document.addEventListener("DOMContentLoaded", () => {
         wordEl.textContent = card.word;
         meaningEl.textContent = card.meaning;
         sentenceEl.textContent = card.sentence;
-        detailsEl.classList.add("is-hidden");
+        flipCardEl.classList.remove("is-flipped");
         statusEl.textContent = "";
         setButtonsDisabled(false);
     }
 
-    showMeaningBtn.addEventListener("click", () => {
-        detailsEl.classList.remove("is-hidden");
+    flipCardEl.addEventListener("click", (event) => {
+        if (event.target.closest("#mark-learned-btn, #next-word-btn")) {
+            return;
+        }
+
+        if (!cards.length || currentIndex >= cards.length) {
+            return;
+        }
+
+        flipCardEl.classList.toggle("is-flipped");
     });
 
     markLearnedBtn.addEventListener("click", async () => {
@@ -59,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            markLearnedBtn.disabled = true;
             const response = await fetch(`/flashcards/learn/${card.id}`, {
                 method: "POST",
                 headers: {
@@ -77,6 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderCard();
         } catch (error) {
             statusEl.textContent = "Could not update this word right now.";
+            markLearnedBtn.disabled = false;
         }
     });
 

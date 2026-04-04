@@ -23,20 +23,27 @@
             {% endfor %}
             ]'
         >
-            <article class="word-card flashcard">
+            <div class="flashcard-stage">
                 <div class="flashcard-count" id="flashcard-count"></div>
-                <h2 id="flashcard-word"></h2>
-                <div id="flashcard-details" class="flashcard-details is-hidden">
-                    <p><strong>Meaning:</strong> <span id="flashcard-meaning"></span></p>
-                    <p><strong>Sentence:</strong> <span id="flashcard-sentence"></span></p>
-                </div>
-                <div class="flashcard-actions">
-                    <button type="button" id="show-meaning-btn">Show Meaning</button>
-                    <button type="button" id="mark-learned-btn">Mark as Learned</button>
-                    <button type="button" id="next-word-btn" class="button-secondary">Next Word</button>
-                </div>
+                <article class="flashcard-shell">
+                    <button type="button" id="flashcard-flip" class="flashcard-flip" aria-label="Flip flashcard">
+                        <div class="flashcard-face flashcard-front">
+                            <span class="flashcard-kicker">Click to reveal</span>
+                            <h2 id="flashcard-word"></h2>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <span class="flashcard-kicker">Meaning and example</span>
+                            <p><strong>Meaning:</strong> <span id="flashcard-meaning"></span></p>
+                            <p><strong>Sentence:</strong> <span id="flashcard-sentence"></span></p>
+                            <div class="flashcard-actions">
+                                <button type="button" id="mark-learned-btn">Mark as Learned</button>
+                                <button type="button" id="next-word-btn" class="button-secondary">Next Word</button>
+                            </div>
+                        </div>
+                    </button>
+                </article>
                 <p id="flashcard-status" class="muted"></p>
-            </article>
+            </div>
         </div>
     {% else %}
         <p class="empty-state">No more words to study</p>

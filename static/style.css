@@ -7,6 +7,9 @@
     --accent: #d97706;
     --accent-dark: #9a3412;
     --line: #e8dcc7;
+    --card-ink: #24364a;
+    --card-muted: #5b6b7c;
+    --card-paper: #fffaf1;
     --success: #166534;
     --error: #b91c1c;
     --info: #1d4ed8;
@@ -240,11 +243,11 @@ button {
     margin: 0 auto;
 }
 
-.flashcard {
+.flashcard-stage {
     display: grid;
-    gap: 1rem;
-    min-height: 320px;
-    align-content: start;
+    gap: 1.25rem;
+    justify-items: center;
+    text-align: center;
 }
 
 .flashcard-count {
@@ -252,22 +255,84 @@ button {
     font-size: 0.95rem;
 }
 
-.flashcard h2 {
-    margin: 0;
-    font-size: clamp(2rem, 4vw, 3rem);
+.flashcard-shell {
+    width: min(100%, 460px);
+    perspective: 1200px;
 }
 
-.flashcard-details {
-    padding: 1rem;
-    border-radius: 14px;
-    background: #fff6e7;
+.flashcard-flip {
+    position: relative;
+    width: 100%;
+    min-height: 380px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    transform-style: preserve-3d;
+    transition: transform 0.7s ease;
+    cursor: pointer;
+}
+
+.flashcard-flip.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.flashcard-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    border-radius: 24px;
+    backface-visibility: hidden;
     border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    color: var(--card-ink);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 241, 1)),
+        repeating-linear-gradient(
+            180deg,
+            transparent,
+            transparent 34px,
+            rgba(217, 119, 6, 0.08) 34px,
+            rgba(217, 119, 6, 0.08) 35px
+        );
+}
+
+.flashcard-front {
+    align-items: center;
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+    text-align: left;
+}
+
+.flashcard-kicker {
+    color: var(--card-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+}
+
+.flashcard-front h2 {
+    margin: 0;
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    color: var(--card-ink);
+    text-shadow: none;
+}
+
+.flashcard-back p {
+    margin: 0;
+    color: var(--card-ink);
 }
 
 .flashcard-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    margin-top: auto;
 }
 
 .is-hidden {
