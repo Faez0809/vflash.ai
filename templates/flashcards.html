@@ -3,29 +3,43 @@
 {% block title %}Flashcards | VocabAI{% endblock %}
 
 {% block content %}
-<section class="panel">
+<section class="panel flashcard-panel">
     <div class="panel-heading">
         <h1>Flashcards</h1>
         <span class="badge">{{ user_words|length }} cards</span>
     </div>
 
     {% if user_words %}
-        <div class="word-list">
+        <div
+            id="flashcard-app"
+            data-cards='[
             {% for item in user_words %}
-                <article class="word-card">
-                    <div class="word-card-heading">
-                        <h3>{{ item.word_entry.word }}</h3>
-                        <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
-                            {{ 'Learned' if item.learned else 'Learning' }}
-                        </span>
-                    </div>
-                    <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
-                    <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
-                </article>
+                {
+                    "id": {{ item.id }},
+                    "word": {{ item.word_entry.word|tojson }},
+                    "meaning": {{ item.word_entry.meaning|tojson }},
+                    "sentence": {{ (item.word_entry.sentence or "No example yet.")|tojson }}
+                }{{ "," if not loop.last }}
             {% endfor %}
+            ]'
+        >
+            <article class="word-card flashcard">
+                <div class="flashcard-count" id="flashcard-count"></div>
+                <h2 id="flashcard-word"></h2>
+                <div id="flashcard-details" class="flashcard-details is-hidden">
+                    <p><strong>Meaning:</strong> <span id="flashcard-meaning"></span></p>
+                    <p><strong>Sentence:</strong> <span id="flashcard-sentence"></span></p>
+                </div>
+                <div class="flashcard-actions">
+                    <button type="button" id="show-meaning-btn">Show Meaning</button>
+                    <button type="button" id="mark-learned-btn">Mark as Learned</button>
+                    <button type="button" id="next-word-btn" class="button-secondary">Next Word</button>
+                </div>
+                <p id="flashcard-status" class="muted"></p>
+            </article>
         </div>
     {% else %}
-        <p class="empty-state">No flashcards yet. Add words from your dashboard first.</p>
+        <p class="empty-state">No more words to study</p>
     {% endif %}
 </section>
 {% endblock %}

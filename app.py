@@ -2,7 +2,7 @@ from datetime import date
 import os
 import secrets
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import (
     LoginManager,
     current_user,
@@ -148,10 +148,26 @@ def flashcards():
     user_words = (
         UserWord.query.filter_by(user_id=current_user.id)
         .join(Word)
-        .order_by(Word.word.asc())
+        .filter(UserWord.learned.is_(False))
+        .order_by(UserWord.added_date.desc(), Word.word.asc())
         .all()
     )
     return render_template("flashcards.html", user_words=user_words)
+
+
+@app.route("/flashcards/learn/<int:user_word_id>", methods=["POST"])
+@login_required
+def mark_flashcard_learned(user_word_id):
+    user_word = UserWord.query.filter_by(
+        id=user_word_id,
+        user_id=current_user.id,
+    ).first_or_404()
+
+    user_word.learned = True
+    user_word.last_reviewed = date.today()
+    db.session.commit()
+
+    return jsonify({"status": "success"})
 
 
 @app.route("/logout")
