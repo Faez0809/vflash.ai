@@ -2,6 +2,7 @@ from datetime import date
 import os
 import secrets
 
+from dotenv import load_dotenv
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import (
     LoginManager,
@@ -17,6 +18,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from ai_generator import generate_vocabulary_words
 from models import User, UserWord, Word, db
 
+
+load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
