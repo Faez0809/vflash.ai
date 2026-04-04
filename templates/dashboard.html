@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | VocabAI{% endblock %}
+
+{% block content %}
+<section class="dashboard-grid">
+    <div class="panel">
+        <h1>Your vocabulary</h1>
+        <p class="muted">Add words and keep track of each study record.</p>
+        <form method="post" class="form-grid">
+            <label for="word">Word</label>
+            <input id="word" name="word" type="text" required>
+
+            <label for="meaning">Meaning</label>
+            <textarea id="meaning" name="meaning" rows="3" required></textarea>
+
+            <label for="sentence">Sentence</label>
+            <textarea id="sentence" name="sentence" rows="3"></textarea>
+
+            <button type="submit">Add word</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="panel-heading">
+            <h2>Saved words</h2>
+            <span class="badge">{{ user_words|length }} total</span>
+        </div>
+
+        {% if user_words %}
+            <div class="word-list">
+                {% for item in user_words %}
+                    <article class="word-card">
+                        <div class="word-card-heading">
+                            <h3>{{ item.word_entry.word }}</h3>
+                            <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
+                                {{ 'Learned' if item.learned else 'Learning' }}
+                            </span>
+                        </div>
+                        <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
+                        <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
+                        <p><strong>Added:</strong> {{ item.added_date.strftime('%Y-%m-%d') }}</p>
+                        <p><strong>Last reviewed:</strong> {{ item.last_reviewed.strftime('%Y-%m-%d') if item.last_reviewed else 'Not reviewed yet' }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No words added yet. Use the form to create your first entry.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
