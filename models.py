@@ -29,6 +29,10 @@ class Word(db.Model):
 
 
 class UserWord(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "word_id", name="unique_user_word"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     word_id = db.Column(db.Integer, db.ForeignKey("word.id"), nullable=False)

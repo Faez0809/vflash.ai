@@ -1,5 +1,6 @@
 from datetime import date
 import os
+import secrets
 
 from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_login import (
@@ -9,27 +10,31 @@ from flask_login import (
     login_user,
     logout_user,
 )
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from models import User, UserWord, Word, db
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_DATA_ROOT = os.environ.get("LOCALAPPDATA") or BASE_DIR
-INSTANCE_DIR = os.path.join(DEFAULT_DATA_ROOT, "VocabAI")
+INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
 os.makedirs(INSTANCE_DIR, exist_ok=True)
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL",
     f"sqlite:///{os.path.join(INSTANCE_DIR, 'vocabai.db')}",
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+
+# Database setup
 db.init_app(app)
 
+
+# Login manager setup
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
@@ -73,6 +78,7 @@ def signup():
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
+        # Store emails in lowercase so login and uniqueness checks stay consistent.
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm_password = request.form.get("confirm_password", "")
@@ -105,21 +111,17 @@ def dashboard():
         if not word_text or not meaning:
             flash("Word and meaning are required.", "error")
         else:
+            # Normalize words to lowercase so the shared word bank stays unique.
             normalized_word = word_text.lower()
             word = Word.query.filter_by(word=normalized_word).first()
-            if word is None:
-                word = Word(word=normalized_word, meaning=meaning, sentence=sentence)
-                db.session.add(word)
-                db.session.flush()
+            is_new_word = word is None
 
-            existing_user_word = UserWord.query.filter_by(
-                user_id=current_user.id,
-                word_id=word.id,
-            ).first()
+            try:
+                if is_new_word:
+                    word = Word(word=normalized_word, meaning=meaning, sentence=sentence)
+                    db.session.add(word)
+                    db.session.flush()
 
-            if existing_user_word:
-                flash("That word is already in your vocabulary list.", "info")
-            else:
                 user_word = UserWord(
                     user_id=current_user.id,
                     word_id=word.id,
@@ -128,6 +130,9 @@ def dashboard():
                 db.session.add(user_word)
                 db.session.commit()
                 flash("Word added to your vocabulary list.", "success")
+            except IntegrityError:
+                db.session.rollback()
+                flash("That word is already in your vocabulary list.", "info")
 
     user_words = (
         UserWord.query.filter_by(user_id=current_user.id)
@@ -147,6 +152,7 @@ def logout():
 
 
 with app.app_context():
+    # Create tables after the app, database, and models are fully configured.
     db.create_all()
 
 
