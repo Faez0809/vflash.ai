@@ -45,9 +45,11 @@ def get_weekly_activity(user_id):
                 counts[activity_date] += 1
 
     today = date.today()
+    recent_days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
+    recent_days.sort(key=lambda item: item.weekday())
+
     weekly_activity = []
-    for offset in range(6, -1, -1):
-        day = today - timedelta(days=offset)
+    for day in recent_days:
         weekly_activity.append(
             {
                 "label": day.strftime("%a"),

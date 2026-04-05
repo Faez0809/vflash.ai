@@ -3,21 +3,61 @@
 {% block title %}Sign Up | VocabAI{% endblock %}
 
 {% block content %}
-<section class="auth-card">
-    <h1>Create account</h1>
-    <p class="muted">Start building your own shared vocabulary bank.</p>
-    <form method="post" class="form-grid">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" required>
+<section class="auth-shell auth-shell-split">
+    <div class="auth-pane auth-pane-form">
+        <div class="auth-brand">VocabAI</div>
+        <div class="auth-form-wrap">
+            <header class="auth-copy">
+                <h1>Create your account</h1>
+                <p>Create your account and start a cleaner, more consistent vocabulary routine.</p>
+            </header>
+            <form method="post" class="auth-form-grid">
+                <div class="auth-field">
+                    <label for="email">Email address</label>
+                    <input id="email" name="email" type="email" placeholder="Enter your email" required>
+                </div>
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" required>
+                <div class="auth-field">
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" placeholder="Create a password" required>
+                </div>
 
-        <label for="confirm_password">Confirm password</label>
-        <input id="confirm_password" name="confirm_password" type="password" required>
+                <div class="auth-field">
+                    <label for="confirm_password">Confirm password</label>
+                    <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm your password" required>
+                </div>
 
-        <button type="submit">Sign up</button>
-    </form>
-    <p class="form-footer">Already registered? <a href="{{ url_for('login') }}">Login</a>.</p>
+                <button type="submit" class="auth-submit">Create account</button>
+            </form>
+            <p class="form-footer auth-footer-link">Already registered? <a href="{{ url_for('login') }}">Sign in</a></p>
+        </div>
+        <footer class="auth-meta">
+            <span>&copy; 2024 VocabAI</span>
+            <div>
+                <span>Privacy</span>
+                <span>Terms</span>
+            </div>
+        </footer>
+    </div>
+
+    <aside class="auth-pane auth-pane-feature">
+        <div class="auth-feature-surface">
+            <span class="auth-eyebrow">Premium learning space</span>
+            <h2>Structured practice for serious vocabulary growth.</h2>
+            <p>Set your focus, generate personalized study sets, and build progress through daily sessions and review.</p>
+            <div class="auth-feature-grid">
+                <article class="auth-feature-card">
+                    <span class="auth-feature-label">Guided progress</span>
+                    <strong>Track goals and momentum</strong>
+                    <p>Keep sight of what to learn next and what needs review.</p>
+                </article>
+                <article class="auth-feature-card">
+                    <span class="auth-feature-label">Flexible practice</span>
+                    <strong>Flashcards, quizzes, and review</strong>
+                    <p>Learn new words, mark difficult items, and revisit weak areas over time.</p>
+                </article>
+            </div>
+        </div>
+    </aside>
 </section>
 {% endblock %}

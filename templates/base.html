@@ -4,9 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}VocabAI{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="{% if request.endpoint in ['login', 'signup'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% endif %}">
+    {% if request.endpoint not in ['login', 'signup', 'dashboard'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
         <div class="container nav-shell">
@@ -45,8 +50,9 @@
             </nav>
         </div>
     </header>
+    {% endif %}
 
-    <main class="container page-shell">
+    <main class="{% if request.endpoint in ['login', 'signup'] %}auth-page-shell{% elif request.endpoint == 'dashboard' %}dashboard-page-shell{% else %}container page-shell{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <section class="flash-stack">

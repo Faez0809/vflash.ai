@@ -6,16 +6,19 @@
 <section class="panel flashcard-panel">
     <div class="panel-heading">
         <div>
-            <h1>{{ "Review" if review_mode else "Flashcards" }}</h1>
+            <span class="flashcard-eyebrow">{{ "Review queue" if review_mode else "Current session" }}</span>
+            <h1>{{ "Review Session" if review_mode else "Study Session" }}</h1>
             {% if study_session %}
                 <p class="muted session-meta">
-                    Session #{{ study_session.id }} &bull; {{ study_session.difficulty }} &bull; {{ study_session.word_count }} words &bull; {{ study_session.created_at.strftime('%Y-%m-%d') }}
+                    {{ study_session.difficulty }} &bull; {{ study_session.word_count }} cards &bull; {{ study_session.created_at.strftime('%Y-%m-%d') }}
                 </p>
                 {% if study_session.custom_prompt %}
                     <p class="muted session-meta">Focus: {{ study_session.custom_prompt }}</p>
                 {% endif %}
             {% elif review_mode %}
                 <p class="muted session-meta">Review the words that are due today and keep your memory strong.</p>
+            {% else %}
+                <p class="muted session-meta">Move through your saved words at a calm, steady pace.</p>
             {% endif %}
         </div>
         <span class="badge">{{ user_words|length }} cards</span>
@@ -46,17 +49,17 @@
             <div class="flashcard-stage">
                 <div class="flashcard-count" id="flashcard-count"></div>
                 <p class="flashcard-instructions">
-                    Tip: Click left or right to move between cards, and click the center to flip.
+                    Click the card to flip. Use the edges to move between words.
                 </p>
                 <article class="flashcard-shell">
                     <div id="flashcard-flip" class="flashcard-flip" role="button" tabindex="0" aria-label="Flip flashcard">
                         <div class="flashcard-face flashcard-front">
-                            <span class="flashcard-kicker">Tap to reveal details</span>
+                            <span class="flashcard-kicker">Tap to reveal</span>
                             <div class="flashcard-word-wrap">
                                 <h2 id="flashcard-word"></h2>
                                 <span id="flashcard-part-of-speech" class="flashcard-pos"></span>
                             </div>
-                            <p class="flashcard-front-hint">Flip the card to see the meaning, memory hook, and study actions.</p>
+                            <p class="flashcard-front-hint">Meaning, Bangla support, sentence, synonym, and memory cue.</p>
                         </div>
                         <div class="flashcard-face flashcard-back">
                             <span class="flashcard-kicker">Word details</span>

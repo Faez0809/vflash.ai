@@ -1,9 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const firstInput = document.querySelector("input, textarea, select");
+    const shouldAutofocus = document.body.classList.contains("auth-page");
+    const firstInput = shouldAutofocus ? document.querySelector("input, textarea, select") : null;
     if (firstInput) {
         firstInput.focus();
     }
 
+    initFlashMessages();
     initNavMenu();
     initAjaxDifficultForms();
     initFlashcards();
@@ -16,7 +18,7 @@ function ensureFlashStack() {
         return flashStack;
     }
 
-    const pageShell = document.querySelector(".page-shell");
+    const pageShell = document.querySelector(".page-shell, .dashboard-page-shell");
     if (!pageShell) {
         return null;
     }
@@ -61,6 +63,20 @@ async function postJson(url, formData = null) {
     }
 
     return response.json();
+}
+
+function initFlashMessages() {
+    const flashes = document.querySelectorAll(".flash-stack .flash");
+    if (!flashes.length) {
+        return;
+    }
+
+    flashes.forEach((flash, index) => {
+        window.setTimeout(() => {
+            flash.classList.add("is-fading");
+            window.setTimeout(() => flash.remove(), 320);
+        }, 1400 + (index * 150));
+    });
 }
 
 function initAjaxDifficultForms() {
