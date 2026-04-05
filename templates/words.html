@@ -8,8 +8,63 @@
         <div>
             <span class="eyebrow">My words</span>
             <h1>All saved vocabulary</h1>
+            <p class="muted section-copy">Search, filter, and organize the words you are actively learning.</p>
         </div>
         <span class="badge">{{ user_words|length }} words</span>
+    </div>
+
+    <form method="get" class="word-filter-form">
+        <div class="filter-grid">
+            <div class="generator-row">
+                <label for="q">Search</label>
+                <input id="q" name="q" type="text" value="{{ search_query }}" placeholder="Search by word, meaning, topic, or difficulty">
+            </div>
+            <div class="generator-row">
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" name="difficulty">
+                    <option value="All" {{ 'selected' if difficulty_filter == 'All' else '' }}>All</option>
+                    {% for difficulty in available_difficulties %}
+                        <option value="{{ difficulty }}" {{ 'selected' if difficulty_filter == difficulty else '' }}>{{ difficulty }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="generator-row">
+                <label for="topic">Topic</label>
+                <select id="topic" name="topic">
+                    <option value="All" {{ 'selected' if topic_filter == 'All' else '' }}>All</option>
+                    {% for topic in available_topics %}
+                        <option value="{{ topic }}" {{ 'selected' if topic_filter == topic else '' }}>{{ topic }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="generator-row">
+                <label for="learned">Learning state</label>
+                <select id="learned" name="learned">
+                    <option value="all" {{ 'selected' if learned_filter == 'all' else '' }}>All</option>
+                    <option value="learned" {{ 'selected' if learned_filter == 'learned' else '' }}>Learned</option>
+                    <option value="learning" {{ 'selected' if learned_filter == 'learning' else '' }}>Not learned</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-toggle-row">
+            <label class="save-default-option" for="difficult">
+                <input id="difficult" name="difficult" type="checkbox" value="1" {{ 'checked' if difficult_only else '' }}>
+                <span>Difficult only</span>
+            </label>
+            <label class="save-default-option" for="favorite">
+                <input id="favorite" name="favorite" type="checkbox" value="1" {{ 'checked' if favorite_only else '' }}>
+                <span>Favorites only</span>
+            </label>
+            <div class="filter-actions">
+                <button type="submit">Apply Filters</button>
+                <a class="button-secondary" href="{{ url_for('words') }}">Clear</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="results-summary">
+        <span>{{ user_words|length }} result{{ '' if user_words|length == 1 else 's' }}</span>
+        <span class="muted">Use favorites and notes to build your own revision system.</span>
     </div>
 
     {% if user_words %}
@@ -31,6 +86,12 @@
                         <span class="meta-pill">{{ item.word_entry.difficulty or 'General' }}</span>
                         <span class="meta-pill">{{ item.word_entry.topic or 'General topic' }}</span>
                         <span class="meta-pill">{{ item.added_date.strftime('%Y-%m-%d') }}</span>
+                        {% if item.is_difficult %}
+                            <span class="meta-pill meta-pill-warning">Difficult</span>
+                        {% endif %}
+                        {% if item.is_favorite %}
+                            <span class="meta-pill meta-pill-favorite">Favorite</span>
+                        {% endif %}
                     </div>
                     <dl class="word-details">
                         <div>
@@ -49,7 +110,27 @@
                             <dt>Synonym</dt>
                             <dd>{{ item.word_entry.synonym or 'No synonym yet.' }}</dd>
                         </div>
+                        <div>
+                            <dt>Personal note</dt>
+                            <dd>{{ item.note or 'No note added yet.' }}</dd>
+                        </div>
                     </dl>
+                    <div class="word-action-row">
+                        <form method="post" action="{{ url_for('toggle_favorite_flag', user_word_id=item.id) }}">
+                            <input type="hidden" name="next" value="{{ request.full_path }}">
+                            <button type="submit" class="button-secondary">{{ 'Remove Favorite' if item.is_favorite else 'Mark Favorite' }}</button>
+                        </form>
+                        <form method="post" action="{{ url_for('toggle_difficult_flag', user_word_id=item.id) }}">
+                            <input type="hidden" name="next" value="{{ request.full_path }}">
+                            <button type="submit" class="button-warning">{{ 'Remove Difficult' if item.is_difficult else 'Mark Difficult' }}</button>
+                        </form>
+                    </div>
+                    <form method="post" action="{{ url_for('save_word_note', user_word_id=item.id) }}" class="note-form">
+                        <input type="hidden" name="next" value="{{ request.full_path }}">
+                        <label for="note_{{ item.id }}">Personal note</label>
+                        <textarea id="note_{{ item.id }}" name="note" rows="3" placeholder="Write a short memory hook, mistake, or example that helps you remember this word.">{{ item.note or '' }}</textarea>
+                        <button type="submit">Save Note</button>
+                    </form>
                 </article>
             {% endfor %}
         </div>

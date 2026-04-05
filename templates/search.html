@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Word Search | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel search-page-panel">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">Word search</span>
+            <h1>{{ word.word }}</h1>
+            <p class="muted section-copy">Search result for "{{ search_query }}".</p>
+        </div>
+        <a class="button-secondary" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+    </div>
+
+    <article class="search-word-card">
+        <div class="flashcard-word-wrap search-word-heading">
+            <h2>{{ word.word }}</h2>
+            {% if word.part_of_speech %}
+                <span class="flashcard-pos">{{ word.part_of_speech }}</span>
+            {% endif %}
+        </div>
+        <div class="search-word-grid">
+            <div class="search-word-detail">
+                <span class="detail-label">Meaning</span>
+                <p>{{ word.meaning }}</p>
+            </div>
+            <div class="search-word-detail">
+                <span class="detail-label">Bangla meaning</span>
+                <p>{{ word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
+            </div>
+            <div class="search-word-detail search-word-detail-inline">
+                <div>
+                    <span class="detail-label">Pronunciation</span>
+                    <p>{{ word.phonetic or 'Not added yet.' }}</p>
+                </div>
+                <div>
+                    <span class="detail-label">Topic</span>
+                    <p>{{ word.topic or 'General' }}</p>
+                </div>
+            </div>
+            <div class="search-word-detail">
+                <span class="detail-label">Sentence</span>
+                <p>{{ word.sentence or 'No example sentence yet.' }}</p>
+            </div>
+            <div class="search-word-detail">
+                <span class="detail-label">Memory trick</span>
+                <p>{{ word.memory_trick or 'No memory trick yet.' }}</p>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}

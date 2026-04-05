@@ -9,6 +9,7 @@
             <div>
                 <span class="eyebrow">Profile</span>
                 <h1>Your learning settings</h1>
+                <p class="muted section-copy">Track your study footprint and adjust the defaults that shape each session.</p>
             </div>
         </div>
         <dl class="profile-details">
@@ -23,6 +24,20 @@
             <div>
                 <dt>Total words</dt>
                 <dd>{{ total_words }}</dd>
+            </div>
+            <div>
+                <dt>Total quizzes</dt>
+                <dd>{{ total_quizzes }}</dd>
+            </div>
+            <div>
+                <dt>Latest quiz</dt>
+                <dd>
+                    {% if latest_quiz %}
+                        {{ latest_quiz.score }}/{{ latest_quiz.total_questions }} on {{ latest_quiz.created_at.strftime('%Y-%m-%d') }}
+                    {% else %}
+                        No quiz yet
+                    {% endif %}
+                </dd>
             </div>
         </dl>
     </section>
@@ -39,6 +54,11 @@
                 <label for="default_study_focus">Default study focus</label>
                 <textarea id="default_study_focus" name="default_study_focus" rows="4">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
                 <small class="field-hint">This is used to prefill the dashboard generator so you can keep a consistent study direction.</small>
+            </div>
+            <div class="generator-row">
+                <label for="daily_goal">Daily goal</label>
+                <input id="daily_goal" name="daily_goal" type="number" min="1" max="100" value="{{ current_user.daily_goal or 10 }}">
+                <small class="field-hint">Set how many new words you want to learn each day.</small>
             </div>
             <button type="submit">Save Profile</button>
         </form>

@@ -641,3 +641,93 @@ def generate_word_content(word):
         }
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         return _fallback_word_content(normalized_word)
+
+
+def _request_quiz_question_support_from_groq(word, meaning, sentence, difficulty="", custom_instruction="", quiz_type="multiple_choice"):
+    api_key = os.environ.get("GROQ_API_KEY")
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured.")
+
+    prompt = f"""
+You are an IELTS vocabulary coach and quiz designer.
+
+Create better quiz support for this English vocabulary item.
+
+Word: {word}
+Meaning: {meaning}
+Sentence: {sentence}
+Difficulty: {difficulty or "General"}
+Quiz type: {quiz_type}
+Custom instruction: {custom_instruction or "General IELTS, speaking, and writing focus"}
+
+Rules:
+- Focus on useful IELTS, speaking, and writing vocabulary.
+- Avoid very easy questions.
+- Avoid very rare or outdated words.
+- Use realistic, plausible wrong options.
+- Keep the language natural and clean.
+- Prefer medium to advanced vocabulary support.
+
+Return ONLY JSON:
+{{
+  "question_prompt": "...",
+  "subtitle": "...",
+  "distractors": ["...", "...", "..."],
+  "fill_blank_sentence": "..."
+}}
+"""
+
+    response = requests.post(
+        GROQ_API_URL,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "temperature": 0.4,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You generate compact JSON quiz support for vocabulary learning.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload["choices"][0]["message"]["content"]
+    return json.loads(_extract_json_text(content))
+
+
+def generate_quiz_question_support(word, meaning, sentence="", difficulty="", custom_instruction="", quiz_type="multiple_choice"):
+    try:
+        content = _request_quiz_question_support_from_groq(
+            word=word,
+            meaning=meaning,
+            sentence=sentence,
+            difficulty=difficulty,
+            custom_instruction=custom_instruction,
+            quiz_type=quiz_type,
+        )
+        distractors = [
+            str(item).strip()
+            for item in content.get("distractors", [])
+            if str(item).strip()
+        ]
+        return {
+            "question_prompt": str(content.get("question_prompt", "")).strip() or word,
+            "subtitle": str(content.get("subtitle", "")).strip() or "Choose the best answer",
+            "distractors": distractors[:3],
+            "fill_blank_sentence": str(content.get("fill_blank_sentence", "")).strip() or sentence,
+        }
+    except (requests.RequestException, ValueError, KeyError, RuntimeError):
+        return {
+            "question_prompt": word,
+            "subtitle": "Choose the correct meaning" if quiz_type == "multiple_choice" else "Type the missing word",
+            "distractors": [],
+            "fill_blank_sentence": sentence,
+        }

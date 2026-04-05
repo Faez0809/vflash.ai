@@ -6,7 +6,7 @@
 <section class="panel flashcard-panel">
     <div class="panel-heading">
         <div>
-            <h1>Flashcards</h1>
+            <h1>{{ "Review" if review_mode else "Flashcards" }}</h1>
             {% if study_session %}
                 <p class="muted session-meta">
                     Session #{{ study_session.id }} &bull; {{ study_session.difficulty }} &bull; {{ study_session.word_count }} words &bull; {{ study_session.created_at.strftime('%Y-%m-%d') }}
@@ -14,6 +14,8 @@
                 {% if study_session.custom_prompt %}
                     <p class="muted session-meta">Focus: {{ study_session.custom_prompt }}</p>
                 {% endif %}
+            {% elif review_mode %}
+                <p class="muted session-meta">Review the words that are due today and keep your memory strong.</p>
             {% endif %}
         </div>
         <span class="badge">{{ user_words|length }} cards</span>
@@ -22,11 +24,14 @@
     {% if user_words %}
         <div
             id="flashcard-app"
+            data-mode="{{ 'review' if review_mode else 'study' }}"
             data-cards='[
             {% for item in user_words %}
                 {
                     "id": {{ item.id }},
                     "word": {{ item.word_entry.word|tojson }},
+                    "is_difficult": {{ item.is_difficult|tojson }},
+                    "already_known": {{ item.already_known|tojson }},
                     "part_of_speech": {{ (item.word_entry.part_of_speech or "")|tojson }},
                     "meaning": {{ item.word_entry.meaning|tojson }},
                     "bangla_meaning": {{ (item.word_entry.bangla_meaning or "No Bangla meaning yet.")|tojson }},
@@ -41,16 +46,17 @@
             <div class="flashcard-stage">
                 <div class="flashcard-count" id="flashcard-count"></div>
                 <p class="flashcard-instructions">
-                    Tap to flip &bull; Left edge or swipe left = Previous &bull; Right edge = Next &bull; Swipe right = Learned
+                    Tip: Click left or right to move between cards, and click the center to flip.
                 </p>
                 <article class="flashcard-shell">
-                    <button type="button" id="flashcard-flip" class="flashcard-flip" aria-label="Flip flashcard">
+                    <div id="flashcard-flip" class="flashcard-flip" role="button" tabindex="0" aria-label="Flip flashcard">
                         <div class="flashcard-face flashcard-front">
-                            <span class="flashcard-kicker">Tap to reveal</span>
+                            <span class="flashcard-kicker">Tap to reveal details</span>
                             <div class="flashcard-word-wrap">
                                 <h2 id="flashcard-word"></h2>
                                 <span id="flashcard-part-of-speech" class="flashcard-pos"></span>
                             </div>
+                            <p class="flashcard-front-hint">Flip the card to see the meaning, memory hook, and study actions.</p>
                         </div>
                         <div class="flashcard-face flashcard-back">
                             <span class="flashcard-kicker">Word details</span>
@@ -82,13 +88,16 @@
                                     <p id="flashcard-memory-trick"></p>
                                 </div>
                             </div>
-                            <div class="flashcard-actions">
-                                <button type="button" id="mark-learned-btn">Mark as Learned</button>
-                                <button type="button" id="next-word-btn" class="button-secondary">Next Word</button>
-                            </div>
                         </div>
-                    </button>
+                    </div>
                 </article>
+                <div class="flashcard-actions">
+                    <button type="button" id="mark-learned-btn" class="button-outline button-outline-success">{{ "Mark Reviewed" if review_mode else "Mark Learned" }}</button>
+                    <button type="button" id="mark-difficult-btn" class="button-outline button-outline-warning">Mark Difficult</button>
+                    {% if not review_mode %}
+                        <button type="button" id="already-known-btn" class="button-outline button-outline-muted">Already Known</button>
+                    {% endif %}
+                </div>
                 <p id="flashcard-status" class="muted"></p>
             </div>
         </div>

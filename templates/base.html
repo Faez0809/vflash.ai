@@ -8,18 +8,36 @@
 </head>
 <body>
     <header class="site-header">
+        <div class="site-header-glow"></div>
         <div class="container nav-shell">
-            <a class="brand" href="{{ url_for('index') }}">VocabAI</a>
-            <nav class="nav-links">
+            <div class="brand-lockup">
+                <a class="brand" href="{{ url_for('index') }}">VocabAI</a>
                 {% if current_user.is_authenticated %}
-                    <span class="nav-email">{{ current_user.email }}</span>
+                    <span class="brand-tag">AI vocabulary trainer</span>
+                {% endif %}
+            </div>
+            <form class="nav-search" action="{{ url_for('search_word') }}" method="get">
+                <input type="search" name="q" placeholder="Search any word" value="{{ request.args.get('q', '') if request.endpoint == 'search_word' else '' }}">
+            </form>
+            <nav class="nav-links nav-links-primary">
+                {% if current_user.is_authenticated %}
                     <a class="{{ 'is-active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
-                    <a class="{{ 'is-active' if request.endpoint == 'generate_page' else '' }}" href="{{ url_for('generate_page') }}">Generate Words</a>
-                    <a class="{{ 'is-active' if request.endpoint == 'words' else '' }}" href="{{ url_for('words') }}">My Words</a>
-                    <a class="{{ 'is-active' if request.endpoint == 'difficult_words' else '' }}" href="{{ url_for('difficult_words') }}">Difficult Words</a>
-                    <a class="{{ 'is-active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}">Profile</a>
-                    <a href="{{ url_for('logout') }}">Logout</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
+                    <a class="{{ 'is-active' if request.endpoint in ['quiz', 'quiz_start'] else '' }}" href="{{ url_for('quiz') }}">Quiz</a>
+                    <div class="nav-menu" data-nav-menu>
+                        <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                            <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                        </button>
+                        <div class="nav-menu-panel" aria-hidden="true">
+                            <span class="nav-menu-email">{{ current_user.email }}</span>
+                            <a href="{{ url_for('dashboard') }}#generate-section">Generate Words</a>
+                            <a href="{{ url_for('words') }}">My Words</a>
+                            <a href="{{ url_for('difficult_words') }}">Difficult Words</a>
+                            <a href="{{ url_for('profile') }}">Profile</a>
+                            <a href="{{ url_for('logout') }}">Logout</a>
+                        </div>
+                    </div>
                 {% else %}
                     <a href="{{ url_for('login') }}">Login</a>
                     <a href="{{ url_for('signup') }}">Sign up</a>

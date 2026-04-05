@@ -7,16 +7,16 @@
     <div class="section-heading">
         <div>
             <span class="eyebrow">Difficult words</span>
-            <h1>Words still in progress</h1>
+            <h1>Words marked for extra attention</h1>
+            <p class="muted section-copy">Keep a sharper eye on the vocabulary that needs extra repetition.</p>
         </div>
-        <span class="badge">{{ user_words|length }} active</span>
+        <span class="badge">{{ user_words|length }} flagged</span>
     </div>
-    <p class="muted">This page currently highlights the words you have not marked as learned yet.</p>
 
     {% if user_words %}
         <div class="word-list">
             {% for item in user_words %}
-                <article class="word-card">
+                <article class="word-card" data-user-word-card="{{ item.id }}">
                     <div class="word-card-heading">
                         <div class="word-card-title">
                             <h3>{{ item.word_entry.word }}</h3>
@@ -24,7 +24,7 @@
                                 <span class="word-type">{{ item.word_entry.part_of_speech }}</span>
                             {% endif %}
                         </div>
-                        <span class="status status-pending">Learning</span>
+                        <span class="status status-warning">Difficult</span>
                     </div>
                     <div class="word-meta">
                         <span class="meta-pill">{{ item.word_entry.difficulty or 'General' }}</span>
@@ -37,20 +37,21 @@
                             <dd>{{ item.word_entry.meaning }}</dd>
                         </div>
                         <div>
-                            <dt>Bangla</dt>
-                            <dd>{{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</dd>
-                        </div>
-                        <div>
-                            <dt>Memory trick</dt>
-                            <dd>{{ item.word_entry.memory_trick or 'No memory trick yet.' }}</dd>
+                            <dt>Example sentence</dt>
+                            <dd>{{ item.word_entry.sentence or 'No example yet.' }}</dd>
                         </div>
                     </dl>
-                    {% if item.session_id %}
-                        <div class="word-card-footer">
-                            <span>Session {{ item.session_id }}</span>
-                            <a href="{{ url_for('flashcards_session', session_id=item.session_id) }}">Continue</a>
-                        </div>
-                    {% endif %}
+                    <div class="word-card-footer difficult-actions">
+                        {% if item.session_id %}
+                            <a class="button-link" href="{{ url_for('flashcards_session', session_id=item.session_id) }}">Review</a>
+                        {% else %}
+                            <a class="button-link" href="{{ url_for('flashcards') }}">Review</a>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('toggle_difficult_flag', user_word_id=item.id) }}" data-ajax-difficult-form data-remove-card="true">
+                            <input type="hidden" name="next" value="{{ url_for('difficult_words') }}">
+                            <button type="submit" class="button-secondary">Remove from Difficult</button>
+                        </form>
+                    </div>
                 </article>
             {% endfor %}
         </div>

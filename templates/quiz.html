@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Mode | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel quiz-panel quiz-panel-minimal">
+    {% if quiz_result %}
+        <section class="quiz-result quiz-result-minimal">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">Quiz result</span>
+                    <h1>{{ quiz_result.score }}/{{ quiz_result.total_questions }}</h1>
+                    <p class="muted section-copy">Accuracy {{ quiz_result.accuracy }}%{% if quiz_result.was_quit %} | Quiz ended early{% endif %}</p>
+                </div>
+            </div>
+            <div class="button-row-minimal">
+                <a class="button-warning" href="{{ url_for('quiz_start', retry='wrong') }}">Retry Wrong Words</a>
+                <a class="button-link" href="{{ url_for('quiz', reset=1) }}">Start New Quiz</a>
+                <a class="button-secondary" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+            </div>
+        </section>
+    {% elif quiz_setup %}
+        <section class="quiz-setup-wrap quiz-setup-wrap-minimal">
+            <div class="quiz-setup-card quiz-setup-card-minimal">
+                <div>
+                    <span class="eyebrow">Quiz setup</span>
+                    <h1>Build a focused quiz</h1>
+                    <p class="muted section-copy">Choose a source, level, and instruction to shape a more useful practice round.</p>
+                </div>
+                {% if quiz_setup.has_resume and quiz_setup.resume_progress %}
+                    <div class="resume-quiz-card">
+                        <div>
+                            <span class="eyebrow">Resume quiz</span>
+                            <p class="muted">You have an unfinished quiz in progress.</p>
+                            <p class="muted">Progress: {{ quiz_setup.resume_progress.current_index + 1 }} / {{ quiz_setup.resume_progress.total_questions }} | Score: {{ quiz_setup.resume_progress.score }}</p>
+                        </div>
+                        <div class="button-row-minimal">
+                            <a class="button-link" href="{{ url_for('quiz_start') }}">Resume Quiz</a>
+                            <a class="button-secondary" href="{{ url_for('quiz', reset=1) }}">Start New Quiz</a>
+                        </div>
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('quiz_start') }}" class="generator-form generator-form-clean quiz-setup-form">
+                    <div class="generator-row">
+                        <label for="quiz_type">Quiz type</label>
+                        <select id="quiz_type" name="quiz_type">
+                            {% for value, label in quiz_setup.quiz_types %}
+                                <option value="{{ value }}" {{ 'selected' if value == 'mixed' else '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generator-row">
+                        <label for="word_source">Word source</label>
+                        <select id="word_source" name="word_source">
+                            {% for value, label in quiz_setup.word_sources %}
+                                <option value="{{ value }}" {{ 'selected' if value == 'my_words' else '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generator-row">
+                        <label for="difficulty">Difficulty</label>
+                        <select id="difficulty" name="difficulty">
+                            {% for value in quiz_setup.difficulty_options %}
+                                <option value="{{ value }}">{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generator-row">
+                        <label for="question_count">Number of questions</label>
+                        <select id="question_count" name="question_count">
+                            {% for value in quiz_setup.question_counts %}
+                                <option value="{{ value }}" {{ 'selected' if value == 10 else '' }}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="generator-row">
+                        <label for="custom_quiz_instruction">Custom quiz instruction</label>
+                        <textarea id="custom_quiz_instruction" name="custom_quiz_instruction" rows="3" placeholder="IELTS writing vocabulary quiz, synonym quiz, sentence usage quiz"></textarea>
+                    </div>
+                    <button type="submit">Start Quiz</button>
+                </form>
+            </div>
+        </section>
+    {% elif question %}
+        <section class="quiz-question-wrap quiz-question-wrap-minimal" id="quiz-app">
+            <div class="quiz-header-bar">
+                <div class="quiz-meta-stack">
+                    <span class="quiz-step">Question {{ question_number }} / {{ total_questions }}</span>
+                    <div class="progress-bar" aria-label="Quiz progress">
+                        <div class="progress-fill progress-fill-blue" style="width: {{ (question_number - 1) / total_questions * 100 }}%;"></div>
+                    </div>
+                </div>
+                <button type="button" class="button-secondary" id="quit-quiz-btn">Quit Quiz</button>
+            </div>
+
+            <form method="post" action="{{ url_for('quiz_start') }}" class="quiz-form" id="quiz-question-form" data-quiz-form data-correct-answer='{{ question.answer|lower|tojson }}' data-quiz-prefetch-url="{{ url_for('quiz_prefetch') }}">
+                <div class="quiz-card quiz-card-animated quiz-card-minimal">
+                    <span class="flashcard-kicker">{{ question.subtitle }}</span>
+                    <h2>{{ question.prompt }}</h2>
+
+                    {% if question.question_type == "fill_blank" %}
+                        <label for="answer" class="is-hidden">Type your answer</label>
+                        <input id="answer" name="answer" type="text" required autocomplete="off">
+                        <p class="quiz-feedback" id="quiz-feedback"></p>
+                    {% else %}
+                        <div class="quiz-options">
+                            {% for option in question.options %}
+                                <label class="quiz-option" for="option_{{ loop.index }}" data-quiz-option data-option-value='{{ option|lower|tojson }}'>
+                                    <input id="option_{{ loop.index }}" type="radio" name="answer" value="{{ option }}" required>
+                                    <span>{{ option }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="quiz-feedback" id="quiz-feedback"></p>
+                    {% endif %}
+                </div>
+                <button type="submit">Submit Answer</button>
+            </form>
+            <div class="quiz-prefetch-status" id="quiz-prefetch-status" aria-live="polite"></div>
+
+            <div class="modal-backdrop is-hidden" id="quit-quiz-modal" aria-hidden="true">
+                <div class="modal-card">
+                    <h3>Are you sure you want to quit the quiz?</h3>
+                    <p class="muted">Your current progress and score will be saved in the result screen.</p>
+                    <div class="modal-actions">
+                        <form method="post" action="{{ url_for('quiz_start') }}">
+                            <input type="hidden" name="action" value="quit">
+                            <button type="submit" class="button-warning">Yes, Quit</button>
+                        </form>
+                        <button type="button" class="button-secondary" id="continue-quiz-btn">Continue Quiz</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+</section>
+{% endblock %}
