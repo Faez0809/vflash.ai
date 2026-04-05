@@ -3,97 +3,204 @@
 {% block title %}Dashboard | VocabAI{% endblock %}
 
 {% block content %}
-<section class="dashboard-shell">
-    <div class="panel dashboard-summary">
-        <div class="panel-heading">
-            <h1>Your vocabulary</h1>
-            <span class="badge">{{ total_words }} total</span>
+<section class="dashboard-shell dashboard-platform">
+    <section class="dashboard-hero panel">
+        <div>
+            <span class="eyebrow">Learning dashboard</span>
+            <h1>Welcome back, {{ current_user.email.split('@')[0] }}</h1>
+            <p class="muted">Build practical vocabulary, continue your latest session, and keep your study habit moving.</p>
         </div>
-        <p class="muted">Track your study progress and keep building your word bank.</p>
-        <div class="stats-grid">
-            <article class="stat-card">
-                <span class="stat-label">Total words</span>
-                <strong class="stat-value">{{ total_words }}</strong>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Learned</span>
-                <strong class="stat-value">{{ learned_words }}</strong>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Unlearned</span>
-                <strong class="stat-value">{{ unlearned_words }}</strong>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Added today</span>
-                <strong class="stat-value">{{ words_added_today }}</strong>
-            </article>
+        <div class="hero-actions">
+            <a class="button-link" href="{{ url_for('flashcards') }}">Open Flashcards</a>
+            <a class="button-secondary" href="{{ url_for('sessions') }}">View Sessions</a>
         </div>
-        <div class="progress-wrap">
-            <div class="progress-meta">
-                <span>Learning progress</span>
-                <strong>{{ progress_percentage }}%</strong>
+    </section>
+
+    <section class="stats-grid dashboard-cards">
+        <article class="stat-card stat-card-learned">
+            <span class="stat-label">Words Learned</span>
+            <strong class="stat-value">{{ learned_words }}</strong>
+        </article>
+        <article class="stat-card stat-card-learning">
+            <span class="stat-label">Words To Learn</span>
+            <strong class="stat-value">{{ unlearned_words }}</strong>
+        </article>
+        <article class="stat-card stat-card-today">
+            <span class="stat-label">New Words Today</span>
+            <strong class="stat-value">{{ words_added_today }}</strong>
+        </article>
+        <article class="stat-card stat-card-streak">
+            <span class="stat-label">Study Streak</span>
+            <strong class="stat-value">{{ study_streak }} day{{ '' if study_streak == 1 else 's' }}</strong>
+        </article>
+    </section>
+
+    <section class="dashboard-main-grid">
+        <section class="panel generator-panel" id="generate-section">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">Generate new words</span>
+                    <h2>Build your next study set</h2>
+                </div>
+                <span class="badge">Core feature</span>
             </div>
-            <div class="progress-bar" aria-label="Learning progress">
-                <div class="progress-fill" style="width: {{ progress_percentage }}%;"></div>
-            </div>
-        </div>
-    </div>
-
-    <section class="dashboard-grid">
-        <div class="panel">
-            <h2>Add a word</h2>
-            <p class="muted">Add words manually or jump straight into study mode.</p>
-            <div class="dashboard-actions">
-                <a class="button-link" href="{{ url_for('flashcards') }}">Study Flashcards</a>
-                <form method="post" action="{{ url_for('generate_words') }}">
-                    <button type="submit">Generate 10 Words</button>
-                </form>
-            </div>
-            <form method="post" class="form-grid">
-                <label for="word">Word</label>
-                <input id="word" name="word" type="text" required>
-
-                <label for="meaning">Meaning</label>
-                <textarea id="meaning" name="meaning" rows="3" required></textarea>
-
-                <label for="bangla_meaning">Bangla meaning</label>
-                <textarea id="bangla_meaning" name="bangla_meaning" rows="3"></textarea>
-
-                <label for="sentence">Sentence</label>
-                <textarea id="sentence" name="sentence" rows="3"></textarea>
-
-                <button type="submit">Add word</button>
+            <p class="muted">Choose your level, set a target, and tailor the topic to IELTS, business, speaking, or any focus area you want.</p>
+            <form method="post" action="{{ url_for('generate_words') }}" class="generator-form generator-form-hero">
+                <div class="generator-layout">
+                    <div class="generator-row">
+                        <label for="difficulty">Difficulty</label>
+                        <select id="difficulty" name="difficulty">
+                            <option value="Beginner" selected>Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <fieldset class="generator-fieldset">
+                        <legend>Number of words</legend>
+                        <label class="radio-option" for="word_count_5">
+                            <input id="word_count_5" name="word_count" type="radio" value="5" checked>
+                            <span>5 words</span>
+                        </label>
+                        <label class="radio-option" for="word_count_10">
+                            <input id="word_count_10" name="word_count" type="radio" value="10">
+                            <span>10 words</span>
+                        </label>
+                        <label class="radio-option" for="word_count_15">
+                            <input id="word_count_15" name="word_count" type="radio" value="15">
+                            <span>15 words</span>
+                        </label>
+                    </fieldset>
+                </div>
+                <div class="generator-row">
+                    <label for="custom_prompt">Custom topic</label>
+                    <textarea id="custom_prompt" name="custom_prompt" rows="3">{{ default_study_focus }}</textarea>
+                    <small class="field-hint">Examples: IELTS writing, business English, daily conversation, technology vocabulary.</small>
+                </div>
+                <div class="generator-footer">
+                    <label class="save-default-option" for="save_as_default">
+                        <input id="save_as_default" name="save_as_default" type="checkbox">
+                        <span>Save this as my default focus</span>
+                    </label>
+                    <button type="submit">Generate Words</button>
+                </div>
             </form>
-        </div>
+        </section>
 
-        <div class="panel">
-            <div class="panel-heading">
-                <h2>Saved words</h2>
-                <span class="badge">{{ user_words|length }} listed</span>
+        <aside class="dashboard-side-stack">
+            <section class="panel continue-panel">
+                <span class="eyebrow">Continue study</span>
+                <h2>Pick up where you left off</h2>
+                {% if last_session %}
+                    <p class="continue-meta">Last session: {{ last_session.word_count }} words</p>
+                    <p class="continue-meta">Not learned yet: {{ last_session_remaining }}</p>
+                    <a class="button-link" href="{{ url_for('flashcards_session', session_id=last_session.id) }}">Continue Flashcards</a>
+                {% else %}
+                    <p class="muted">You have not created a study session yet.</p>
+                    <a class="button-link" href="{{ url_for('generate_page') }}">Start First Session</a>
+                {% endif %}
+            </section>
+
+            <section class="panel quick-links-panel">
+                <span class="eyebrow">Quick access</span>
+                <div class="quick-link-list">
+                    <a href="{{ url_for('words') }}">Browse all words</a>
+                    <a href="{{ url_for('difficult_words') }}">Review difficult words</a>
+                    <a href="{{ url_for('profile') }}">Update profile settings</a>
+                </div>
+            </section>
+        </aside>
+    </section>
+
+    <section class="dashboard-progress-grid">
+        <section class="panel">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">Progress</span>
+                    <h2>Words by difficulty</h2>
+                </div>
             </div>
+            <div class="difficulty-progress-list">
+                {% for item in difficulty_progress %}
+                    <div class="difficulty-row">
+                        <div class="difficulty-row-header">
+                            <span>{{ item.label }}</span>
+                            <span>{{ item.learned }}/{{ item.count }}</span>
+                        </div>
+                        <div class="progress-track difficulty-track">
+                            <div class="progress-fill difficulty-fill" style="width: {{ item.fill }}%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
 
-            {% if user_words %}
-                <div class="word-list">
-                    {% for item in user_words %}
-                        <article class="word-card">
-                            <div class="word-card-heading">
-                                <h3>{{ item.word_entry.word }}</h3>
-                                <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
-                                    {{ 'Learned' if item.learned else 'Learning' }}
-                                </span>
+        <section class="panel">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">Progress</span>
+                    <h2>Learning overview</h2>
+                </div>
+            </div>
+            <div class="overview-metric">
+                <div class="progress-meta">
+                    <span>Learned vs Unlearned</span>
+                    <strong>{{ progress_percentage }}%</strong>
+                </div>
+                <div class="progress-bar" aria-label="Learning progress">
+                    <div class="progress-fill progress-fill-blue" style="width: {{ progress_percentage }}%;"></div>
+                </div>
+            </div>
+            <div class="weekly-activity">
+                <div class="weekly-activity-header">
+                    <span>Weekly activity</span>
+                    <span class="muted">Last 7 days</span>
+                </div>
+                <div class="activity-chart">
+                    {% for day in weekly_activity %}
+                        <div class="activity-bar-wrap">
+                            <div class="activity-bar" style="height: {{ day.height }}%;">
+                                <span class="activity-value">{{ day.count }}</span>
                             </div>
-                            <p><strong>Meaning:</strong> {{ item.word_entry.meaning }}</p>
-                            <p><strong>Meaning (Bangla):</strong> {{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</p>
-                            <p><strong>Sentence:</strong> {{ item.word_entry.sentence or 'No example yet.' }}</p>
-                            <p><strong>Added:</strong> {{ item.added_date.strftime('%Y-%m-%d') }}</p>
-                            <p><strong>Last reviewed:</strong> {{ item.last_reviewed.strftime('%Y-%m-%d') if item.last_reviewed else 'Not reviewed yet' }}</p>
-                        </article>
+                            <span class="activity-label">{{ day.label }}</span>
+                        </div>
                     {% endfor %}
                 </div>
-            {% else %}
-                <p class="empty-state">No words added yet. Use the form to create your first entry.</p>
-            {% endif %}
+            </div>
+        </section>
+    </section>
+
+    <section class="panel recent-panel">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">Recent activity</span>
+                <h2>Recent words</h2>
+            </div>
+            <a class="button-secondary" href="{{ url_for('words') }}">My Words</a>
         </div>
+        {% if recent_words %}
+            <div class="recent-word-list">
+                {% for item in recent_words %}
+                    <article class="recent-word-card">
+                        <div class="recent-word-header">
+                            <div>
+                                <h3>{{ item.word_entry.word }}</h3>
+                                <p>{{ item.word_entry.meaning }}</p>
+                            </div>
+                            <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
+                                {{ 'Learned' if item.learned else 'Learning' }}
+                            </span>
+                        </div>
+                        <div class="word-meta">
+                            <span class="meta-pill">{{ item.word_entry.difficulty or 'General' }}</span>
+                            <span class="meta-pill">{{ item.word_entry.topic or 'General topic' }}</span>
+                            <span class="meta-pill">{{ item.added_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No recent words yet. Generate a study set to start building activity.</p>
+        {% endif %}
     </section>
 </section>
 {% endblock %}

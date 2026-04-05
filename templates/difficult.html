@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Difficult Words | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel list-page-panel">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">Difficult words</span>
+            <h1>Words still in progress</h1>
+        </div>
+        <span class="badge">{{ user_words|length }} active</span>
+    </div>
+    <p class="muted">This page currently highlights the words you have not marked as learned yet.</p>
+
+    {% if user_words %}
+        <div class="word-list">
+            {% for item in user_words %}
+                <article class="word-card">
+                    <div class="word-card-heading">
+                        <div class="word-card-title">
+                            <h3>{{ item.word_entry.word }}</h3>
+                            {% if item.word_entry.part_of_speech %}
+                                <span class="word-type">{{ item.word_entry.part_of_speech }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="status status-pending">Learning</span>
+                    </div>
+                    <div class="word-meta">
+                        <span class="meta-pill">{{ item.word_entry.difficulty or 'General' }}</span>
+                        <span class="meta-pill">{{ item.word_entry.topic or 'General topic' }}</span>
+                        <span class="meta-pill">{{ item.added_date.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <dl class="word-details">
+                        <div>
+                            <dt>Meaning</dt>
+                            <dd>{{ item.word_entry.meaning }}</dd>
+                        </div>
+                        <div>
+                            <dt>Bangla</dt>
+                            <dd>{{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Memory trick</dt>
+                            <dd>{{ item.word_entry.memory_trick or 'No memory trick yet.' }}</dd>
+                        </div>
+                    </dl>
+                    {% if item.session_id %}
+                        <div class="word-card-footer">
+                            <span>Session {{ item.session_id }}</span>
+                            <a href="{{ url_for('flashcards_session', session_id=item.session_id) }}">Continue</a>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No difficult words right now. You are caught up.</p>
+    {% endif %}
+</section>
+{% endblock %}

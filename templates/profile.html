@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Profile | VocabAI{% endblock %}
+
+{% block content %}
+<section class="profile-grid">
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">Profile</span>
+                <h1>Your learning settings</h1>
+            </div>
+        </div>
+        <dl class="profile-details">
+            <div>
+                <dt>Email</dt>
+                <dd>{{ current_user.email }}</dd>
+            </div>
+            <div>
+                <dt>Total sessions</dt>
+                <dd>{{ total_sessions }}</dd>
+            </div>
+            <div>
+                <dt>Total words</dt>
+                <dd>{{ total_words }}</dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">Default focus</span>
+                <h2>Set your preferred study topic</h2>
+            </div>
+        </div>
+        <form method="post" class="generator-form">
+            <div class="generator-row">
+                <label for="default_study_focus">Default study focus</label>
+                <textarea id="default_study_focus" name="default_study_focus" rows="4">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
+                <small class="field-hint">This is used to prefill the dashboard generator so you can keep a consistent study direction.</small>
+            </div>
+            <button type="submit">Save Profile</button>
+        </form>
+    </section>
+</section>
+{% endblock %}

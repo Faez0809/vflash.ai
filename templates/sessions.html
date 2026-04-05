@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Study Sessions | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel sessions-panel">
+    <div class="panel-heading">
+        <h1>Study sessions</h1>
+        <span class="badge">{{ study_sessions|length }} total</span>
+    </div>
+
+    {% if study_sessions %}
+        <div class="sessions-list">
+            {% for session in study_sessions %}
+                <article class="session-card">
+                    <div class="word-card-heading">
+                        <h2>Session #{{ session.id }}</h2>
+                        <span class="badge">{{ session.word_count }} words</span>
+                    </div>
+                    <p><strong>Difficulty:</strong> {{ session.difficulty }}</p>
+                    <p><strong>Created:</strong> {{ session.created_at.strftime('%Y-%m-%d') }}</p>
+                    {% if session.custom_prompt %}
+                        <p><strong>Focus:</strong> {{ session.custom_prompt }}</p>
+                    {% endif %}
+                    <p><a class="button-link" href="{{ url_for('flashcards_session', session_id=session.id) }}">Open session</a></p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No study sessions yet. Generate a set of words from the dashboard to start one.</p>
+    {% endif %}
+</section>
+{% endblock %}

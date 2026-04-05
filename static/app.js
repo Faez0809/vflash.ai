@@ -12,10 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const cards = JSON.parse(flashcardApp.dataset.cards || "[]");
     const countEl = document.querySelector("#flashcard-count");
     const wordEl = document.querySelector("#flashcard-word");
+    const partOfSpeechEl = document.querySelector("#flashcard-part-of-speech");
     const flipCardEl = document.querySelector("#flashcard-flip");
     const meaningEl = document.querySelector("#flashcard-meaning");
     const banglaMeaningEl = document.querySelector("#flashcard-bangla-meaning");
+    const phoneticEl = document.querySelector("#flashcard-phonetic");
+    const synonymEl = document.querySelector("#flashcard-synonym");
     const sentenceEl = document.querySelector("#flashcard-sentence");
+    const memoryTrickEl = document.querySelector("#flashcard-memory-trick");
     const statusEl = document.querySelector("#flashcard-status");
     const markLearnedBtn = document.querySelector("#mark-learned-btn");
     const nextWordBtn = document.querySelector("#next-word-btn");
@@ -106,9 +110,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!hasActiveCard()) {
             countEl.textContent = "Study complete";
             wordEl.textContent = "No more words to study";
+            partOfSpeechEl.textContent = "";
             meaningEl.textContent = "";
             banglaMeaningEl.textContent = "";
+            phoneticEl.textContent = "";
+            synonymEl.textContent = "";
             sentenceEl.textContent = "";
+            memoryTrickEl.textContent = "";
             flipCardEl.classList.remove("is-flipped");
             statusEl.textContent = "";
             setButtonsDisabled(true);
@@ -118,9 +126,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = cards[currentIndex];
         countEl.textContent = `Word ${currentIndex + 1} of ${cards.length}`;
         wordEl.textContent = card.word;
+        partOfSpeechEl.textContent = card.part_of_speech || "";
+        partOfSpeechEl.classList.toggle("is-hidden", !card.part_of_speech);
         meaningEl.textContent = card.meaning;
         banglaMeaningEl.textContent = card.bangla_meaning;
+        phoneticEl.textContent = card.phonetic;
+        synonymEl.textContent = card.synonym;
         sentenceEl.textContent = card.sentence;
+        memoryTrickEl.textContent = card.memory_trick;
         flipCardEl.classList.remove("is-flipped");
         statusEl.textContent = "";
         setButtonsDisabled(false);

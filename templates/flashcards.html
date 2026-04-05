@@ -5,7 +5,17 @@
 {% block content %}
 <section class="panel flashcard-panel">
     <div class="panel-heading">
-        <h1>Flashcards</h1>
+        <div>
+            <h1>Flashcards</h1>
+            {% if study_session %}
+                <p class="muted session-meta">
+                    Session #{{ study_session.id }} &bull; {{ study_session.difficulty }} &bull; {{ study_session.word_count }} words &bull; {{ study_session.created_at.strftime('%Y-%m-%d') }}
+                </p>
+                {% if study_session.custom_prompt %}
+                    <p class="muted session-meta">Focus: {{ study_session.custom_prompt }}</p>
+                {% endif %}
+            {% endif %}
+        </div>
         <span class="badge">{{ user_words|length }} cards</span>
     </div>
 
@@ -17,9 +27,13 @@
                 {
                     "id": {{ item.id }},
                     "word": {{ item.word_entry.word|tojson }},
+                    "part_of_speech": {{ (item.word_entry.part_of_speech or "")|tojson }},
                     "meaning": {{ item.word_entry.meaning|tojson }},
                     "bangla_meaning": {{ (item.word_entry.bangla_meaning or "No Bangla meaning yet.")|tojson }},
-                    "sentence": {{ (item.word_entry.sentence or "No example yet.")|tojson }}
+                    "sentence": {{ (item.word_entry.sentence or "No example yet.")|tojson }},
+                    "phonetic": {{ (item.word_entry.phonetic or "Not added yet.")|tojson }},
+                    "synonym": {{ (item.word_entry.synonym or "No synonym yet.")|tojson }},
+                    "memory_trick": {{ (item.word_entry.memory_trick or "No memory trick yet.")|tojson }}
                 }{{ "," if not loop.last }}
             {% endfor %}
             ]'
@@ -27,19 +41,47 @@
             <div class="flashcard-stage">
                 <div class="flashcard-count" id="flashcard-count"></div>
                 <p class="flashcard-instructions">
-                    Tap center to flip &bull; Left edge/swipe left = Previous &bull; Right edge = Next &bull; Swipe right = Learned
+                    Tap to flip &bull; Left edge or swipe left = Previous &bull; Right edge = Next &bull; Swipe right = Learned
                 </p>
                 <article class="flashcard-shell">
                     <button type="button" id="flashcard-flip" class="flashcard-flip" aria-label="Flip flashcard">
                         <div class="flashcard-face flashcard-front">
-                            <span class="flashcard-kicker">Click to reveal</span>
-                            <h2 id="flashcard-word"></h2>
+                            <span class="flashcard-kicker">Tap to reveal</span>
+                            <div class="flashcard-word-wrap">
+                                <h2 id="flashcard-word"></h2>
+                                <span id="flashcard-part-of-speech" class="flashcard-pos"></span>
+                            </div>
                         </div>
                         <div class="flashcard-face flashcard-back">
-                            <span class="flashcard-kicker">Meaning and example</span>
-                            <p><strong>Meaning (English):</strong> <span id="flashcard-meaning"></span></p>
-                            <p><strong>Meaning (Bangla):</strong> <span id="flashcard-bangla-meaning"></span></p>
-                            <p><strong>Sentence:</strong> <span id="flashcard-sentence"></span></p>
+                            <span class="flashcard-kicker">Word details</span>
+                            <div class="flashcard-back-grid">
+                                <div class="flashcard-detail">
+                                    <span class="detail-label">Meaning</span>
+                                    <p id="flashcard-meaning"></p>
+                                </div>
+                                <div class="flashcard-detail">
+                                    <span class="detail-label">Bangla</span>
+                                    <p id="flashcard-bangla-meaning"></p>
+                                </div>
+                                <div class="flashcard-detail flashcard-detail-inline">
+                                    <div>
+                                        <span class="detail-label">Phonetic</span>
+                                        <p id="flashcard-phonetic"></p>
+                                    </div>
+                                    <div>
+                                        <span class="detail-label">Synonym</span>
+                                        <p id="flashcard-synonym"></p>
+                                    </div>
+                                </div>
+                                <div class="flashcard-detail">
+                                    <span class="detail-label">Sentence</span>
+                                    <p id="flashcard-sentence"></p>
+                                </div>
+                                <div class="flashcard-detail">
+                                    <span class="detail-label">Memory trick</span>
+                                    <p id="flashcard-memory-trick"></p>
+                                </div>
+                            </div>
                             <div class="flashcard-actions">
                                 <button type="button" id="mark-learned-btn">Mark as Learned</button>
                                 <button type="button" id="next-word-btn" class="button-secondary">Next Word</button>

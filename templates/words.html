@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}My Words | VocabAI{% endblock %}
+
+{% block content %}
+<section class="panel list-page-panel">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">My words</span>
+            <h1>All saved vocabulary</h1>
+        </div>
+        <span class="badge">{{ user_words|length }} words</span>
+    </div>
+
+    {% if user_words %}
+        <div class="word-list">
+            {% for item in user_words %}
+                <article class="word-card">
+                    <div class="word-card-heading">
+                        <div class="word-card-title">
+                            <h3>{{ item.word_entry.word }}</h3>
+                            {% if item.word_entry.part_of_speech %}
+                                <span class="word-type">{{ item.word_entry.part_of_speech }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="status {{ 'status-done' if item.learned else 'status-pending' }}">
+                            {{ 'Learned' if item.learned else 'Learning' }}
+                        </span>
+                    </div>
+                    <div class="word-meta">
+                        <span class="meta-pill">{{ item.word_entry.difficulty or 'General' }}</span>
+                        <span class="meta-pill">{{ item.word_entry.topic or 'General topic' }}</span>
+                        <span class="meta-pill">{{ item.added_date.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <dl class="word-details">
+                        <div>
+                            <dt>Meaning</dt>
+                            <dd>{{ item.word_entry.meaning }}</dd>
+                        </div>
+                        <div>
+                            <dt>Bangla</dt>
+                            <dd>{{ item.word_entry.bangla_meaning or 'No Bangla meaning yet.' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Sentence</dt>
+                            <dd>{{ item.word_entry.sentence or 'No example yet.' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Synonym</dt>
+                            <dd>{{ item.word_entry.synonym or 'No synonym yet.' }}</dd>
+                        </div>
+                    </dl>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">You do not have saved words yet. Generate a study set to begin.</p>
+    {% endif %}
+</section>
+{% endblock %}

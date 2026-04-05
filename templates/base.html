@@ -13,8 +13,12 @@
             <nav class="nav-links">
                 {% if current_user.is_authenticated %}
                     <span class="nav-email">{{ current_user.email }}</span>
-                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                    <a href="{{ url_for('flashcards') }}">Flashcards</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'generate_page' else '' }}" href="{{ url_for('generate_page') }}">Generate Words</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'words' else '' }}" href="{{ url_for('words') }}">My Words</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'difficult_words' else '' }}" href="{{ url_for('difficult_words') }}">Difficult Words</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}">Profile</a>
                     <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}
                     <a href="{{ url_for('login') }}">Login</a>
