@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}User Manual | VocabAI{% endblock %}
+
+{% block content %}
+<section class="manual-page">
+    <div class="manual-hero">
+        <div>
+            <p class="manual-eyebrow">User manual</p>
+            <h1>Learn VocabAI in a few simple steps.</h1>
+            <p>Start with word generation, study with flashcards, review daily, and use quizzes to check progress.</p>
+        </div>
+        <div class="manual-actions">
+            <a href="{{ url_for('dashboard') }}#generate-section" class="manual-primary">Start with generating words</a>
+            <a href="{{ url_for('dashboard') }}" class="manual-secondary">Back to dashboard</a>
+        </div>
+    </div>
+
+    <div class="manual-grid">
+        <article class="manual-card">
+            <span class="material-symbols-outlined">neurology</span>
+            <h2>1. Generate words</h2>
+            <p>Go to the dashboard, choose a topic and difficulty, then generate your first study set.</p>
+            <a href="{{ url_for('dashboard') }}#generate-section">Open generator</a>
+        </article>
+
+        <article class="manual-card">
+            <span class="material-symbols-outlined">style</span>
+            <h2>2. Check Word Lists</h2>
+            <p>Your generated words are stored in Word Lists so you can read meanings and track what you saved.</p>
+            <a href="{{ url_for('words') }}">Open Word Lists</a>
+        </article>
+
+        <article class="manual-card">
+            <span class="material-symbols-outlined">amp_stories</span>
+            <h2>3. Study with flashcards</h2>
+            <p>Use flashcards to go word by word and mark what you learned, already knew, or found difficult.</p>
+            <a href="{{ url_for('flashcards') }}">Open flashcards</a>
+        </article>
+
+        <article class="manual-card">
+            <span class="material-symbols-outlined">history</span>
+            <h2>4. Review regularly</h2>
+            <p>Review helps you revisit words at the right time so they stay in memory longer.</p>
+            <a href="{{ url_for('review') }}">Open review</a>
+        </article>
+
+        <article class="manual-card">
+            <span class="material-symbols-outlined">quiz</span>
+            <h2>5. Take quizzes</h2>
+            <p>Use quizzes after studying to check accuracy and see how much you remember.</p>
+            <a href="{{ url_for('quiz') }}">Open quiz</a>
+        </article>
+
+        <article class="manual-card">
+            <span class="material-symbols-outlined">person</span>
+            <h2>6. Personalize your profile</h2>
+            <p>Set your nickname, daily goal, and study focus so the app matches how you learn.</p>
+            <a href="{{ url_for('profile') }}">Open profile</a>
+        </article>
+    </div>
+</section>
+{% endblock %}

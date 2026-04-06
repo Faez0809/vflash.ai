@@ -7,9 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initFlashMessages();
     initNavMenu();
+    initPasswordToggles();
     initAjaxDifficultForms();
     initFlashcards();
     initQuizUX();
+    initUsageTracking();
 });
 
 function ensureFlashStack() {
@@ -76,6 +78,37 @@ function initFlashMessages() {
             flash.classList.add("is-fading");
             window.setTimeout(() => flash.remove(), 320);
         }, 1400 + (index * 150));
+    });
+}
+
+function initPasswordToggles() {
+    const buttons = document.querySelectorAll("[data-password-toggle-button]");
+    if (!buttons.length) {
+        return;
+    }
+
+    buttons.forEach((button) => {
+        const inputId = button.getAttribute("data-password-toggle-button");
+        const target = inputId ? document.getElementById(inputId) : null;
+        if (!target) {
+            return;
+        }
+
+        const openIcon = button.querySelector("[data-eye-open]");
+        const closedIcon = button.querySelector("[data-eye-closed]");
+
+        button.addEventListener("click", () => {
+            const shouldShow = target.type === "password";
+            target.type = shouldShow ? "text" : "password";
+            button.setAttribute("aria-pressed", shouldShow ? "true" : "false");
+            button.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
+            if (openIcon) {
+                openIcon.style.display = shouldShow ? "none" : "inline-flex";
+            }
+            if (closedIcon) {
+                closedIcon.style.display = shouldShow ? "inline-flex" : "none";
+            }
+        });
     });
 }
 
@@ -535,6 +568,156 @@ function initFlashcards() {
     }
 
     renderCard();
+}
+
+function initUsageTracking() {
+    const usageEndpoint = document.body.dataset.usageEndpoint;
+    if (!usageEndpoint) {
+        return;
+    }
+
+    const sessionStorageKey = "vocabai_usage_session";
+    const sessionTimeoutMs = 30 * 60 * 1000;
+    const activeWindowMs = 60 * 1000;
+    const tickMs = 15000;
+
+    const now = Date.now();
+    let interactionCount = 0;
+    let lastInteractionAt = now;
+    let pendingActiveSeconds = 0;
+    let lastTickAt = now;
+    let isPageVisible = document.visibilityState === "visible";
+    let hasFocus = document.hasFocus();
+
+    function generateSessionKey() {
+        return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function loadSessionState() {
+        try {
+            return JSON.parse(localStorage.getItem(sessionStorageKey) || "{}");
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function saveSessionState(state) {
+        localStorage.setItem(sessionStorageKey, JSON.stringify(state));
+    }
+
+    function resolveSessionKey() {
+        const saved = loadSessionState();
+        if (!saved.sessionKey || !saved.lastSeenAt || (now - saved.lastSeenAt) > sessionTimeoutMs) {
+            const nextState = { sessionKey: generateSessionKey(), lastSeenAt: now };
+            saveSessionState(nextState);
+            return nextState.sessionKey;
+        }
+
+        saved.lastSeenAt = now;
+        saveSessionState(saved);
+        return saved.sessionKey;
+    }
+
+    const sessionKey = resolveSessionKey();
+
+    function updateSessionSeen() {
+        const saved = loadSessionState();
+        saved.sessionKey = sessionKey;
+        saved.lastSeenAt = Date.now();
+        saveSessionState(saved);
+    }
+
+    function isActivelyUsingApp() {
+        return isPageVisible && hasFocus && (Date.now() - lastInteractionAt) <= activeWindowMs;
+    }
+
+    function registerInteraction() {
+        interactionCount += 1;
+        lastInteractionAt = Date.now();
+        updateSessionSeen();
+    }
+
+    async function sendUsage(payload, useBeacon = false) {
+        updateSessionSeen();
+        const body = JSON.stringify({
+            session_key: sessionKey,
+            page_path: `${window.location.pathname}${window.location.search || ""}`,
+            ...payload,
+        });
+
+        if (useBeacon && navigator.sendBeacon) {
+            const blob = new Blob([body], { type: "application/json" });
+            navigator.sendBeacon(usageEndpoint, blob);
+            return;
+        }
+
+        try {
+            await fetch(usageEndpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body,
+                keepalive: true,
+            });
+        } catch (error) {
+            // Swallow analytics errors so they never affect the product flow.
+        }
+    }
+
+    function flushUsage(useBeacon = false) {
+        const payload = {
+            active_seconds: pendingActiveSeconds,
+            interaction_count: interactionCount,
+            page_load: false,
+        };
+        pendingActiveSeconds = 0;
+        interactionCount = 0;
+        return sendUsage(payload, useBeacon);
+    }
+
+    sendUsage({ active_seconds: 0, interaction_count: 0, page_load: true });
+
+    ["pointerdown", "keydown", "scroll", "touchstart", "mousemove"].forEach((eventName) => {
+        window.addEventListener(eventName, registerInteraction, { passive: true });
+    });
+
+    window.addEventListener("focus", () => {
+        hasFocus = true;
+        registerInteraction();
+    });
+
+    window.addEventListener("blur", () => {
+        hasFocus = false;
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        isPageVisible = document.visibilityState === "visible";
+        if (!isPageVisible && (pendingActiveSeconds > 0 || interactionCount > 0)) {
+            flushUsage(true);
+        }
+    });
+
+    window.setInterval(() => {
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.max(0, Math.floor((currentTime - lastTickAt) / 1000));
+        lastTickAt = currentTime;
+
+        if (isActivelyUsingApp()) {
+            pendingActiveSeconds += elapsedSeconds;
+        }
+
+        if (pendingActiveSeconds > 0 || interactionCount > 0) {
+            flushUsage();
+        }
+    }, tickMs);
+
+    window.addEventListener("pagehide", () => {
+        if (pendingActiveSeconds > 0 || interactionCount > 0) {
+            flushUsage(true);
+        }
+    });
 }
 
 function initQuizUX() {

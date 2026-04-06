@@ -13,6 +13,9 @@
             <input type="search" name="q" placeholder="Search any word">
         </form>
         <div class="dashboard-topbar-actions">
+            {% if current_user.is_admin and admin_session_active %}
+            <a class="dashboard-topbar-cta" href="{{ url_for('admin_dashboard') }}">Switch to Admin Panel</a>
+            {% endif %}
             <a class="dashboard-topbar-cta" href="#generate-section">New Session</a>
             <a class="dashboard-avatar" href="{{ url_for('profile') }}" aria-label="Profile">
                 {{ display_name[:1]|upper }}
@@ -57,11 +60,20 @@
                     <span class="material-symbols-outlined">person</span>
                     <span>Profile</span>
                 </a>
+                <a href="{{ url_for('user_manual') }}">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span>User Manual</span>
+                </a>
                 <a href="{{ url_for('logout') }}">
                     <span class="material-symbols-outlined">logout</span>
                     <span>Sign Out</span>
                 </a>
             </nav>
+            <div style="margin-top:auto; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.06); color:#8a9291; font-size:0.72rem; line-height:1.6;">
+                <div style="color:#c0c8c7; font-weight:700;">VocabAI</div>
+                <div>Vocabulary learning platform</div>
+                <div>by Faez Mahmud</div>
+            </div>
         </aside>
 
         <section class="dashboard-main">
@@ -76,7 +88,7 @@
                             <h2>{{ "Resume latest session" if last_session else "Start first session" }}</h2>
                             <small>
                                 {% if last_session %}
-                                    {{ last_session_remaining }}/{{ last_session.word_count }} words left
+                                    {{ last_session_remaining }}/{{ last_session.word_count }} {{ 'word' if last_session.word_count == 1 else 'words' }} left
                                 {% else %}
                                     Create a fresh word set
                                 {% endif %}
@@ -88,7 +100,7 @@
                         <span class="material-symbols-outlined">history</span>
                         <div>
                             <p class="dashboard-stitch-label">Review due today</p>
-                            <h2>{{ words_to_review_today }} words</h2>
+                            <h2>{{ words_to_review_today }} {{ 'word' if words_to_review_today == 1 else 'words' }}</h2>
                             <small>Clear your due queue.</small>
                         </div>
                     </a>
@@ -109,7 +121,7 @@
                         <div>
                             <h2 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
                                 <span class="material-symbols-outlined" style="font-size: 1.4rem; color: var(--accent);">neurology</span>
-                                Generate build your next study set
+                                Generate and build your next study set
                             </h2>
                         </div>
                     </div>
@@ -155,7 +167,7 @@
                                 <div class="dashboard-today-overview-goal" style="margin: 0; min-width: 200px;">
                                     <div class="dashboard-today-overview-goal-copy" style="margin-bottom: 0.15rem; font-size: 0.85rem;">
                                         <span>Daily goal</span>
-                                        <strong>{{ learned_today }} / {{ daily_goal }} words</strong>
+                                        <strong>{{ learned_today }} / {{ daily_goal }} {{ 'word' if daily_goal == 1 else 'words' }}</strong>
                                     </div>
                                     <div class="dashboard-goal-progress" aria-label="Daily goal progress" style="height: 6px;">
                                         <span style="width: {{ daily_goal_percentage }}%;"></span>
@@ -166,11 +178,11 @@
                             <div class="dynamic-motivational-message">
                                 {% set completion_rate = (learned_today / daily_goal * 100) if daily_goal > 0 else 0 %}
                                 {% if study_streak >= 7 %}
-                                    <p>🔥 <strong>You're on fire!</strong> {{ study_streak }} day streak. Keep the momentum going!</p>
+                                    <p>🔥 <strong>You're on fire!</strong> {{ study_streak }} {{ 'day' if study_streak == 1 else 'days' }} in a row. Keep the momentum going!</p>
                                 {% elif completion_rate >= 100 %}
                                     <p>⭐ <strong>Goal crushed!</strong> You're making excellent progress today.</p>
                                 {% elif words_to_review_today > 20 %}
-                                    <p>⏳ A busy review day ahead. Knock out those {{ words_to_review_today }} words!</p>
+                                    <p>⏳ A busy review day ahead. Knock out those {{ words_to_review_today }} {{ 'word' if words_to_review_today == 1 else 'words' }}!</p>
                                 {% elif completion_rate > 50 %}
                                     <p>📈 More than halfway to your daily goal. Keep it up!</p>
                                 {% elif words_to_review_today == 0 and unlearned_words == 0 and completion_rate == 0 %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel | VocabAI{% endblock %}
+
+{% block content %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+    .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+</style>
+<div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter']">
+    <header class="sticky top-0 z-40 border-b border-white/5 bg-[#121414]/90 backdrop-blur-xl">
+        <div class="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div>
+                <p class="text-[10px] uppercase tracking-[0.22em] text-[#9dd0cd] font-bold mb-1">Admin Panel</p>
+                <h1 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">VocabAI control center</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('dashboard') }}" class="rounded-2xl border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e2e2e2] no-underline">Return to User Dashboard</a>
+                <span class="hidden md:block text-sm text-[#c0c8c7]">{{ admin_email }}</span>
+                <a href="{{ url_for('admin_logout') }}" class="rounded-2xl border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e2e2e2] no-underline">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-screen-2xl mx-auto px-6 py-8">
+        <section class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Users</p>
+                <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_users }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Restricted</p>
+                <strong class="font-['Manrope'] text-3xl text-[#ffb4ab]">{{ admin_summary.restricted_users }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Active 7d</p>
+                <strong class="font-['Manrope'] text-3xl text-[#9dd0cd]">{{ admin_summary.active_users_7d }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Words</p>
+                <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_words }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Quizzes</p>
+                <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_quizzes }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Visits</p>
+                <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_visits }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Active Hours</p>
+                <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_active_hours }}</strong>
+            </article>
+        </section>
+
+        <section class="rounded-3xl border border-white/5 bg-[#1a1c1c] shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-white/5">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#9dd0cd] font-bold mb-2">Users</p>
+                    <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">User controls</h2>
+                </div>
+                <p class="text-xs text-[#c0c8c7] m-0 hidden md:block">Restricted users cannot log in or use the app.</p>
+            </div>
+
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full min-w-[1100px]">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-[0.18em] text-[#8a9291]">
+                            <th class="px-6 py-4 font-bold">User</th>
+                            <th class="px-6 py-4 font-bold">Joined</th>
+                            <th class="px-6 py-4 font-bold">Last Login</th>
+                            <th class="px-6 py-4 font-bold">Words</th>
+                            <th class="px-6 py-4 font-bold">Quizzes</th>
+                            <th class="px-6 py-4 font-bold">Visits</th>
+                            <th class="px-6 py-4 font-bold">Active</th>
+                            <th class="px-6 py-4 font-bold">Views</th>
+                            <th class="px-6 py-4 font-bold">Status</th>
+                            <th class="px-6 py-4 font-bold">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in user_rows %}
+                        <tr class="border-t border-white/5 align-top">
+                            <td class="px-6 py-5">
+                                <p class="font-semibold text-[#e2e2e2] m-0">{{ row.user.display_name }}</p>
+                                <p class="text-xs text-[#c0c8c7] mt-1 mb-0">{{ row.user.email }}</p>
+                                {% if row.user.restricted_reason %}
+                                <p class="text-xs text-[#ffb4ab] mt-2 mb-0">{{ row.user.restricted_reason }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-5 text-sm text-[#c0c8c7]">{{ row.user.created_at.strftime('%Y-%m-%d') if row.user.created_at else '-' }}</td>
+                            <td class="px-6 py-5 text-sm text-[#c0c8c7]">{{ row.user.last_login_at.strftime('%Y-%m-%d %H:%M') if row.user.last_login_at else '-' }}</td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ row.word_count }}</td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ row.quiz_count }}</td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ row.visit_count }}</td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ row.active_minutes }}m</td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ row.page_views }}</td>
+                            <td class="px-6 py-5">
+                                {% if row.user.is_restricted %}
+                                <span class="inline-flex rounded-full bg-[#93000a]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffb4ab]">Restricted</span>
+                                {% else %}
+                                <span class="inline-flex rounded-full bg-[#2d5f5d]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9dd0cd]">Active</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-5">
+                                <form method="post" action="{{ url_for('admin_update_user_restriction', user_id=row.user.id) }}" class="space-y-2 m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                    {% if row.user.is_restricted %}
+                                    <input type="hidden" name="action" value="unrestrict">
+                                    <button type="submit" class="w-full rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Restore</button>
+                                    {% else %}
+                                    <input type="hidden" name="action" value="restrict">
+                                    <textarea name="restricted_reason" rows="2" class="w-full rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Reason (optional)"></textarea>
+                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Restrict</button>
+                                    {% endif %}
+                                </form>
+                                {% if row.last_seen_at %}
+                                <p class="text-[10px] text-[#8a9291] mt-2 mb-0">Last seen {{ row.last_seen_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

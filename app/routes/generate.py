@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 
 from app.models import StudySession, UserWord, Word, db
 from app.services.ai_generator import generate_vocabulary_words
-from app.services.stats import clean_text
+from app.services.stats import clean_text, pluralize
 
 
 def register(app):
@@ -188,10 +188,10 @@ def register(app):
         if save_as_default:
             flash("Your default study focus has been updated.", "info")
         if added_count == word_count:
-            flash(f"{added_count} new words generated for your study list.", "success")
+            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
         elif added_count:
             flash(
-                f"{added_count} new words generated. The AI repeated too many existing words before reaching {word_count}.",
+                f"{pluralize(added_count, 'new word')} generated. The AI repeated too many existing words before reaching {pluralize(word_count, 'word')}.",
                 "info",
             )
         else:

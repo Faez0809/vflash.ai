@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 
 import requests
@@ -668,6 +668,10 @@ Rules:
 - Use realistic, plausible wrong options.
 - Keep the language natural and clean.
 - Prefer medium to advanced vocabulary support.
+- If quiz_type is fill_blank, the fill_blank_sentence must naturally include the exact target word before hiding it.
+- Do not switch the target concept, topic, part of speech, or meaning.
+- Do not return duplicate distractors.
+- Keep question_prompt relevant to the exact word and meaning provided.
 
 Return ONLY JSON:
 {{
@@ -731,3 +735,50 @@ def generate_quiz_question_support(word, meaning, sentence="", difficulty="", cu
             "distractors": [],
             "fill_blank_sentence": sentence,
         }
+
+def verify_answer_using_ai(prompt, exact_answer, user_answer):
+    """Use AI to verify if the user's fill-in-the-blank answer is correct."""
+    def normalize_token(value):
+        return "".join(ch.lower() for ch in str(value).strip() if ch.isalnum())
+
+    if not user_answer.strip():
+        return False
+    if normalize_token(user_answer) == normalize_token(exact_answer):
+        return True
+        
+    api_key = os.environ.get("GROQ_API_KEY")
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    if not api_key:
+        return False
+        
+    instruction = f"""Evaluate this fill-in-the-blank answer.
+Sentence: {prompt}
+Target exact word: {exact_answer}
+User's submitted word: {user_answer}
+
+Accept alternate answers if they fit the blank naturally, preserve the sentence meaning, and are grammatically correct.
+Reject answers that are close in meaning but do not fit the grammar or tone of the sentence.
+Return ONLY 'YES' or 'NO'."""
+
+    try:
+        response = requests.post(
+            GROQ_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "temperature": 0.1,
+                "messages": [
+                    {"role": "system", "content": "You are an English language evaluator."},
+                    {"role": "user", "content": instruction},
+                ],
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"].strip().upper()
+        return "YES" in content
+    except Exception:
+        return False

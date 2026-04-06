@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login | VocabAI{% endblock %}
+
+{% block content %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+    .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+</style>
+<div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter'] flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-md rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(30,32,32,0.98),rgba(18,20,20,0.98))] p-8 shadow-[0_48px_48px_-12px_rgba(45,95,93,0.18)]">
+        <p class="text-[10px] uppercase tracking-[0.22em] text-[#9dd0cd] font-bold mb-3">Admin</p>
+        <h1 class="font-['Manrope'] text-3xl font-extrabold tracking-tight mb-2">Secure control panel access</h1>
+        <p class="text-sm text-[#c0c8c7] leading-relaxed mb-6">Only the configured administrator email can open this area.</p>
+
+        <form method="post" class="space-y-4">
+            <div class="space-y-2">
+                <label for="email" class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold block">Admin Email</label>
+                <input id="email" name="email" type="email" autocomplete="username" class="w-full rounded-2xl border border-white/10 bg-[#0d0f0f] px-4 py-3 text-sm text-[#e2e2e2] outline-none focus:border-[#9dd0cd]/50 focus:ring-1 focus:ring-[#9dd0cd]/50" placeholder="{{ admin_email }}">
+            </div>
+            <div class="space-y-2">
+                <label for="password" class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold block">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" class="w-full rounded-2xl border border-white/10 bg-[#0d0f0f] px-4 py-3 text-sm text-[#e2e2e2] outline-none focus:border-[#9dd0cd]/50 focus:ring-1 focus:ring-[#9dd0cd]/50" placeholder="Enter admin password">
+            </div>
+            <button type="submit" class="w-full rounded-2xl bg-gradient-to-r from-[#9dd0cd] to-[#2d5f5d] px-6 py-3.5 text-sm font-['Manrope'] font-extrabold uppercase tracking-[0.18em] text-[#00201f] border-none cursor-pointer">Open Admin Panel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

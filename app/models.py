@@ -1,4 +1,7 @@
+from datetime import date, datetime
+
 import runtime_compat
+from flask import current_app
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 
@@ -13,6 +16,10 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(80), nullable=True)
     default_study_focus = db.Column(db.Text, nullable=True)
     daily_goal = db.Column(db.Integer, nullable=False, default=10)
+    created_at = db.Column(db.Date, nullable=False, default=date.today)
+    last_login_at = db.Column(db.DateTime, nullable=True)
+    is_restricted = db.Column(db.Boolean, nullable=False, default=False)
+    restricted_reason = db.Column(db.Text, nullable=True)
     study_sessions = db.relationship(
         "StudySession",
         back_populates="user",
@@ -29,6 +36,15 @@ class User(UserMixin, db.Model):
         if self.nickname and self.nickname.strip():
             return self.nickname.strip()
         return self.email.split("@")[0]
+
+    @property
+    def is_admin(self):
+        admin_email = (current_app.config.get("ADMIN_EMAIL") or "").strip().lower()
+        return bool(admin_email) and self.email.strip().lower() == admin_email
+
+    @property
+    def is_active(self):
+        return not self.is_restricted
 
 
 class Word(db.Model):
@@ -106,6 +122,29 @@ class QuizHistory(db.Model):
     quiz_type = db.Column(db.String(50), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     total_questions = db.Column(db.Integer, nullable=False)
+    answered_questions = db.Column(db.Integer, nullable=False, default=0)
+    configured_total_questions = db.Column(db.Integer, nullable=False, default=0)
+    was_quit = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.Date, nullable=False)
+
+    user = db.relationship("User")
+
+
+class UserAppSession(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "session_key", name="unique_user_app_session"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    session_key = db.Column(db.String(80), nullable=False)
+    visit_date = db.Column(db.Date, nullable=False)
+    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_active_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    active_seconds = db.Column(db.Integer, nullable=False, default=0)
+    page_views = db.Column(db.Integer, nullable=False, default=0)
+    interaction_count = db.Column(db.Integer, nullable=False, default=0)
+    first_path = db.Column(db.String(255), nullable=True)
+    last_path = db.Column(db.String(255), nullable=True)
 
     user = db.relationship("User")

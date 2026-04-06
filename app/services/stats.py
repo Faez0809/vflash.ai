@@ -1,6 +1,7 @@
 from collections import Counter
 from datetime import date, timedelta
 import random
+import re
 
 from sqlalchemy import or_
 
@@ -62,14 +63,74 @@ def get_weekly_activity(user_id):
     return weekly_activity
 
 
+def pluralize(count, singular, plural=None):
+    """Return a count-aware label like '1 word' or '2 words'."""
+    chosen = singular if count == 1 else (plural or f"{singular}s")
+    return f"{count} {chosen}"
+
+
+def normalize_quiz_subtitle(subtitle, question_type):
+    """Keep quiz subtitles short and natural."""
+    subtitle = clean_text(subtitle)
+    if question_type == "fill_blank":
+        lowered = subtitle.lower()
+        if not subtitle or "target word" in lowered or "find" in lowered:
+            return "Type the missing word"
+    elif not subtitle:
+        return "Choose the correct meaning"
+    return subtitle.rstrip(" .:-")
+
+
+def normalize_fill_blank_prompt(prompt):
+    """Remove trailing placeholder marks and normalize spacing."""
+    prompt = clean_text(prompt)
+    if not prompt:
+        return prompt
+
+    prompt = re.sub(r"\s+([,.;!?])", r"\1", prompt)
+    prompt = re.sub(r"(?:\s*[_-]{2,}\s*)+$", "", prompt).strip()
+    prompt = re.sub(r"\s{2,}", " ", prompt)
+    return prompt
+
+
+def is_relevant_fill_blank_sentence(sentence_text, word_text):
+    """Ensure fill-in-the-blank sentences actually relate to the target word."""
+    sentence_text = clean_text(sentence_text)
+    word_text = clean_text(word_text)
+    if not sentence_text or not word_text:
+        return False
+    return re.search(rf"\b{re.escape(word_text)}\b", sentence_text, re.IGNORECASE) is not None
+
+
+def build_mcq_distractors(correct_meaning, candidate_meanings):
+    """Create distinct, non-empty distractors for meaning-based MCQs."""
+    normalized_correct = clean_text(correct_meaning).lower()
+    distractors = []
+    seen = {normalized_correct}
+
+    for item in candidate_meanings:
+        cleaned = clean_text(item)
+        lowered = cleaned.lower()
+        if not cleaned or lowered in seen:
+            continue
+        seen.add(lowered)
+        distractors.append(cleaned)
+        if len(distractors) == 3:
+            break
+
+    return distractors
+
+
 def build_fill_in_blank_sentence(word_text, sentence_text):
     """Create a simple fill-in-the-blank prompt for quiz mode."""
     sentence_text = clean_text(sentence_text)
-    if sentence_text and word_text.lower() in sentence_text.lower():
-        return sentence_text.replace(word_text, "_____", 1).replace(word_text.capitalize(), "_____", 1)
-    if sentence_text:
-        return f"{sentence_text} (Target word hidden: _____)"
-    return f"Fill in the blank with the correct word: _____ means {word_text}."
+    if not sentence_text:
+        return "Complete the sentence with the best word."
+
+    pattern = re.compile(rf"\b{re.escape(word_text)}\b", re.IGNORECASE)
+    if pattern.search(sentence_text):
+        return normalize_fill_blank_prompt(pattern.sub("_____", sentence_text, 1))
+    return normalize_fill_blank_prompt(sentence_text)
 
 
 def build_quiz_questions(
@@ -145,43 +206,53 @@ def build_quiz_questions(
         else:
             question_type = quiz_type
 
-        quiz_support = generate_quiz_question_support(
-            word=word_entry.word,
-            meaning=word_entry.meaning,
-            sentence=word_entry.sentence or "",
-            difficulty=word_entry.difficulty or difficulty or "",
-            custom_instruction=custom_instruction,
-            quiz_type=question_type,
-        )
+        quiz_support = {}
+        if question_type == "fill_blank":
+            quiz_support = generate_quiz_question_support(
+                word=word_entry.word,
+                meaning=word_entry.meaning,
+                sentence=word_entry.sentence or "",
+                difficulty=word_entry.difficulty or difficulty or "",
+                custom_instruction=custom_instruction,
+                quiz_type=question_type,
+            )
 
         if question_type == "multiple_choice":
             if len(pool) < 3:
                 continue
-            distractors = quiz_support.get("distractors") or [candidate.word_entry.meaning for candidate in random.sample(pool, 3)]
+            fallback_meanings = [candidate.word_entry.meaning for candidate in random.sample(pool, min(len(pool), 6))]
+            distractors = build_mcq_distractors(word_entry.meaning, fallback_meanings)
             if len(distractors) < 3:
-                fallback_meanings = [candidate.word_entry.meaning for candidate in random.sample(pool, 3)]
-                distractors = (distractors + fallback_meanings)[:3]
+                extra_meanings = [candidate.word_entry.meaning for candidate in pool]
+                distractors = build_mcq_distractors(word_entry.meaning, fallback_meanings + extra_meanings)
+            if len(distractors) < 3:
+                continue
             options = [word_entry.meaning] + distractors[:3]
             random.shuffle(options)
             questions.append(
                 {
                     "question_type": question_type,
                     "user_word_id": item.id,
-                    "prompt": quiz_support.get("question_prompt") or word_entry.word,
-                    "subtitle": quiz_support.get("subtitle") or "Choose the correct meaning",
+                    "prompt": word_entry.word,
+                    "subtitle": "Choose the correct meaning",
                     "answer": word_entry.meaning,
                     "options": options,
                 }
             )
         else:
             fill_blank_sentence = quiz_support.get("fill_blank_sentence") or word_entry.sentence
+            if not is_relevant_fill_blank_sentence(fill_blank_sentence, word_entry.word):
+                fill_blank_sentence = word_entry.sentence or word_entry.word
             questions.append(
                 {
                     "question_type": question_type,
                     "user_word_id": item.id,
-                    "prompt": build_fill_in_blank_sentence(word_entry.word, fill_blank_sentence),
-                    "subtitle": quiz_support.get("subtitle") or "Type the missing word",
+                    "prompt": normalize_fill_blank_prompt(
+                        build_fill_in_blank_sentence(word_entry.word, fill_blank_sentence)
+                    ),
+                    "subtitle": normalize_quiz_subtitle(quiz_support.get("subtitle"), question_type),
                     "answer": word_entry.word,
+                    "meaning": word_entry.meaning,
                     "options": [],
                 }
             )

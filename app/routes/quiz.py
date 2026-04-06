@@ -16,7 +16,7 @@ def register(app):
         new_questions = build_quiz_questions(
             current_user.id,
             total_questions=min(batch_size, remaining),
-            quiz_type=quiz_state.get("quiz_type", "mixed"),
+            quiz_type=quiz_state.get("quiz_type", "multiple_choice"),
             difficulty=quiz_state.get("difficulty", "All"),
             word_source=quiz_state.get("word_source", "my_words"),
             custom_instruction=quiz_state.get("custom_instruction", ""),
@@ -35,11 +35,15 @@ def register(app):
 
     def finalize_quiz_result(quiz_state, mark_quit=False):
         answered_count = len(quiz_state["answers"])
+        configured_total_questions = quiz_state.get("target_count", len(quiz_state["questions"]))
         history = QuizHistory(
             user_id=current_user.id,
-            quiz_type=quiz_state.get("quiz_type", "mixed"),
+            quiz_type=quiz_state.get("quiz_type", "multiple_choice"),
             score=quiz_state["score"],
             total_questions=answered_count or len(quiz_state["questions"]),
+            answered_questions=answered_count,
+            configured_total_questions=configured_total_questions,
+            was_quit=mark_quit,
             created_at=date.today(),
         )
         db.session.add(history)
@@ -53,9 +57,9 @@ def register(app):
         session["quiz_result"] = {
             "score": quiz_state["score"],
             "total_questions": answered_count or len(quiz_state["questions"]),
-            "configured_total_questions": len(quiz_state["questions"]),
+            "configured_total_questions": configured_total_questions,
             "answers": quiz_state["answers"],
-            "quiz_type": quiz_state.get("quiz_type", "mixed"),
+            "quiz_type": quiz_state.get("quiz_type", "multiple_choice"),
             "difficulty": quiz_state.get("difficulty", "All"),
             "word_source": quiz_state.get("word_source", "my_words"),
             "custom_instruction": quiz_state.get("custom_instruction", ""),
@@ -75,16 +79,21 @@ def register(app):
             session.pop("quiz_result", None)
             return redirect(url_for("quiz"))
 
+        if request.args.get("result") == "1" and session.get("quiz_result"):
+            return render_template("quiz.html", quiz_result=session.get("quiz_result"), quiz_setup=None)
+
         quiz_state = session.get("quiz_state")
-        quiz_result = session.get("quiz_result")
-        if quiz_result:
-            return render_template("quiz.html", quiz_result=quiz_result, quiz_setup=None)
+        if quiz_state:
+            return redirect(url_for("quiz_start"))
+
+        # Explicitly popping previous results if visiting quiz freshly to ensure setup loads
+        session.pop("quiz_result", None)
 
         return render_template(
             "quiz.html",
             quiz_setup={
                 "quiz_types": [
-                    ("multiple_choice", "Multiple Choice (Word -> Meaning)"),
+                    ("multiple_choice", "MCQ"),
                     ("fill_blank", "Fill in the Blank"),
                     ("mixed", "Mixed Quiz"),
                 ],
@@ -125,7 +134,7 @@ def register(app):
             questions = build_quiz_questions(
                 current_user.id,
                 total_questions=min(len(wrong_word_ids), 10),
-                quiz_type=quiz_result.get("quiz_type", "mixed"),
+                quiz_type=quiz_result.get("quiz_type", "multiple_choice"),
                 difficulty=quiz_result.get("difficulty", "All"),
                 word_source=quiz_result.get("word_source", "my_words"),
                 specific_user_word_ids=wrong_word_ids,
@@ -141,7 +150,7 @@ def register(app):
                 "current_index": 0,
                 "score": 0,
                 "answers": [],
-                "quiz_type": quiz_result.get("quiz_type", "mixed"),
+                "quiz_type": quiz_result.get("quiz_type", "multiple_choice"),
                 "difficulty": quiz_result.get("difficulty", "All"),
                 "word_source": quiz_result.get("word_source", "my_words"),
                 "custom_instruction": quiz_result.get("custom_instruction", ""),
@@ -151,7 +160,7 @@ def register(app):
             return redirect(url_for("quiz_start"))
 
         if request.method == "POST" and not quiz_state:
-            quiz_type = clean_text(request.form.get("quiz_type")) or "mixed"
+            quiz_type = clean_text(request.form.get("quiz_type")) or "multiple_choice"
             word_source = clean_text(request.form.get("word_source")) or "my_words"
             difficulty = clean_text(request.form.get("difficulty")) or "All"
             custom_instruction = clean_text(request.form.get("custom_quiz_instruction"))
@@ -198,13 +207,19 @@ def register(app):
 
             if request.form.get("action") == "quit":
                 finalize_quiz_result(quiz_state, mark_quit=True)
-                return redirect(url_for("quiz"))
+                return redirect(url_for("quiz", result=1))
 
             current_index = quiz_state["current_index"]
             current_question = quiz_state["questions"][current_index]
             submitted_answer = clean_text(request.form.get("answer")).lower()
             correct_answer = clean_text(current_question["answer"]).lower()
-            is_correct = submitted_answer == correct_answer
+            
+            if current_question.get("question_type") == "fill_blank":
+                from app.services.ai_generator import verify_answer_using_ai
+                is_correct = verify_answer_using_ai(current_question["prompt"], correct_answer, submitted_answer)
+            else:
+                is_correct = submitted_answer == correct_answer
+
 
             quiz_state["answers"].append(
                 {
@@ -228,7 +243,7 @@ def register(app):
 
             if quiz_state["current_index"] >= len(quiz_state["questions"]):
                 finalize_quiz_result(quiz_state)
-                return redirect(url_for("quiz"))
+                return redirect(url_for("quiz", result=1))
 
             session["quiz_state"] = quiz_state
             return redirect(url_for("quiz_start"))
@@ -246,7 +261,7 @@ def register(app):
             quiz_setup=None,
             quiz_result=None,
             quiz_meta={
-                "quiz_type": quiz_state.get("quiz_type", "mixed"),
+                "quiz_type": quiz_state.get("quiz_type", "multiple_choice"),
                 "difficulty": quiz_state.get("difficulty", "All"),
                 "word_source": quiz_state.get("word_source", "my_words"),
                 "custom_instruction": quiz_state.get("custom_instruction", ""),

@@ -9,17 +9,43 @@
         <div class="auth-form-wrap">
             <header class="auth-copy">
                 <h1>Welcome back</h1>
-                <p>Sign in to continue your study sessions, reviews, and progress tracking.</p>
+                <p>Pick up where you left off with a clean, focused study space.</p>
             </header>
             <form method="post" class="auth-form-grid">
                 <div class="auth-field">
                     <label for="email">Email address</label>
-                    <input id="email" name="email" type="email" placeholder="Enter your email" required>
+                    <input id="email" name="email" type="email" placeholder="Enter your email" value="{{ email_value or '' }}" required>
                 </div>
 
                 <div class="auth-field">
                     <label for="password">Password</label>
-                    <input id="password" name="password" type="password" placeholder="Enter your password" required>
+                    <div style="position:relative;">
+                        <input id="password" name="password" type="password" placeholder="Enter your password" required style="padding-right:2.75rem;">
+                        <button type="button" data-password-toggle-button="password" style="position:absolute; right:0.8rem; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:1.1rem; height:1.1rem; padding:0; border:0; background:transparent; color:#7f8a8a; cursor:pointer;" aria-label="Show password" aria-pressed="false">
+                            <span data-eye-open aria-hidden="true" style="display:inline-flex;">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </span>
+                            <span data-eye-closed aria-hidden="true" style="display:none;">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 3l18 18"></path>
+                                    <path d="M10.6 10.7A3 3 0 0 0 13.4 13.5"></path>
+                                    <path d="M9.9 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a18.7 18.7 0 0 1-4.2 4.9"></path>
+                                    <path d="M6.6 6.7A18.6 18.6 0 0 0 2 12s3.6 7 10 7a10.7 10.7 0 0 0 5-.9"></path>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                    {% if login_error %}
+                    <p style="margin:0.55rem 0 0; font-size:0.84rem; color:#d7a7a7;">{{ login_error }}</p>
+                    {% endif %}
+                    {% if show_forgot_password %}
+                    <p style="margin:0.45rem 0 0; font-size:0.82rem;">
+                        <a href="{{ url_for('forgot_password', email=email_value or '') }}" style="color:#9dd0cd; text-decoration:none;">Forgot password?</a>
+                    </p>
+                    {% endif %}
                 </div>
 
                 <button type="submit" class="auth-submit">Sign in</button>
@@ -27,29 +53,25 @@
             <p class="form-footer auth-footer-link">Don't have an account yet? <a href="{{ url_for('signup') }}">Create account</a></p>
         </div>
         <footer class="auth-meta">
-            <span>&copy; 2024 VocabAI</span>
-            <div>
-                <span>Privacy</span>
-                <span>Terms</span>
-            </div>
+            <span>VocabAI · Vocabulary learning platform · by Faez Mahmud</span>
         </footer>
     </div>
 
     <aside class="auth-pane auth-pane-feature">
         <div class="auth-feature-surface">
             <span class="auth-eyebrow">Calm learning space</span>
-            <h2>Focused English practice, designed for consistency.</h2>
-            <p>Study with AI-generated word sets, flashcards, quizzes, and review sessions in one premium workspace.</p>
+            <h2>Learn with less clutter and better focus.</h2>
+            <p>VocabAI keeps your words, practice, and progress in one smooth routine.</p>
             <div class="auth-feature-grid">
                 <article class="auth-feature-card">
-                    <span class="auth-feature-label">Study flow</span>
+                    <span class="auth-feature-label">Simple flow</span>
                     <strong>Generate, study, review</strong>
-                    <p>Move from new words to revision without leaving the same system.</p>
+                    <p>Move from new words to revision without jumping between tools.</p>
                 </article>
                 <article class="auth-feature-card">
-                    <span class="auth-feature-label">Learning focus</span>
-                    <strong>IELTS, academic, business</strong>
-                    <p>Shape each session by topic, difficulty, and your current goal.</p>
+                    <span class="auth-feature-label">Clear direction</span>
+                    <strong>Practice that fits your goal</strong>
+                    <p>Focus each session by topic, difficulty, and the words you need most.</p>
                 </article>
             </div>
         </div>

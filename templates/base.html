@@ -10,8 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="{% if request.endpoint in ['login', 'signup'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session'] %}tw-dark-page{% endif %}">
-    {% if request.endpoint not in ['login', 'signup', 'dashboard', 'words', 'flashcards', 'flashcards_session'] %}
+<body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}"{% endif %}>
+    {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
         <div class="container nav-shell">
@@ -30,6 +30,10 @@
                     <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
                     <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
                     <a class="{{ 'is-active' if request.endpoint in ['quiz', 'quiz_start'] else '' }}" href="{{ url_for('quiz') }}">Quiz</a>
+                    <a class="{{ 'is-active' if request.endpoint == 'user_manual' else '' }}" href="{{ url_for('user_manual') }}">Manual</a>
+                    {% if admin_session_active %}
+                        <a class="{{ 'is-active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}">Admin</a>
+                    {% endif %}
                     <div class="nav-menu" data-nav-menu>
                         <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
                             <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
@@ -39,6 +43,7 @@
                             <a href="{{ url_for('dashboard') }}#generate-section">Generate Words</a>
                             <a href="{{ url_for('words') }}">My Words</a>
                             <a href="{{ url_for('difficult_words') }}">Difficult Words</a>
+                            <a href="{{ url_for('user_manual') }}">User Manual</a>
                             <a href="{{ url_for('profile') }}">Profile</a>
                             <a href="{{ url_for('logout') }}">Logout</a>
                         </div>
@@ -52,7 +57,7 @@
     </header>
     {% endif %}
 
-    <main class="{% if request.endpoint in ['login', 'signup'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
+    <main class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <section class="flash-stack">
@@ -65,6 +70,50 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    {% if show_onboarding_nudge %}
+        <details class="onboarding-float">
+            <summary class="onboarding-fab">
+                <span class="onboarding-fab-icon"><span class="material-symbols-outlined">tips_and_updates</span></span>
+                <span>Tips for this page</span>
+            </summary>
+            <div class="onboarding-panel">
+                <div class="onboarding-panel-header">
+                    <div class="onboarding-panel-intro">
+                        <div class="onboarding-panel-badge-wrap">
+                            <p class="onboarding-panel-label">Guided start</p>
+                            <span class="onboarding-panel-badge">{{ onboarding_minutes_left }} min left</span>
+                        </div>
+                        <h2>Quick tips for this page</h2>
+                        <p>Simple actions to help you know what to do next.</p>
+                    </div>
+                    <div class="onboarding-panel-side">
+                        <p class="onboarding-panel-meta">Available during your first 20 active minutes</p>
+                        <a class="onboarding-panel-manual" href="{{ url_for('user_manual') }}">
+                            <span class="onboarding-inline-icon"><span class="material-symbols-outlined">menu_book</span></span>
+                            <span>Open full manual</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="onboarding-panel-grid">
+                    {% for tip in onboarding_tips %}
+                        <a class="onboarding-panel-card" href="{{ tip.href }}">
+                            <span class="onboarding-panel-card-icon"><span class="material-symbols-outlined">{{ tip.icon }}</span></span>
+                            <div class="onboarding-panel-card-copy">
+                                <strong>{{ tip.title }}</strong>
+                                <p>{{ tip.body }}</p>
+                                <span class="onboarding-panel-card-cta">
+                                    <small>{{ tip.label }}</small>
+                                    <span class="onboarding-inline-icon onboarding-inline-icon-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
+                                </span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </details>
+    {% endif %}
+
 
     <script src="{{ url_for('static', filename='app.js') }}?v={{ range(1, 1000000) | random }}"></script>
 </body>

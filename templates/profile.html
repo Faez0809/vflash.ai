@@ -3,74 +3,281 @@
 {% block title %}Profile | VocabAI{% endblock %}
 
 {% block content %}
-<section class="profile-grid">
-    <section class="panel">
-        <div class="section-heading">
-            <div>
-                <span class="eyebrow">Profile</span>
-                <h1>Your learning settings</h1>
-                <p class="muted section-copy">Track your study footprint and adjust the defaults that shape each session.</p>
-            </div>
-        </div>
-        <dl class="profile-details">
-            <div>
-                <dt>Nickname</dt>
-                <dd>{{ current_user.display_name }}</dd>
-            </div>
-            <div>
-                <dt>Email</dt>
-                <dd>{{ current_user.email }}</dd>
-            </div>
-            <div>
-                <dt>Total sessions</dt>
-                <dd>{{ total_sessions }}</dd>
-            </div>
-            <div>
-                <dt>Total words</dt>
-                <dd>{{ total_words }}</dd>
-            </div>
-            <div>
-                <dt>Total quizzes</dt>
-                <dd>{{ total_quizzes }}</dd>
-            </div>
-            <div>
-                <dt>Latest quiz</dt>
-                <dd>
-                    {% if latest_quiz %}
-                        {{ latest_quiz.score }}/{{ latest_quiz.total_questions }} on {{ latest_quiz.created_at.strftime('%Y-%m-%d') }}
-                    {% else %}
-                        No quiz yet
-                    {% endif %}
-                </dd>
-            </div>
-        </dl>
-    </section>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+    body.tw-dark-page {
+        background-color: #121414 !important;
+        color: #e2e2e2 !important;
+    }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+    .tw-scope input, .tw-scope select, .tw-scope textarea {
+        color: #e2e2e2 !important;
+        background-color: transparent !important;
+    }
+    .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+<script id="tailwind-config">
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-lowest": "#0d0f0f",
+            "surface-container-low": "#1a1c1c",
+            "surface-container": "#1e2020",
+            "surface-container-high": "#282a2a",
+            "surface-container-highest": "#333535",
+            "outline": "#8a9291",
+            "outline-variant": "#404848",
+            "on-surface": "#e2e2e2",
+            "on-surface-variant": "#c0c8c7",
+            "primary": "#9dd0cd",
+            "on-primary": "#003735",
+            "primary-container": "#2d5f5d",
+            "secondary": "#dec38f",
+            "error": "#ffb4ab",
+            "error-container": "#93000a"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"]
+          }
+        }
+      }
+    }
+</script>
 
-    <section class="panel">
-        <div class="section-heading">
-            <div>
-                <span class="eyebrow">Default focus</span>
-                <h2>Set your preferred study topic</h2>
+<div class="tw-scope font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2]">
+    <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
+        <div class="flex justify-between items-center h-16 px-6 max-w-screen-2xl mx-auto font-headline tracking-tight">
+            <div class="flex items-center gap-8">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">VocabAI</a>
+                <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
+                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('words') }}">My Words</a>
+                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('flashcards') }}">Flashcards</a>
+                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('review') }}">Review</a>
+                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('quiz') }}">Quiz</a>
+                    <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline" href="{{ url_for('profile') }}">Profile</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
+                    <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
+                    <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
+                        <span class="material-symbols-outlined text-[1.1rem]">person</span>
+                    </div>
+                </a>
             </div>
         </div>
-        <form method="post" class="generator-form">
-            <div class="generator-row">
-                <label for="nickname">Nickname</label>
-                <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}">
-                <small class="field-hint">This name is shown across your dashboard, profile, and quiz feedback.</small>
+    </header>
+
+    <main class="pt-24 pb-12 px-6 max-w-screen-2xl mx-auto">
+        <section class="mb-8">
+            <div class="rounded-3xl border border-white/[0.05] bg-[radial-gradient(circle_at_top,rgba(157,208,205,0.12),transparent_40%),linear-gradient(180deg,rgba(30,32,32,0.98),rgba(18,20,20,0.98))] p-6 md:p-8 shadow-[0_48px_48px_-12px_rgba(45,95,93,0.16)]">
+                <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-3">Profile</p>
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                    <div class="max-w-2xl">
+                        <h1 class="font-headline text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-0">Settings, quiz stats, and app activity.</h1>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 min-w-[280px]">
+                        <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Quiz Visits</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ quiz_metrics.total_attempts }}</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Accuracy</p>
+                            <strong class="text-2xl font-headline text-primary">{{ quiz_metrics.accuracy }}%</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Active Time</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.total_active_minutes }}m</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">App Visits</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.total_visits }}</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="generator-row">
-                <label for="default_study_focus">Default study focus</label>
-                <textarea id="default_study_focus" name="default_study_focus" rows="4">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
-                <small class="field-hint">This is used to prefill the dashboard generator so you can keep a consistent study direction.</small>
+        </section>
+
+        <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-6 items-start">
+            <div class="space-y-6">
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Account</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Snapshot</h2>
+                    </div>
+                    <dl class="space-y-4">
+                        <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Nickname</dt>
+                            <dd class="m-0 text-lg text-on-surface font-semibold">{{ current_user.display_name }}</dd>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Email</dt>
+                            <dd class="m-0 text-sm md:text-base text-on-surface break-all">{{ current_user.email }}</dd>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                                <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Study Sessions</dt>
+                                <dd class="m-0 text-2xl font-headline text-on-surface">{{ total_sessions }}</dd>
+                            </div>
+                            <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                                <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Saved Words</dt>
+                                <dd class="m-0 text-2xl font-headline text-on-surface">{{ total_words }}</dd>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Latest Quiz</dt>
+                            <dd class="m-0 text-sm md:text-base text-on-surface">
+                                {% if latest_quiz %}
+                                    {{ latest_quiz.score }}/{{ latest_quiz.answered_questions or latest_quiz.total_questions }}
+                                    {% if latest_quiz.was_quit %}<span class="text-[#ffb4ab]">(quit)</span>{% endif %}
+                                    on {{ latest_quiz.created_at.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    No quiz yet
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Quiz</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Performance</h2>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Visits</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ quiz_metrics.total_attempts }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Completed</p>
+                            <strong class="text-2xl font-headline text-primary">{{ quiz_metrics.completed_attempts }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Quit</p>
+                            <strong class="text-2xl font-headline text-[#ffb4ab]">{{ quiz_metrics.quit_attempts }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Accuracy</p>
+                            <strong class="text-2xl font-headline text-primary">{{ quiz_metrics.accuracy }}%</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Completion Rate</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ quiz_metrics.completion_rate }}%</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Best Completed Score</p>
+                            <strong class="text-2xl font-headline text-secondary">{{ quiz_metrics.best_score }}/{{ quiz_metrics.best_total }}</strong>
+                        </article>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Correct Answers</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ quiz_metrics.correct_answers }}</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Answered Questions</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ quiz_metrics.answered_questions }}</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Questions Seen</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ quiz_metrics.configured_questions }}</strong>
+                        </div>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mt-4 mb-0">Quit quizzes are tracked, but not included in accuracy.</p>
+                </section>
+
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Usage</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">App Activity</h2>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Active Time</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.total_active_minutes }}m</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Visits</p>
+                            <strong class="text-2xl font-headline text-primary">{{ usage_metrics.total_visits }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Active Days</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.active_days }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Avg / Visit</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.average_active_minutes }}m</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Page Views</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.total_page_views }}</strong>
+                        </article>
+                        <article class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Last 7 Days</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.visits_last_7_days }}</strong>
+                        </article>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Longest Session</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.longest_session_minutes }}m</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Interactions</p>
+                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.total_interactions }}</strong>
+                        </div>
+                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Last Seen</p>
+                            <strong class="text-sm font-headline text-on-surface">
+                                {% if usage_metrics.last_seen_at %}
+                                    {{ usage_metrics.last_seen_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    No tracked activity yet
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                    <p class="text-xs text-on-surface-variant mt-4 mb-0">Only active use is counted. Background tabs do not add time.</p>
+                </section>
             </div>
-            <div class="generator-row">
-                <label for="daily_goal">Daily goal</label>
-                <input id="daily_goal" name="daily_goal" type="number" min="1" max="100" value="{{ current_user.daily_goal or 10 }}">
-                <small class="field-hint">Set how many new words you want to learn each day.</small>
-            </div>
-            <button type="submit">Save Profile</button>
-        </form>
-    </section>
-</section>
+
+            <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                <div class="mb-4">
+                    <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Defaults</p>
+                    <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Study Settings</h2>
+                </div>
+                <form method="post" class="space-y-5">
+                    <div class="space-y-2">
+                        <label for="nickname" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Nickname</label>
+                        <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="default_study_focus" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Default Study Focus</label>
+                        <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="daily_goal" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Daily Goal</label>
+                        <input id="daily_goal" name="daily_goal" type="number" min="1" max="100" value="{{ current_user.daily_goal or 10 }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-container text-[#00201f] px-6 py-4 rounded-2xl font-headline font-extrabold text-sm uppercase tracking-[0.18em] hover:brightness-110 active:scale-[0.99] duration-200 border-none cursor-pointer">Save Profile</button>
+                </form>
+            </section>
+        </section>
+    </main>
+</div>
 {% endblock %}
