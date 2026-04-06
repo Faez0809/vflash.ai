@@ -1,4 +1,27 @@
-{% extends "base.html" %}
+﻿import os
+
+# 1. Update base.html to hide default header for 'words'
+with open('templates/base.html', 'r', encoding='utf-8') as f:
+    base_html = f.read()
+
+# Make sure we clean up the previous changes
+base_html = base_html.replace(
+    "{% elif request.endpoint in ['dashboard', 'words'] %}dashboard-page{% endif %}", 
+    "{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'words' %}tw-dark-page{% endif %}"
+)
+
+# If it didn't match the combined rule, it might still be separated depending on state
+if "{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'words' %}tw-dark-page{% endif %}" not in base_html:
+    base_html = base_html.replace(
+        "{% elif request.endpoint == 'dashboard' %}dashboard-page{% endif %}", 
+        "{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'words' %}tw-dark-page{% endif %}"
+    )
+
+with open('templates/base.html', 'w', encoding='utf-8') as f:
+    f.write(base_html)
+
+# 2. Re-write words.html with EXACT Tailwind layout including the Top Navbar
+WORDS_HTML = """{% extends "base.html" %}
 
 {% block title %}My Words | VocabAI{% endblock %}
 
@@ -92,12 +115,11 @@
                 </nav>
             </div>
             <div class="flex items-center gap-4">
-                <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
-                    <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
-                    <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
-                        <span class="material-symbols-outlined text-[1.1rem]">person</span>
+                <div class="flex items-center gap-2 text-primary">
+                    <div class="w-8 h-8 rounded-full bg-surface-container-low overflow-hidden border border-outline-variant flex items-center justify-center font-bold text-xs uppercase" title="{{ display_name }}">
+                        {{ display_name[:1]|upper if display_name else 'U' }}
                     </div>
-                </a>
+                </div>
             </div>
         </div>
     </header>
@@ -242,3 +264,9 @@
     </main>
 </div>
 {% endblock %}
+"""
+
+with open('templates/words.html', 'w', encoding='utf-8') as f:
+    f.write(WORDS_HTML)
+
+print("Restored exact Tailwind original design securely.")

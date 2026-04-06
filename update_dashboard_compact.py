@@ -1,4 +1,6 @@
-{% extends "base.html" %}
+﻿import os
+
+HTML_CONTENT = '''{% extends "base.html" %}
 
 {% block title %}Dashboard | VocabAI{% endblock %}
 
@@ -270,3 +272,182 @@
     </div>
 </section>
 {% endblock %}
+'''
+
+CSS_ADDITIONS = '''
+/* --- ULtra Compact 2-Column Layout Overrides --- */
+
+body.dashboard-page .dashboard-layout-extreme-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-bottom: 1.5rem;
+}
+
+body.dashboard-page .dashboard-action-row {
+    gap: 0.8rem;
+}
+
+body.dashboard-page .dashboard-action-card {
+    padding: 1rem;
+}
+body.dashboard-page .dashboard-action-card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+body.dashboard-page .dashboard-action-card p.dashboard-stitch-label {
+    margin-bottom: 0.2rem;
+}
+
+/* Generate full width but thin */
+body.dashboard-page .generate-panel-ultra-compact {
+    padding: 0.8rem 1rem;
+}
+
+body.dashboard-page .generate-columns-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+body.dashboard-page .generate-columns-flex .field-small {
+    flex: 0 0 140px;
+}
+body.dashboard-page .generate-columns-flex .field-expand {
+    flex: 1;
+}
+
+body.dashboard-page .generate-columns-flex select,
+body.dashboard-page .generate-columns-flex input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+body.dashboard-page .btn-generate-compact {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+    min-width: 0;
+}
+
+/* 2-Column Dashboard Engine */
+body.dashboard-page .dashboard-two-col-engine {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    gap: 0.8rem;
+    align-items: start;
+}
+
+body.dashboard-page .dashboard-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+body.dashboard-page .dashboard-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* Motivational Message */
+body.dashboard-page .dynamic-motivational-message {
+    padding: 0.75rem 0;
+    margin: 0;
+}
+body.dashboard-page .dynamic-motivational-message p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.4;
+}
+
+body.dashboard-page .today-overview-ultra {
+    padding: 1rem;
+}
+
+body.dashboard-page .recent-ultra-compact {
+    padding: 1rem;
+}
+body.dashboard-page .compact-4-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Quick Stats 2x3 Grid */
+body.dashboard-page .stats-2x3-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+body.dashboard-page .small-stat-card {
+    padding: 0.75rem 0.85rem;
+}
+body.dashboard-page .small-stat-card p {
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+}
+body.dashboard-page .small-stat-card strong {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+body.dashboard-page .stat-span-2 {
+    grid-column: span 2;
+}
+
+/* Mini Chart under stats */
+body.dashboard-page .weekly-mini {
+    padding: 0.85rem 1rem;
+}
+body.dashboard-page .mini-chart-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 70px;
+    margin-top: 0.25rem;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar-track {
+    width: 20px;
+    height: 55px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-end;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar {
+    width: 100%;
+    border-radius: 4px;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+@media (max-width: 900px) {
+    body.dashboard-page .dashboard-two-col-engine {
+        grid-template-columns: 1fr;
+    }
+    body.dashboard-page .generate-columns-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    body.dashboard-page .generate-columns-flex .field-small {
+        flex: auto;
+    }
+}
+'''
+
+with open('templates/dashboard.html', 'w', encoding='utf-8') as f:
+    f.write(HTML_CONTENT)
+
+# Avoid adding CSS_ADDITIONS repeatedly if run twice. Note we trust this runs once cleanly.
+with open('static/style.css', 'a', encoding='utf-8') as f:
+    f.write(CSS_ADDITIONS)
+
+print("Updated dashboard.html and style.css for exact compact layout")

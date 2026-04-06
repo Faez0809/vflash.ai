@@ -4441,3 +4441,290 @@ body.dashboard-page .dashboard-stitch-stats-compact .dashboard-stitch-stat stron
         padding-right: 0;
     }
 }
+
+
+/* --- Custom additions for new compact dashboard layout --- */
+body.dashboard-page .dashboard-layout-new {
+    display: grid;
+    gap: 1.25rem;
+    padding-bottom: 2rem;
+}
+
+body.dashboard-page .dashboard-row-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+body.dashboard-page .dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    align-content: start;
+    height: 100%;
+}
+
+body.dashboard-page .dashboard-stats-grid .stat-full-width {
+    grid-column: span 2;
+}
+
+body.dashboard-page .dashboard-stats-grid .dashboard-stitch-stat {
+    padding: 1rem 1.15rem;
+}
+
+/* Compact Generate Words Section */
+body.dashboard-page .generate-columns {
+    grid-template-columns: 1fr 1fr 2fr;
+}
+
+body.dashboard-page .generate-inline-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+body.dashboard-page .generate-footer-inline {
+    margin-top: 0;
+}
+
+/* Compact Overview Section */
+body.dashboard-page .today-overview-compact .dashboard-today-overview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+body.dashboard-page .today-overview-compact .dashboard-today-overview-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+body.dashboard-page .today-overview-compact .overview-messages-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.7);
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+    padding-left: 1.25rem;
+    margin-left: auto;
+}
+
+/* Compact Recent Words */
+body.dashboard-page .compact-recent-list {
+    margin-top: 0.5rem;
+}
+body.dashboard-page .compact-recent-list .dashboard-stitch-recent-item {
+    padding: 0.65rem 0.85rem;
+}
+body.dashboard-page .compact-recent-list .dashboard-stitch-recent-item p {
+    margin-top: 0.2rem;
+    font-size: 0.82rem;
+}
+
+/* Weekly Chart compact */
+body.dashboard-page .chart-very-compact {
+    min-height: 120px;
+    margin-top: 0.5rem;
+}
+body.dashboard-page .chart-very-compact .dashboard-stitch-bar-track {
+    height: 70px;
+}
+
+@media (max-width: 900px) {
+    body.dashboard-page .dashboard-row-split {
+        grid-template-columns: 1fr;
+    }
+    body.dashboard-page .generate-columns {
+        grid-template-columns: 1fr;
+    }
+    body.dashboard-page .today-overview-compact .overview-messages-compact {
+        margin-left: 0;
+        border-left: none;
+        padding-left: 0;
+        padding-top: 0.75rem;
+        border-top: 2px solid rgba(255, 255, 255, 0.1);
+        width: 100%;
+    }
+}
+
+/* --- ULtra Compact 2-Column Layout Overrides --- */
+
+body.dashboard-page .dashboard-layout-extreme-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-bottom: 1.5rem;
+}
+
+body.dashboard-page .dashboard-action-row {
+    gap: 0.8rem;
+}
+
+body.dashboard-page .dashboard-action-card {
+    padding: 1rem;
+}
+body.dashboard-page .dashboard-action-card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+body.dashboard-page .dashboard-action-card p.dashboard-stitch-label {
+    margin-bottom: 0.2rem;
+}
+
+/* Generate full width but thin */
+body.dashboard-page .generate-panel-ultra-compact {
+    padding: 0.8rem 1rem;
+}
+
+body.dashboard-page .generate-columns-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+body.dashboard-page .generate-columns-flex .field-small {
+    flex: 0 0 140px;
+}
+body.dashboard-page .generate-columns-flex .field-expand {
+    flex: 1;
+}
+
+body.dashboard-page .generate-columns-flex select,
+body.dashboard-page .generate-columns-flex input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+body.dashboard-page .btn-generate-compact {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+    min-width: 0;
+}
+
+/* 2-Column Dashboard Engine */
+body.dashboard-page .dashboard-two-col-engine {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    gap: 0.8rem;
+    align-items: start;
+}
+
+body.dashboard-page .dashboard-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+body.dashboard-page .dashboard-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* Motivational Message */
+body.dashboard-page .dynamic-motivational-message {
+    padding: 0.75rem 0;
+    margin: 0;
+}
+body.dashboard-page .dynamic-motivational-message p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.4;
+}
+
+body.dashboard-page .today-overview-ultra {
+    padding: 1rem;
+}
+
+body.dashboard-page .recent-ultra-compact {
+    padding: 1rem;
+}
+body.dashboard-page .compact-4-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Quick Stats 2x3 Grid */
+body.dashboard-page .stats-2x3-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+body.dashboard-page .small-stat-card {
+    padding: 0.75rem 0.85rem;
+}
+body.dashboard-page .small-stat-card p {
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+}
+body.dashboard-page .small-stat-card strong {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+body.dashboard-page .stat-span-2 {
+    grid-column: span 2;
+}
+
+/* Mini Chart under stats */
+body.dashboard-page .weekly-mini {
+    padding: 0.85rem 1rem;
+}
+body.dashboard-page .mini-chart-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 70px;
+    margin-top: 0.25rem;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar-track {
+    width: 20px;
+    height: 55px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-end;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar {
+    width: 100%;
+    border-radius: 4px;
+}
+body.dashboard-page .mini-chart-bars .dashboard-stitch-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+@media (max-width: 900px) {
+    body.dashboard-page .dashboard-two-col-engine {
+        grid-template-columns: 1fr;
+    }
+    body.dashboard-page .generate-columns-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    body.dashboard-page .generate-columns-flex .field-small {
+        flex: auto;
+    }
+}
+
+/* Fix generate form width constraint */
+body.dashboard-page form.generate-inline-form-row {
+    max-width: none !important;
+    width: 100%;
+}

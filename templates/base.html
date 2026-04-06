@@ -10,8 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="{% if request.endpoint in ['login', 'signup'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% endif %}">
-    {% if request.endpoint not in ['login', 'signup', 'dashboard'] %}
+<body class="{% if request.endpoint in ['login', 'signup'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session'] %}tw-dark-page{% endif %}">
+    {% if request.endpoint not in ['login', 'signup', 'dashboard', 'words', 'flashcards', 'flashcards_session'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
         <div class="container nav-shell">
@@ -52,7 +52,7 @@
     </header>
     {% endif %}
 
-    <main class="{% if request.endpoint in ['login', 'signup'] %}auth-page-shell{% elif request.endpoint == 'dashboard' %}dashboard-page-shell{% else %}container page-shell{% endif %}">
+    <main class="{% if request.endpoint in ['login', 'signup'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <section class="flash-stack">
@@ -66,6 +66,6 @@
         {% block content %}{% endblock %}
     </main>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ range(1, 1000000) | random }}"></script>
 </body>
 </html>

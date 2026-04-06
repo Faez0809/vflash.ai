@@ -193,6 +193,8 @@ function initFlashcards() {
     const meaningEl = document.querySelector("#flashcard-meaning");
     const banglaMeaningEl = document.querySelector("#flashcard-bangla-meaning");
     const phoneticEl = document.querySelector("#flashcard-phonetic");
+    const frontPhoneticEl = document.querySelector("#flashcard-front-phonetic");
+    const wordBackEl = document.querySelector("#flashcard-word-back");
     const synonymEl = document.querySelector("#flashcard-synonym");
     const sentenceEl = document.querySelector("#flashcard-sentence");
     const memoryTrickEl = document.querySelector("#flashcard-memory-trick");
@@ -208,6 +210,20 @@ function initFlashcards() {
     const swipeThreshold = 50;
     const leftZoneRatio = 0.26;
     const rightZoneRatio = 0.74;
+    
+    // Stable counters for tracking session progress easily
+    const initialTotalCards = cards.length;
+    let numCompletedThisSession = 0;
+    const progressEl = document.querySelector("#flashcard-progress");
+    
+    const storageKey = `vocabai_last_card_id_${flashcardMode}`;
+    const savedCardId = localStorage.getItem(storageKey);
+    if (savedCardId && cards.length > 0) {
+        const foundIndex = cards.findIndex(c => c.id == parseInt(savedCardId, 10));
+        if (foundIndex !== -1) {
+            currentIndex = foundIndex;
+        }
+    }
 
     function setButtonsDisabled(disabled) {
         if (markLearnedBtn) {
@@ -226,14 +242,20 @@ function initFlashcards() {
         if (!markDifficultBtn) {
             return;
         }
+        
+        const textSpan = markDifficultBtn.querySelector(".font-label") || markDifficultBtn;
+        const iconSpan = markDifficultBtn.querySelector(".material-symbols-outlined");
 
         if (!card) {
-            markDifficultBtn.textContent = "Mark as Difficult";
+            textSpan.textContent = "Difficult";
+            if (iconSpan) iconSpan.textContent = "error";
             markDifficultBtn.classList.remove("is-active");
             return;
         }
 
-        markDifficultBtn.textContent = card.is_difficult ? "Difficult Saved" : "Mark Difficult";
+        textSpan.textContent = card.is_difficult ? "Saved" : "Difficult";
+        if (iconSpan) iconSpan.textContent = card.is_difficult ? "error" : "error"; 
+        // Can keep icon as error or change to something else if desired.
         markDifficultBtn.classList.toggle("is-active", card.is_difficult);
     }
 
@@ -281,8 +303,8 @@ function initFlashcards() {
             const actionPath = flashcardMode === "review" ? `/review/complete/${card.id}` : `/flashcards/learn/${card.id}`;
             const payload = await postJson(actionPath);
             queuedStatusMessage = payload.message || (flashcardMode === "review" ? "Marked as reviewed." : "Marked as learned.");
-            showAjaxMessage(queuedStatusMessage, "success");
             cards.splice(currentIndex, 1);
+            numCompletedThisSession += 1;
             if (currentIndex >= cards.length && currentIndex > 0) {
                 currentIndex -= 1;
             }
@@ -305,8 +327,14 @@ function initFlashcards() {
             const payload = await postJson(`/words/difficult/${card.id}`);
             card.is_difficult = Boolean(payload.is_difficult);
             updateDifficultButton(card);
-            statusEl.textContent = payload.message || "";
-            showAjaxMessage(payload.message || "", payload.is_difficult ? "success" : "info");
+            
+            statusEl.textContent = payload.message || (payload.is_difficult ? "Marked as difficult." : "Removed from difficult list.");
+            statusEl.style.opacity = 0;
+            requestAnimationFrame(() => {
+                statusEl.style.transition = 'opacity 0.2s';
+                statusEl.style.opacity = 1;
+                setTimeout(() => statusEl.style.opacity = 0, 1500);
+            });
         } catch (error) {
             statusEl.textContent = "Could not update difficult words right now.";
             showAjaxMessage("Could not update difficult words right now.", "error");
@@ -325,8 +353,8 @@ function initFlashcards() {
             alreadyKnownBtn.disabled = true;
             const payload = await postJson(`/flashcards/already-known/${card.id}`);
             queuedStatusMessage = payload.message || "Marked as already known.";
-            showAjaxMessage(queuedStatusMessage, "success");
             cards.splice(currentIndex, 1);
+            numCompletedThisSession += 1;
             if (currentIndex >= cards.length && currentIndex > 0) {
                 currentIndex -= 1;
             }
@@ -340,38 +368,74 @@ function initFlashcards() {
 
     function renderCard() {
         if (!hasActiveCard()) {
-            countEl.textContent = "Study complete";
-            wordEl.textContent = "No more words to study";
-            partOfSpeechEl.textContent = "";
-            meaningEl.textContent = "";
-            banglaMeaningEl.textContent = "";
-            phoneticEl.textContent = "";
-            synonymEl.textContent = "";
-            sentenceEl.textContent = "";
-            memoryTrickEl.textContent = "";
+            if (countEl) countEl.textContent = `0 / ${initialTotalCards} Cards`;
+            if (wordEl) wordEl.textContent = "No more words to study";
+            if (wordBackEl) wordBackEl.textContent = "Complete";
+            if (partOfSpeechEl) {
+                partOfSpeechEl.textContent = "";
+                partOfSpeechEl.classList.add("is-hidden");
+            }
+            if (meaningEl) meaningEl.textContent = "";
+            if (banglaMeaningEl) banglaMeaningEl.textContent = "";
+            if (phoneticEl) phoneticEl.textContent = "";
+            if (frontPhoneticEl) frontPhoneticEl.textContent = "";
+            if (synonymEl) synonymEl.textContent = "";
+            if (sentenceEl) sentenceEl.textContent = "";
+            if (memoryTrickEl) memoryTrickEl.textContent = "";
             flipCardEl.classList.remove("is-flipped");
-            statusEl.textContent = queuedStatusMessage;
+            if (statusEl) statusEl.textContent = queuedStatusMessage;
             setButtonsDisabled(true);
             updateDifficultButton(null);
+            localStorage.removeItem(storageKey);
+            if (progressEl) progressEl.style.width = '100%';
             return;
         }
 
         const card = cards[currentIndex];
-        countEl.textContent = `Card ${currentIndex + 1} of ${cards.length}`;
-        wordEl.textContent = card.word;
-        partOfSpeechEl.textContent = card.part_of_speech || "";
-        partOfSpeechEl.classList.toggle("is-hidden", !card.part_of_speech);
-        meaningEl.textContent = card.meaning;
-        banglaMeaningEl.textContent = card.bangla_meaning;
-        phoneticEl.textContent = card.phonetic;
-        synonymEl.textContent = card.synonym;
-        sentenceEl.textContent = card.sentence;
-        memoryTrickEl.textContent = card.memory_trick;
-        flipCardEl.classList.remove("is-flipped");
+        localStorage.setItem(storageKey, card.id);
+        
+        if (countEl) countEl.textContent = `${currentIndex + 1} / ${initialTotalCards} Cards`;
+        
+        // Update Progress Bar based on completed vs initial
+        if (progressEl && initialTotalCards > 0) {
+            const pct = Math.round((numCompletedThisSession / initialTotalCards) * 100);
+            progressEl.style.width = `${pct}%`;
+        }
+
+        if (wordEl) wordEl.textContent = card.word;
+        if (wordBackEl) wordBackEl.textContent = card.word;
+        if (partOfSpeechEl) {
+            partOfSpeechEl.textContent = card.part_of_speech || "";
+            partOfSpeechEl.classList.toggle("is-hidden", !card.part_of_speech);
+        }
+        if (meaningEl) meaningEl.textContent = card.meaning;
+        if (banglaMeaningEl) banglaMeaningEl.textContent = card.bangla_meaning;
+        if (phoneticEl) phoneticEl.textContent = card.phonetic;
+        if (frontPhoneticEl) frontPhoneticEl.textContent = card.phonetic;
+        if (synonymEl) synonymEl.textContent = card.synonym;
+        if (sentenceEl) sentenceEl.textContent = card.sentence;
+        if (memoryTrickEl) memoryTrickEl.textContent = card.memory_trick;
+        
+        flipCardEl.style.opacity = 0;
+        requestAnimationFrame(() => {
+            flipCardEl.classList.remove("is-flipped");
+            flipCardEl.style.transition = 'opacity 0.2s';
+            flipCardEl.style.opacity = 1;
+        });
+
         setButtonsDisabled(false);
         updateDifficultButton(card);
-        statusEl.textContent = queuedStatusMessage;
-        queuedStatusMessage = "";
+        
+        if (statusEl && queuedStatusMessage) {
+            statusEl.textContent = queuedStatusMessage;
+            statusEl.style.opacity = 0;
+            requestAnimationFrame(() => {
+                statusEl.style.transition = 'opacity 0.2s';
+                statusEl.style.opacity = 1;
+                setTimeout(() => statusEl.style.opacity = 0, 1500);
+            });
+            queuedStatusMessage = "";
+        }
     }
 
     flipCardEl.addEventListener("click", (event) => {
