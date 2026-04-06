@@ -35,15 +35,22 @@ def register(app):
             email = request.form.get("email", "").strip().lower()
             password = request.form.get("password", "")
             confirm_password = request.form.get("confirm_password", "")
+            nickname = request.form.get("nickname", "").strip()
 
-            if not email or not password:
-                flash("Email and password are required.", "error")
+            if not email or not password or not nickname:
+                flash("Email, nickname, and password are required.", "error")
             elif password != confirm_password:
                 flash("Passwords do not match.", "error")
+            elif len(nickname) < 2:
+                flash("Nickname must be at least 2 characters.", "error")
             elif User.query.filter_by(email=email).first():
                 flash("An account with that email already exists.", "error")
             else:
-                user = User(email=email, password=generate_password_hash(password))
+                user = User(
+                    email=email,
+                    password=generate_password_hash(password),
+                    nickname=nickname[:80],
+                )
                 db.session.add(user)
                 db.session.commit()
                 flash("Account created successfully. Please log in.", "success")

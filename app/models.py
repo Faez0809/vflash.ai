@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    nickname = db.Column(db.String(80), nullable=True)
     default_study_focus = db.Column(db.Text, nullable=True)
     daily_goal = db.Column(db.Integer, nullable=False, default=10)
     study_sessions = db.relationship(
@@ -22,6 +23,12 @@ class User(UserMixin, db.Model):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def display_name(self):
+        if self.nickname and self.nickname.strip():
+            return self.nickname.strip()
+        return self.email.split("@")[0]
 
 
 class Word(db.Model):

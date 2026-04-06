@@ -56,6 +56,7 @@ def register(app):
         progress_percentage = round(((learned_words + already_known_words) / total_words) * 100) if total_words else 0
         daily_goal = current_user.daily_goal or 10
         daily_goal_percentage = min(100, round((learned_today / daily_goal) * 100)) if daily_goal else 0
+        display_name = current_user.display_name
         last_session = (
             StudySession.query.filter_by(user_id=current_user.id)
             .order_by(StudySession.created_at.desc(), StudySession.id.desc())
@@ -103,9 +104,26 @@ def register(app):
 
         recent_words = user_words[:6]
         weekly_activity = get_weekly_activity(current_user.id)
+        dashboard_messages = []
+
+        if words_to_review_today:
+            dashboard_messages.append(f"You have {words_to_review_today} words to review today.")
+        if study_streak:
+            dashboard_messages.append(f"You're on a {study_streak} day streak. Keep going!")
+        if difficult_words:
+            dashboard_messages.append(f"{difficult_words} difficult words need attention.")
+        if daily_goal and learned_today < daily_goal:
+            remaining_goal = daily_goal - learned_today
+            if remaining_goal <= 3:
+                dashboard_messages.append("You're close to your daily goal.")
+            else:
+                dashboard_messages.append(f"{remaining_goal} more words will complete today's goal.")
+        if not dashboard_messages:
+            dashboard_messages.append("Start a new study set to keep your vocabulary momentum moving.")
 
         return render_template(
             "dashboard.html",
+            display_name=display_name,
             user_words=user_words,
             recent_words=recent_words,
             total_words=total_words,
@@ -125,6 +143,7 @@ def register(app):
             last_session_remaining=last_session_remaining,
             difficulty_progress=difficulty_progress,
             weekly_activity=weekly_activity,
+            dashboard_messages=dashboard_messages[:3],
         )
 
     @app.route("/generate")
@@ -173,11 +192,13 @@ def register(app):
     @login_required
     def profile():
         if request.method == "POST":
+            nickname = clean_text(request.form.get("nickname"))
             current_user.default_study_focus = clean_text(request.form.get("default_study_focus")) or None
             try:
                 daily_goal = int(request.form.get("daily_goal", current_user.daily_goal or 10))
             except (TypeError, ValueError):
                 daily_goal = current_user.daily_goal or 10
+            current_user.nickname = nickname[:80] if nickname else current_user.display_name
             current_user.daily_goal = max(1, min(daily_goal, 100))
             db.session.commit()
             flash("Profile updated successfully.", "success")

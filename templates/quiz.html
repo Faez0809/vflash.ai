@@ -10,7 +10,7 @@
                 <div>
                     <span class="eyebrow">Quiz result</span>
                     <h1>{{ quiz_result.score }}/{{ quiz_result.total_questions }}</h1>
-                    <p class="muted section-copy">Accuracy {{ quiz_result.accuracy }}%{% if quiz_result.was_quit %} | Quiz ended early{% endif %}</p>
+                    <p class="muted section-copy">Nice work, {{ current_user.display_name }}. Accuracy {{ quiz_result.accuracy }}%{% if quiz_result.was_quit %} | Quiz ended early{% endif %}</p>
                 </div>
             </div>
             <div class="button-row-minimal">

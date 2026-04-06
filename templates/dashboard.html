@@ -8,15 +8,14 @@
         <div class="dashboard-topbar-brand">
             <a href="{{ url_for('dashboard') }}">VocabAI</a>
         </div>
-        <nav class="dashboard-topbar-nav">
-            <a class="is-active" href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('flashcards') }}">Flashcards</a>
-            <a href="{{ url_for('review') }}">Review</a>
-        </nav>
+        <form class="dashboard-topbar-search" action="{{ url_for('search_word') }}" method="get">
+            <span class="material-symbols-outlined">search</span>
+            <input type="search" name="q" placeholder="Search any word">
+        </form>
         <div class="dashboard-topbar-actions">
             <a class="dashboard-topbar-cta" href="#generate-section">New Session</a>
             <a class="dashboard-avatar" href="{{ url_for('profile') }}" aria-label="Profile">
-                {{ current_user.email[:1]|upper }}
+                {{ display_name[:1]|upper }}
             </a>
         </div>
     </header>
@@ -28,7 +27,7 @@
                     <span class="material-symbols-outlined">book_2</span>
                 </div>
                 <div>
-                    <strong>Study Focus</strong>
+                    <strong>{{ display_name }}</strong>
                     <span title="{{ current_user.default_study_focus or 'General vocabulary practice' }}">{{ (current_user.default_study_focus or "General vocabulary practice")|truncate(28, True, '...') }}</span>
                 </div>
             </div>
@@ -50,9 +49,10 @@
                     <span class="material-symbols-outlined">quiz</span>
                     <span>Quizzes</span>
                 </a>
-            </nav>
-
-            <div class="dashboard-sidebar-footer">
+                <a href="{{ url_for('review') }}">
+                    <span class="material-symbols-outlined">rule</span>
+                    <span>Review</span>
+                </a>
                 <a href="{{ url_for('profile') }}">
                     <span class="material-symbols-outlined">person</span>
                     <span>Profile</span>
@@ -61,33 +61,182 @@
                     <span class="material-symbols-outlined">logout</span>
                     <span>Sign Out</span>
                 </a>
-            </div>
+            </nav>
         </aside>
 
-        <section class="dashboard-main">
-            <section class="dashboard-hero-stitch">
-                <div class="dashboard-hero-stitch-copy">
-                    <p class="dashboard-stitch-label">Learning dashboard</p>
-                    <h1>Welcome back, {{ current_user.email.split('@')[0] }}</h1>
-                    <p>Keep your momentum strong with fresh study sets, focused review, and steady daily progress.</p>
-                </div>
-                <div class="dashboard-stitch-goal">
-                    <div class="dashboard-stitch-ring">
-                        <svg viewBox="0 0 100 100" aria-hidden="true">
-                            <circle cx="50" cy="50" r="42"></circle>
-                            <circle cx="50" cy="50" r="42" class="dashboard-stitch-ring-progress" style="stroke-dasharray: 263.9; stroke-dashoffset: {{ 263.9 - ((daily_goal_percentage / 100) * 263.9) }};"></circle>
-                        </svg>
-                        <span>{{ daily_goal_percentage }}%</span>
-                    </div>
+        <section class="dashboard-main dashboard-main-action-first">
+            <section class="dashboard-action-row">
+                <a class="dashboard-action-card" href="{{ url_for('flashcards_session', session_id=last_session.id) if last_session else '#generate-section' }}">
+                    <span class="material-symbols-outlined">play_arrow</span>
                     <div>
-                        <p class="dashboard-stitch-label">Daily goal</p>
-                        <strong>{{ learned_today }} / {{ daily_goal }} Words</strong>
-                        <span>Words learned today</span>
+                        <p class="dashboard-stitch-label">Continue study</p>
+                        <h2>{{ "Resume your latest session" if last_session else "Start your first session" }}</h2>
+                        <small>
+                            {% if last_session %}
+                                {{ last_session_remaining }}/{{ last_session.word_count }} words remaining
+                            {% else %}
+                                Generate a fresh word set to begin
+                            {% endif %}
+                        </small>
                     </div>
-                </div>
+                </a>
+
+                <a class="dashboard-action-card dashboard-action-card-review" href="{{ url_for('review') }}">
+                    <span class="material-symbols-outlined">history</span>
+                    <div>
+                        <p class="dashboard-stitch-label">Review due today</p>
+                        <h2>{{ words_to_review_today }} words waiting</h2>
+                        <small>Open your review queue and clear today's due words.</small>
+                    </div>
+                </a>
+
+                <a class="dashboard-action-card" href="{{ url_for('quiz') }}">
+                    <span class="material-symbols-outlined">timer</span>
+                    <div>
+                        <p class="dashboard-stitch-label">Start quiz</p>
+                        <h2>Active recall session</h2>
+                        <small>Test your vocabulary with focused quiz practice.</small>
+                    </div>
+                </a>
             </section>
 
-            <section class="dashboard-stitch-stats">
+            {% set has_pending_tasks = words_to_review_today > 0 or difficult_words > 0 or (daily_goal and learned_today < daily_goal) %}
+
+            <section class="dashboard-content-grid">
+                <section class="dashboard-stitch-chart dashboard-grid-panel">
+                    <div class="dashboard-stitch-chart-head">
+                        <div>
+                            <p class="dashboard-stitch-label">Weekly activity</p>
+                            <h3>Progress this week</h3>
+                        </div>
+                        <div class="dashboard-stitch-legend">
+                            <span><i></i>Activity</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-stitch-bars dashboard-stitch-bars-compact">
+                        {% for item in weekly_activity %}
+                            <div class="dashboard-stitch-bar-col">
+                                <div class="dashboard-stitch-bar-track">
+                                    <div class="dashboard-stitch-bar" style="height: {{ item.height }}px;"></div>
+                                </div>
+                                <span>{{ item.label }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="dashboard-today-overview dashboard-grid-panel">
+                    <div class="dashboard-today-overview-head">
+                        <p class="dashboard-stitch-label">Today overview</p>
+                        <h3>Focus for today</h3>
+                    </div>
+
+                    <div class="dashboard-today-overview-goal">
+                        <div class="dashboard-today-overview-goal-copy">
+                            <span>Daily goal</span>
+                            <strong>{{ learned_today }} / {{ daily_goal }} words</strong>
+                        </div>
+                        <span class="dashboard-today-overview-percent">{{ daily_goal_percentage }}%</span>
+                    </div>
+                    <div class="dashboard-goal-progress" aria-label="Daily goal progress">
+                        <span style="width: {{ daily_goal_percentage }}%;"></span>
+                    </div>
+
+                    <div class="dashboard-today-overview-stats">
+                        <article class="dashboard-today-overview-stat">
+                            <span>Words to review</span>
+                            <strong>{{ words_to_review_today }}</strong>
+                        </article>
+                        <article class="dashboard-today-overview-stat">
+                            <span>Difficult words</span>
+                            <strong>{{ difficult_words }}</strong>
+                        </article>
+                        <article class="dashboard-today-overview-stat dashboard-today-overview-stat-wide">
+                            <span>Current streak</span>
+                            <strong>{{ study_streak }} days</strong>
+                        </article>
+                    </div>
+
+                    <div class="dashboard-today-overview-messages">
+                        {% if words_to_review_today > 0 %}
+                            <span>You have {{ words_to_review_today }} words to review today.</span>
+                        {% endif %}
+                        {% if difficult_words > 0 %}
+                            <span>{{ difficult_words }} difficult words need attention.</span>
+                        {% endif %}
+                        {% if daily_goal and learned_today < daily_goal %}
+                            <span>You need {{ daily_goal - learned_today }} more words to complete today's goal.</span>
+                        {% endif %}
+                        {% if not has_pending_tasks %}
+                            <span>You're all caught up for today. Great work.</span>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="dashboard-stitch-generate dashboard-stitch-generate-compact dashboard-grid-panel" id="generate-section">
+                    <span class="dashboard-stitch-brain material-symbols-outlined">neurology</span>
+                    <p class="dashboard-stitch-label">Generate new words</p>
+                    <h2>Build your next study set</h2>
+                    <p>Create a focused session for your next topic without taking over the whole dashboard.</p>
+
+                    <form method="post" action="{{ url_for('generate_words') }}" class="dashboard-stitch-form">
+                        <div class="dashboard-stitch-form-grid">
+                            <div class="dashboard-stitch-field">
+                                <label for="difficulty">Difficulty</label>
+                                <select id="difficulty" name="difficulty">
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate" selected>Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="dashboard-stitch-field">
+                                <label for="word_count">Number of words</label>
+                                <select id="word_count" name="word_count">
+                                    <option value="5">5 Words</option>
+                                    <option value="10" selected>10 Words</option>
+                                    <option value="15">15 Words</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dashboard-stitch-field">
+                            <label for="custom_prompt">Custom topic</label>
+                            <textarea id="custom_prompt" name="custom_prompt" rows="2" placeholder="IELTS writing, business English, daily conversation, technology, environment...">{{ default_study_focus }}</textarea>
+                        </div>
+                        <div class="dashboard-stitch-form-footer">
+                            <label class="dashboard-stitch-checkbox" for="save_as_default">
+                                <input id="save_as_default" name="save_as_default" type="checkbox">
+                                <span>Save as default focus</span>
+                            </label>
+                            <button type="submit">Generate Words</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="dashboard-stitch-recent dashboard-grid-panel">
+                    <div class="dashboard-stitch-recent-head">
+                        <div>
+                            <p class="dashboard-stitch-label">Recent words</p>
+                            <h3>Latest additions</h3>
+                        </div>
+                        <a href="{{ url_for('words') }}">Open My Words</a>
+                    </div>
+                    <div class="dashboard-stitch-recent-list">
+                        {% for item in recent_words[:6] %}
+                            <article class="dashboard-stitch-recent-item">
+                                <div class="dashboard-stitch-recent-title">
+                                    <strong>{{ item.word_entry.word }}</strong>
+                                    <span>{{ item.word_entry.difficulty or "B1" }}</span>
+                                </div>
+                                <p>{{ item.word_entry.meaning }}</p>
+                            </article>
+                        {% else %}
+                            <p class="muted">Generate a study set to start building your recent list.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </section>
+
+            <section class="dashboard-stitch-stats dashboard-stitch-stats-compact">
                 <article class="dashboard-stitch-stat">
                     <p>Learned</p>
                     <div>
@@ -100,13 +249,6 @@
                     <div>
                         <strong>{{ unlearned_words }}</strong>
                         <span class="material-symbols-outlined">pending</span>
-                    </div>
-                </article>
-                <article class="dashboard-stitch-stat">
-                    <p>Already Known</p>
-                    <div>
-                        <strong>{{ already_known_words }}</strong>
-                        <span class="material-symbols-outlined">verified</span>
                     </div>
                 </article>
                 <article class="dashboard-stitch-stat dashboard-stitch-stat-danger">
@@ -123,171 +265,13 @@
                         <span class="material-symbols-outlined">history</span>
                     </div>
                 </article>
-            </section>
-
-            <section class="dashboard-stitch-generate" id="generate-section">
-                <span class="dashboard-stitch-brain material-symbols-outlined">neurology</span>
-                <p class="dashboard-stitch-label">Generate new words</p>
-                <h2>Build your next study set</h2>
-                <p>Create a focused session for IELTS, business English, daily speaking, or any topic you want to practice next.</p>
-
-                <form method="post" action="{{ url_for('generate_words') }}" class="dashboard-stitch-form">
-                    <div class="dashboard-stitch-form-grid">
-                        <div class="dashboard-stitch-field">
-                            <label for="difficulty">Difficulty level</label>
-                            <select id="difficulty" name="difficulty">
-                                <option value="Beginner">Beginner</option>
-                                <option value="Intermediate" selected>Intermediate</option>
-                                <option value="Advanced">Advanced</option>
-                            </select>
-                        </div>
-                        <div class="dashboard-stitch-field">
-                            <label for="word_count">Quantity</label>
-                            <select id="word_count" name="word_count">
-                                <option value="5">5 Words</option>
-                                <option value="10" selected>10 Words</option>
-                                <option value="15">15 Words</option>
-                            </select>
-                        </div>
+                <article class="dashboard-stitch-stat">
+                    <p>Streak</p>
+                    <div>
+                        <strong>{{ study_streak }}</strong>
+                        <span class="material-symbols-outlined">local_fire_department</span>
                     </div>
-                    <div class="dashboard-stitch-field">
-                        <label for="custom_prompt">Custom topic / context</label>
-                        <textarea id="custom_prompt" name="custom_prompt" rows="3" placeholder="e.g., academic vocabulary, technology, environment, speaking practice, business English">{{ default_study_focus }}</textarea>
-                    </div>
-                    <div class="dashboard-stitch-form-footer">
-                        <label class="dashboard-stitch-checkbox" for="save_as_default">
-                            <input id="save_as_default" name="save_as_default" type="checkbox">
-                            <span>Save as session default</span>
-                        </label>
-                        <button type="submit">Generate Words</button>
-                    </div>
-                </form>
-            </section>
-
-            <section class="dashboard-stitch-two-column">
-                <section class="dashboard-stitch-block">
-                    <div class="dashboard-stitch-block-head">
-                        <p class="dashboard-stitch-label">Continue study</p>
-                        <h3>Resume your latest session</h3>
-                    </div>
-                    <div class="dashboard-stitch-list">
-                        {% if last_session %}
-                            <a class="dashboard-stitch-list-item" href="{{ url_for('flashcards_session', session_id=last_session.id) }}">
-                                <div class="dashboard-stitch-list-icon">
-                                    <span class="material-symbols-outlined">play_arrow</span>
-                                </div>
-                                <div>
-                                    <strong>Resume latest session</strong>
-                                    <p>{{ last_session.difficulty }} session &bull; {{ last_session_remaining }}/{{ last_session.word_count }} remaining</p>
-                                </div>
-                            </a>
-                            <a class="dashboard-stitch-list-item" href="{{ url_for('flashcards_session', session_id=last_session.id) }}">
-                                <div class="dashboard-stitch-list-icon">
-                                    <span class="material-symbols-outlined">style</span>
-                                </div>
-                                <div>
-                                    <strong>Continue Flashcards</strong>
-                                    <p>Study set in progress &bull; {{ last_session.word_count }} words</p>
-                                </div>
-                            </a>
-                            <a class="dashboard-stitch-list-item" href="{{ url_for('review') }}">
-                                <div class="dashboard-stitch-list-icon">
-                                    <span class="material-symbols-outlined">rule</span>
-                                </div>
-                                <div>
-                                    <strong>Open Review</strong>
-                                    <p>{{ words_to_review_today }} words due today</p>
-                                </div>
-                            </a>
-                        {% else %}
-                            <div class="dashboard-stitch-empty">You have not created a study session yet.</div>
-                        {% endif %}
-                    </div>
-                </section>
-
-                <section class="dashboard-stitch-block">
-                    <div class="dashboard-stitch-block-head">
-                        <p class="dashboard-stitch-label">Quick actions</p>
-                        <h3>Keep moving</h3>
-                    </div>
-                    <div class="dashboard-stitch-quick-grid">
-                        <a class="dashboard-stitch-quick-card" href="{{ url_for('words') }}">
-                            <span class="material-symbols-outlined">auto_stories</span>
-                            <p>Browse all words</p>
-                        </a>
-                        <a class="dashboard-stitch-quick-card dashboard-stitch-quick-danger" href="{{ url_for('difficult_words') }}">
-                            <span class="material-symbols-outlined">priority_high</span>
-                            <p>Review difficult words</p>
-                        </a>
-                        <a class="dashboard-stitch-quick-card" href="{{ url_for('quiz') }}">
-                            <span class="material-symbols-outlined">timer</span>
-                            <p>Start a quiz</p>
-                        </a>
-                        <a class="dashboard-stitch-quick-card" href="{{ url_for('sessions') }}">
-                            <span class="material-symbols-outlined">history_edu</span>
-                            <p>View sessions</p>
-                        </a>
-                    </div>
-                </section>
-            </section>
-
-            <section class="dashboard-stitch-bottom">
-                <section class="dashboard-stitch-chart">
-                    <div class="dashboard-stitch-chart-head">
-                        <h3>Study Rhythm &amp; Distribution</h3>
-                        <div class="dashboard-stitch-legend">
-                            <span><i></i>Learned</span>
-                            <span><i class="muted"></i>Reviews</span>
-                        </div>
-                    </div>
-                    <div class="dashboard-stitch-bars">
-                        {% for item in weekly_activity %}
-                            <div class="dashboard-stitch-bar-col">
-                                <div class="dashboard-stitch-bar-track">
-                                    <div class="dashboard-stitch-bar" style="height: {{ item.height }}px;"></div>
-                                </div>
-                                <span>{{ item.label }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="dashboard-stitch-chart-meta">
-                        <div>
-                            <p>Vocabulary heatmap</p>
-                            <strong>{{ weekly_activity | max(attribute='count') | attr('label') if weekly_activity else 'N/A' }}</strong>
-                        </div>
-                        <div>
-                            <p>Daily completion</p>
-                            <strong>{{ daily_goal_percentage }}% Avg</strong>
-                        </div>
-                        <div>
-                            <p>Current streak</p>
-                            <strong>{{ study_streak }} Days</strong>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="dashboard-stitch-recent">
-                    <div class="dashboard-stitch-recent-head">
-                        <div>
-                            <p class="dashboard-stitch-label">Recent words</p>
-                            <h3>Fresh additions to your study space</h3>
-                        </div>
-                        <a href="{{ url_for('words') }}">Open My Words</a>
-                    </div>
-                    <div class="dashboard-stitch-recent-list">
-                        {% for item in recent_words[:4] %}
-                            <article class="dashboard-stitch-recent-item">
-                                <div class="dashboard-stitch-recent-title">
-                                    <strong>{{ item.word_entry.word }}</strong>
-                                    <span>{{ item.word_entry.difficulty or "B1" }}</span>
-                                </div>
-                                <p>{{ item.word_entry.meaning }}</p>
-                            </article>
-                        {% else %}
-                            <p class="muted">Generate a study set to start building your recent list.</p>
-                        {% endfor %}
-                    </div>
-                </section>
+                </article>
             </section>
         </section>
     </div>

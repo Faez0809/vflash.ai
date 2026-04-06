@@ -35,7 +35,7 @@
                             <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
                         </button>
                         <div class="nav-menu-panel" aria-hidden="true">
-                            <span class="nav-menu-email">{{ current_user.email }}</span>
+                            <span class="nav-menu-email">{{ current_user.display_name }}</span>
                             <a href="{{ url_for('dashboard') }}#generate-section">Generate Words</a>
                             <a href="{{ url_for('words') }}">My Words</a>
                             <a href="{{ url_for('difficult_words') }}">Difficult Words</a>

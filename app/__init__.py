@@ -56,6 +56,7 @@ def run_migrations():
     ensure_column("study_session", "custom_prompt", "ALTER TABLE study_session ADD COLUMN custom_prompt TEXT")
     ensure_column("user", "default_study_focus", "ALTER TABLE user ADD COLUMN default_study_focus TEXT")
     ensure_column("user", "daily_goal", "ALTER TABLE user ADD COLUMN daily_goal INTEGER DEFAULT 10")
+    ensure_column("user", "nickname", "ALTER TABLE user ADD COLUMN nickname VARCHAR(80)")
 
 
 def create_app():

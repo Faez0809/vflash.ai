@@ -14,6 +14,10 @@
         </div>
         <dl class="profile-details">
             <div>
+                <dt>Nickname</dt>
+                <dd>{{ current_user.display_name }}</dd>
+            </div>
+            <div>
                 <dt>Email</dt>
                 <dd>{{ current_user.email }}</dd>
             </div>
@@ -50,6 +54,11 @@
             </div>
         </div>
         <form method="post" class="generator-form">
+            <div class="generator-row">
+                <label for="nickname">Nickname</label>
+                <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}">
+                <small class="field-hint">This name is shown across your dashboard, profile, and quiz feedback.</small>
+            </div>
             <div class="generator-row">
                 <label for="default_study_focus">Default study focus</label>
                 <textarea id="default_study_focus" name="default_study_focus" rows="4">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
