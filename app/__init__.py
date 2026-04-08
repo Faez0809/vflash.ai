@@ -6,6 +6,7 @@ import runtime_compat
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, logout_user
+from flask_migrate import Migrate
 from sqlalchemy import inspect, text
 
 from app.models import User, db
@@ -15,12 +16,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 INSTANCE_DIR = BASE_DIR / "instance"
-LOCAL_DB_PATH = r"C:\vocabai\vocabai.db"
+LOCAL_DB_PATH = os.environ.get("SQLITE_DB_PATH", str(INSTANCE_DIR / "vocabai.db"))
 INSTANCE_DIR.mkdir(exist_ok=True)
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
+migrate = Migrate()
 
 
 @login_manager.user_loader
@@ -73,10 +75,13 @@ def create_app():
         static_folder=str(BASE_DIR / "static"),
     )
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "DATABASE_URL",
-        f"sqlite:///{LOCAL_DB_PATH}",
-    )
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{LOCAL_DB_PATH}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["ADMIN_EMAIL"] = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD") or ""
@@ -89,6 +94,7 @@ def create_app():
     app.config["REMEMBER_COOKIE_SECURE"] = app.config["SESSION_COOKIE_SECURE"]
 
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
 
     from app.routes import admin, auth, dashboard, flashcards, generate, quiz, review, words
@@ -157,8 +163,11 @@ def create_app():
             500,
         )
 
+    auto_bootstrap_db = os.environ.get("AUTO_BOOTSTRAP_DB", "1").lower() in {"1", "true", "yes"}
+
     with app.app_context():
-        db.create_all()
-        run_migrations()
+        if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
+            db.create_all()
+            run_migrations()
 
     return app

@@ -12,15 +12,18 @@ load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
-LOCAL_DB_PATH = r"C:\vocabai\vocabai.db"
+LOCAL_DB_PATH = os.environ.get("SQLITE_DB_PATH", os.path.join(INSTANCE_DIR, "vocabai.db"))
 os.makedirs(INSTANCE_DIR, exist_ok=True)
 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL",
-    f"sqlite:///{LOCAL_DB_PATH}",
-)
+database_url = (os.environ.get("DATABASE_URL") or "").strip()
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{LOCAL_DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
