@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'search_word' %}search-page tw-dark-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
@@ -159,131 +160,86 @@
         }
     </style>
     <script type="text/javascript">
-        window.Tawk_API = window.Tawk_API || {};
-        window.Tawk_LoadStart = new Date();
-        window.__tawkOpenedByCustomButton = false;
-
-        function hideTawkDefaultLauncher() {
-            if (
-                window.Tawk_API &&
-                typeof window.Tawk_API.hideWidget === "function" &&
-                !window.__tawkOpenedByCustomButton
-            ) {
-                window.Tawk_API.hideWidget();
-            }
-        }
-
-        function keepTawkEmbedded() {
-            if (!window.Tawk_API) {
-                return;
-            }
-
-            if (typeof window.Tawk_API.toggle === "function") {
-                window.Tawk_API.toggle = function () {};
-            }
-        }
-
-        window.Tawk_API.customStyle = {
-            visibility: {
-                desktop: {
-                    position: "br",
-                    xOffset: 24,
-                    yOffset: 24
-                },
-                mobile: {
-                    position: "br",
-                    xOffset: 16,
-                    yOffset: 92
-                }
-            }
-        };
+        var Tawk_API = window.Tawk_API = window.Tawk_API || {};
+        var Tawk_LoadStart = window.Tawk_LoadStart = new Date();
+        var __tawkIsLoaded = false;
 
         {% if current_user.is_authenticated %}
         (function () {
             var visitorName = {{ current_user.display_name|trim|tojson }};
             var visitorEmail = {{ current_user.email|trim|lower|tojson }};
             var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            var visitor = {
-                name: visitorName
-            };
-
+            var visitor = { name: visitorName };
             if (emailPattern.test(visitorEmail)) {
                 visitor.email = visitorEmail;
             }
-
-            window.Tawk_API.visitor = visitor;
+            Tawk_API.visitor = visitor;
         })();
-
-        window.Tawk_API.onLoad = function () {
-            var attributes = {
-                "visitor-role": "authenticated-user",
-                "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
-            };
-
-            hideTawkDefaultLauncher();
-
-            window.Tawk_API.setAttributes(
-                attributes,
-                function (error) {
-                    if (error && window.console && typeof window.console.warn === "function") {
-                        window.console.warn("Tawk.to user identification failed.", error);
-                    }
-                }
-            );
-        };
-        {% else %}
-        window.Tawk_API.onLoad = function () {
-            hideTawkDefaultLauncher();
-
-            window.Tawk_API.setAttributes(
-                {
-                    "visitor-role": "guest",
-                    "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
-                },
-                function (error) {
-                    if (error && window.console && typeof window.console.warn === "function") {
-                        window.console.warn("Tawk.to visitor metadata failed.", error);
-                    }
-                }
-            );
-        };
         {% endif %}
 
-        window.Tawk_API.onChatMinimized = function () {
-            window.__tawkOpenedByCustomButton = false;
-            hideTawkDefaultLauncher();
-        };
+        function waitForTawk(callback) {
+            if (
+                typeof Tawk_API !== "undefined" &&
+                Tawk_API.onLoad &&
+                typeof Tawk_API.showWidget === "function" &&
+                typeof Tawk_API.maximize === "function"
+            ) {
+                callback();
+            } else {
+                setTimeout(function () { waitForTawk(callback); }, 100);
+            }
+        }
 
-        window.Tawk_API.onBeforeLoad = function () {
-            keepTawkEmbedded();
-        };
+        function openChat() {
+            waitForTawk(function () {
+                try {
+                    Tawk_API.showWidget();
+                    Tawk_API.maximize();
+                } catch (e) {
+                    console.error("Tawk error:", e);
+                }
+            });
+        }
 
-        window.Tawk_API.onChatHidden = function () {
-            window.__tawkOpenedByCustomButton = false;
-            hideTawkDefaultLauncher();
-        };
+        Tawk_API.onLoad = function () {
+            __tawkIsLoaded = true;
 
-        window.setInterval(function () {
-            keepTawkEmbedded();
-            hideTawkDefaultLauncher();
-        }, 800);
+            if (typeof Tawk_API.hideWidget === "function") {
+                Tawk_API.hideWidget();
+            }
+
+            if (typeof Tawk_API.setAttributes === "function") {
+                Tawk_API.setAttributes(
+                    {
+                        "visitor-role": {{ ("authenticated-user" if current_user.is_authenticated else "guest")|tojson }},
+                        "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
+                    },
+                    function (error) {
+                        if (error && window.console && typeof window.console.warn === "function") {
+                            window.console.warn("Tawk visitor metadata failed.", error);
+                        }
+                    }
+                );
+            }
+
+        };
 
         if (!window.__tawkWidgetLoaded && !document.getElementById("tawkto-script")) {
             window.__tawkWidgetLoaded = true;
-
             (function () {
                 var s1 = document.createElement("script");
                 var s0 = document.getElementsByTagName("script")[0];
-
                 s1.id = "tawkto-script";
                 s1.async = true;
                 s1.src = "https://embed.tawk.to/69d4db892767f61c30801122/1jljnj4bo";
                 s1.charset = "UTF-8";
                 s1.setAttribute("crossorigin", "*");
-
                 s0.parentNode.insertBefore(s1, s0);
             })();
         }
+
+        window.openChat = openChat;
+        window.waitForTawk = waitForTawk;
     </script>
 </body>
 </html>

@@ -264,68 +264,6 @@ function initFeedbackAssistant() {
         return;
     }
 
-    function pushFeedbackContextToTawk() {
-        if (!window.Tawk_API) {
-            return;
-        }
-
-        const customAttributes = {
-            "feedback-entry": "direct-message",
-            "feedback-page-title": document.title.replace(/\s*\|\s*vflash\.ai\s*$/i, "").trim() || "Unknown page",
-            "feedback-path": window.location.pathname || "/"
-        };
-
-        if (typeof window.Tawk_API.setAttributes === "function") {
-            window.Tawk_API.setAttributes(customAttributes, function (error) {
-                if (error && window.console && typeof window.console.warn === "function") {
-                    window.console.warn("Tawk.to feedback metadata failed.", error);
-                }
-            });
-        }
-
-        if (typeof window.Tawk_API.addTags === "function") {
-            const pageTag = (window.location.pathname || "home")
-                .replace(/[^a-z0-9]+/gi, "-")
-                .replace(/^-+|-+$/g, "")
-                .toLowerCase() || "home";
-
-            window.Tawk_API.addTags(["direct-message", `page-${pageTag}`], function (error) {
-                if (error && window.console && typeof window.console.warn === "function") {
-                    window.console.warn("Tawk.to feedback tags failed.", error);
-                }
-            });
-        }
-    }
-
-    function openFeedbackChat() {
-        pushFeedbackContextToTawk();
-
-        if (!window.Tawk_API || typeof window.Tawk_API.maximize !== "function") {
-            showAjaxMessage("Live chat is still loading.", "info");
-            return;
-        }
-
-        const isMaximized = typeof window.Tawk_API.isChatMaximized === "function" && window.Tawk_API.isChatMaximized();
-
-        if (isMaximized) {
-            window.__tawkOpenedByCustomButton = false;
-            if (typeof window.Tawk_API.minimize === "function") {
-                window.Tawk_API.minimize();
-            }
-            if (typeof window.Tawk_API.hideWidget === "function") {
-                window.Tawk_API.hideWidget();
-            }
-            return;
-        }
-
-        if (typeof window.Tawk_API.showWidget === "function") {
-            window.__tawkOpenedByCustomButton = true;
-            window.Tawk_API.showWidget();
-        }
-
-        window.Tawk_API.maximize();
-    }
-
     openChatButtons.forEach((openChatButton) => {
         if (openChatButton.dataset.feedbackBound === "true") {
             return;
@@ -335,7 +273,11 @@ function initFeedbackAssistant() {
         openChatButton.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            openFeedbackChat();
+            if (typeof window.openChat === "function") {
+                window.openChat();
+                return;
+            }
+            showAjaxMessage("Live chat is still loading.", "info");
         });
     });
 }
@@ -429,7 +371,20 @@ function initAjaxDifficultForms() {
                         const wordList = document.querySelector(".word-list");
                         if (wordList) {
                             wordList.outerHTML = '<p class="empty-state">No difficult words right now. You are caught up.</p>';
-    }
+                        }
+                    }
+                }
+
+                showAjaxMessage(payload.message || "Updated successfully.", payload.is_difficult ? "success" : "info");
+            } catch (error) {
+                showAjaxMessage("Could not update this word right now.", "error");
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
+        });
+    });
 }
 
 function initVocabularyInputs() {
@@ -468,19 +423,6 @@ function initVocabularyInputs() {
         input.setAttribute("maxlength", String(maxLength));
         input.addEventListener("input", () => validateInput(input));
         input.addEventListener("blur", () => validateInput(input));
-    });
-}
-                }
-
-                showAjaxMessage(payload.message || "Updated successfully.", payload.is_difficult ? "success" : "info");
-            } catch (error) {
-                showAjaxMessage("Could not update this word right now.", "error");
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-            }
-        });
     });
 }
 
