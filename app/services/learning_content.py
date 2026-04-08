@@ -3,7 +3,10 @@ import re
 from types import SimpleNamespace
 
 from ai_generator import CURATED_WORD_CONTENT, FALLBACK_RELATIONS, FALLBACK_VOCABULARY
+from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
+from app import cache
 from app.models import StudySession, UserWord, Word, db
 from app.services.ai_generator import generate_word_content
 from app.services.stats import clean_text
@@ -13,6 +16,11 @@ FALLBACK_CONTINUE_MESSAGE = (
     "New content is being prepared. For now, we've loaded words from your existing collection "
     "so you can continue learning without interruption."
 )
+
+
+def invalidate_word_list_cache():
+    # Refresh the shared search dictionary after word inserts.
+    cache.delete("search:candidate_words:v1")
 
 
 def _clean_relation_candidate(value, normalized_word, allow_phrase=False):
@@ -328,12 +336,16 @@ def ensure_starter_pack_for_user(user_id, preferred_focus=""):
     db.session.flush()
 
     added_count = 0
+    existing_word_ids = {
+        row[0]
+        for row in db.session.query(UserWord.word_id).filter(UserWord.user_id == user_id).all()
+    }
     for item in seed_items:
         word = upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_difficulty="Intermediate")
         if word is None:
             continue
 
-        if UserWord.query.filter_by(user_id=user_id, word_id=word.id).first():
+        if word.id in existing_word_ids:
             continue
 
         db.session.add(
@@ -347,9 +359,12 @@ def ensure_starter_pack_for_user(user_id, preferred_focus=""):
                 is_difficult=False,
             )
         )
+        existing_word_ids.add(word.id)
         added_count += 1
 
     db.session.commit()
+    if added_count:
+        invalidate_word_list_cache()
     return {"created": added_count > 0, "session_id": study_session.id if added_count else None, "added_count": added_count}
 
 
@@ -361,17 +376,26 @@ def find_cached_study_session(user_id, difficulty, word_count, custom_prompt="")
         .limit(12)
         .all()
     )
+    if not recent_sessions:
+        return None
+
+    remaining_counts = dict(
+        db.session.query(UserWord.session_id, func.count(UserWord.id))
+        .filter(
+            UserWord.user_id == user_id,
+            UserWord.learned.is_(False),
+            UserWord.session_id.in_([study_session.id for study_session in recent_sessions]),
+        )
+        .group_by(UserWord.session_id)
+        .all()
+    )
 
     for study_session in recent_sessions:
         session_prompt = clean_text(study_session.custom_prompt).lower()
         if session_prompt != normalized_prompt:
             continue
 
-        remaining_count = UserWord.query.filter_by(
-            user_id=user_id,
-            session_id=study_session.id,
-            learned=False,
-        ).count()
+        remaining_count = remaining_counts.get(study_session.id, 0)
         if remaining_count >= word_count:
             return study_session
 
@@ -379,7 +403,7 @@ def find_cached_study_session(user_id, difficulty, word_count, custom_prompt="")
 
 
 def get_existing_collection_words(user_id, limit=10, difficulty=None, topic_hint=""):
-    query = UserWord.query.filter_by(user_id=user_id).join(Word)
+    query = UserWord.query.options(selectinload(UserWord.word_entry)).filter_by(user_id=user_id).join(Word)
 
     if difficulty and difficulty != "All":
         query = query.filter(Word.difficulty == difficulty)
@@ -538,6 +562,7 @@ def get_or_create_word_lookup(raw_word):
         )
         db.session.add(word)
         db.session.commit()
+        invalidate_word_list_cache()
         enrich_word_collection([word], allow_ai=False)
         return word
 
@@ -559,6 +584,7 @@ def get_or_create_word_lookup(raw_word):
     )
     db.session.add(word)
     db.session.commit()
+    invalidate_word_list_cache()
     setattr(word, "synonym_hint", _clean_relation_candidate(word.synonym, normalized_word, allow_phrase=True) or _clean_relation_candidate(content.get("synonym"), normalized_word, allow_phrase=True) or None)
     setattr(word, "antonym_hint", _clean_relation_candidate(FALLBACK_RELATIONS.get(normalized_word, {}).get("antonym"), normalized_word, allow_phrase=True) or None)
     setattr(word, "lookup_pending", False)

@@ -5,6 +5,7 @@ import random
 import re
 
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 
 from app.models import UserWord, Word
 from app.services.ai_generator import generate_quiz_question_support
@@ -96,13 +97,12 @@ def suggest_vocabulary_correction(value, candidates, cutoff=0.82):
 
 def get_study_streak(user_id):
     """Count consecutive days with study activity ending today."""
-    user_activity = UserWord.query.filter_by(user_id=user_id).all()
-    activity_dates = {
-        activity_date
-        for item in user_activity
-        for activity_date in (item.added_date, item.last_reviewed, item.learned_at)
-        if activity_date
-    }
+    activity_rows = (
+        UserWord.query.with_entities(UserWord.added_date, UserWord.last_reviewed, UserWord.learned_at)
+        .filter_by(user_id=user_id)
+        .all()
+    )
+    activity_dates = {activity_date for row in activity_rows for activity_date in row if activity_date}
     if not activity_dates:
         return 0
 
@@ -116,10 +116,14 @@ def get_study_streak(user_id):
 
 def get_weekly_activity(user_id):
     """Return lightweight activity counts for the last 7 days."""
-    user_activity = UserWord.query.filter_by(user_id=user_id).all()
     counts = Counter()
-    for item in user_activity:
-        for activity_date in (item.added_date, item.last_reviewed, item.learned_at):
+    activity_rows = (
+        UserWord.query.with_entities(UserWord.added_date, UserWord.last_reviewed, UserWord.learned_at)
+        .filter_by(user_id=user_id)
+        .all()
+    )
+    for row in activity_rows:
+        for activity_date in row:
             if activity_date:
                 counts[activity_date] += 1
 
@@ -223,7 +227,8 @@ def build_quiz_questions(
 ):
     """Create quiz questions from the user's saved words."""
     user_words_query = (
-        UserWord.query.filter_by(user_id=user_id)
+        UserWord.query.options(selectinload(UserWord.word_entry))
+        .filter_by(user_id=user_id)
         .join(Word)
         .order_by(UserWord.added_date.desc(), Word.word.asc())
     )

@@ -355,7 +355,9 @@ tailwind.config = {
                         <!-- Custom Instruction -->
                         <div class="space-y-2">
                             <label for="custom_quiz_instruction" class="text-[10px] font-bold text-outline tracking-[0.1em] uppercase ml-1 block">Custom quiz instruction (Optional)</label>
-                            <textarea id="custom_quiz_instruction" name="custom_quiz_instruction" class="w-full min-h-[3.5rem] bg-[#0d0f0f] border border-white/10 text-on-surface rounded-lg px-4 py-3 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 transition-all outline-none placeholder:text-outline/30 resize-y text-sm font-medium" placeholder="e.g. IELTS writing vocabulary quiz..." rows="2"></textarea>
+                            <div class="ai-input-enhanced-shell">
+                                <textarea id="custom_quiz_instruction" name="custom_quiz_instruction" class="ai-input-enhanced ai-input-enhanced-textarea w-full min-h-[3.5rem] text-on-surface resize-y text-sm font-medium" placeholder="Describe how you want this quiz tailored..." rows="2"></textarea>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-stitch-glow w-full py-4 rounded-lg font-headline font-extrabold text-sm uppercase tracking-[0.2em] mt-6 flex items-center justify-center gap-2 cursor-pointer">

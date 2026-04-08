@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import jsonify, redirect, render_template, request, url_for, flash
 from flask_login import current_user, login_required
+from sqlalchemy.orm import selectinload
 
 from app.models import UserWord, Word, db
 from app.services.learning_content import enrich_user_word_entries, touch_user_word_interaction
@@ -13,7 +14,8 @@ def register(app):
     @login_required
     def flashcards():
         user_words = (
-            UserWord.query.filter_by(user_id=current_user.id)
+            UserWord.query.options(selectinload(UserWord.word_entry))
+            .filter_by(user_id=current_user.id)
             .join(Word)
             .filter(UserWord.learned.is_(False))
             .order_by(UserWord.added_date.desc(), Word.word.asc())
@@ -33,7 +35,8 @@ def register(app):
             user_id=current_user.id,
         ).first_or_404()
         user_words = (
-            UserWord.query.filter_by(
+            UserWord.query.options(selectinload(UserWord.word_entry))
+            .filter_by(
                 user_id=current_user.id,
                 session_id=study_session.id,
             )

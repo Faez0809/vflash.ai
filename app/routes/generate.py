@@ -8,6 +8,7 @@ from app.services.learning_content import (
     FALLBACK_CONTINUE_MESSAGE,
     ensure_starter_pack_for_user,
     find_cached_study_session,
+    invalidate_word_list_cache,
     upsert_word_from_payload,
 )
 from app.services.ai_generator import generate_vocabulary_words
@@ -105,17 +106,7 @@ def register(app):
 
             for item in ai_words:
                 normalized_word = clean_text(item.get("word")).lower()
-                already_exists_for_user = (
-                    db.session.query(UserWord.id)
-                    .join(Word, UserWord.word_id == Word.id)
-                    .filter(
-                        UserWord.user_id == current_user.id,
-                        Word.word == normalized_word,
-                    )
-                    .first()
-                    is not None
-                )
-                if not normalized_word or normalized_word in seen_words or already_exists_for_user:
+                if not normalized_word or normalized_word in seen_words:
                     continue
 
                 item["word"] = normalized_word
@@ -150,6 +141,10 @@ def register(app):
         db.session.add(study_session)
         db.session.flush()
         added_count = 0
+        existing_word_links = {
+            row[0]
+            for row in db.session.query(UserWord.word_id).filter(UserWord.user_id == current_user.id).all()
+        }
 
         for item in generated_words:
             normalized_word = clean_text(item.get("word")).lower()
@@ -167,11 +162,7 @@ def register(app):
             if word is None:
                 continue
 
-            existing_user_word = UserWord.query.filter_by(
-                user_id=current_user.id,
-                word_id=word.id,
-            ).first()
-            if existing_user_word:
+            if word.id in existing_word_links:
                 continue
 
             db.session.add(
@@ -183,9 +174,12 @@ def register(app):
                     learned=False,
                 )
             )
+            existing_word_links.add(word.id)
             added_count += 1
 
         db.session.commit()
+        if added_count:
+            invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
         if save_as_default:
             flash("Your default study focus has been updated.", "info")
         if added_count == word_count:
