@@ -166,7 +166,9 @@
                                 </select>
                             </div>
                             <div class="dashboard-stitch-field field-expand">
-                                <input type="text" id="custom_prompt" name="custom_prompt" list="topic-suggestions" placeholder="Enter a topic, goal, or short phrase" value="{{ initial_generate_topic }}" aria-label="Custom topic" maxlength="60" autocomplete="off">
+                                <div class="ai-input-enhanced-shell">
+                                    <input type="text" id="custom_prompt" name="custom_prompt" list="topic-suggestions" class="ai-input-enhanced" placeholder="Describe what kind of flashcards you want to generate..." value="{{ initial_generate_topic }}" aria-label="Custom topic" maxlength="60" autocomplete="off">
+                                </div>
                                 <datalist id="topic-suggestions">
                                     {% for suggestion in topic_suggestions %}
                                         <option value="{{ suggestion }}">

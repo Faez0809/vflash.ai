@@ -4,6 +4,35 @@ import secrets
 
 import runtime_compat
 from dotenv import load_dotenv
+try:
+    from flask_caching import Cache
+except ImportError:  # pragma: no cover - fallback keeps app bootable before dependency install
+    class Cache:  # type: ignore[override]
+        def __init__(self):
+            self._store = {}
+
+        def init_app(self, app):
+            return None
+
+        def memoize(self, timeout=None):
+            def decorator(func):
+                return func
+            return decorator
+
+        def delete_memoized(self, *args, **kwargs):
+            return None
+
+        def get(self, key):
+            return self._store.get(key)
+
+        def set(self, key, value, timeout=None):
+            self._store[key] = value
+            return True
+
+        def delete(self, key):
+            self._store.pop(key, None)
+            return True
+
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
@@ -23,6 +52,16 @@ login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 migrate = Migrate()
+cache = Cache()
+SEARCH_CACHE_TTL_SECONDS = 60  # Dynamic/global cache stays short-lived.
+
+
+def _bounded_int(env_name, default, minimum, maximum):
+    try:
+        value = int(os.environ.get(env_name, default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
 
 
 @login_manager.user_loader
@@ -34,6 +73,14 @@ def ensure_column(table_name, column_name, ddl):
     inspector = inspect(db.engine)
     columns = {column["name"] for column in inspector.get_columns(table_name)}
     if column_name not in columns:
+        db.session.execute(text(ddl))
+        db.session.commit()
+
+
+def ensure_index(index_name, ddl):
+    inspector = inspect(db.engine)
+    existing_indexes = {index["name"] for table_name in inspector.get_table_names() for index in inspector.get_indexes(table_name)}
+    if index_name not in existing_indexes:
         db.session.execute(text(ddl))
         db.session.commit()
 
@@ -66,6 +113,23 @@ def run_migrations():
     ensure_column("quiz_history", "answered_questions", "ALTER TABLE quiz_history ADD COLUMN answered_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "configured_total_questions", "ALTER TABLE quiz_history ADD COLUMN configured_total_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "was_quit", "ALTER TABLE quiz_history ADD COLUMN was_quit BOOLEAN DEFAULT 0")
+    ensure_index("ix_word_difficulty", "CREATE INDEX IF NOT EXISTS ix_word_difficulty ON word (difficulty)")
+    ensure_index("ix_word_topic", "CREATE INDEX IF NOT EXISTS ix_word_topic ON word (topic)")
+    ensure_index("ix_study_session_user_created", "CREATE INDEX IF NOT EXISTS ix_study_session_user_created ON study_session (user_id, created_at)")
+    ensure_index("ix_quiz_history_user_created", "CREATE INDEX IF NOT EXISTS ix_quiz_history_user_created ON quiz_history (user_id, created_at)")
+    ensure_index("ix_user_app_session_user_visit_date", "CREATE INDEX IF NOT EXISTS ix_user_app_session_user_visit_date ON user_app_session (user_id, visit_date)")
+    ensure_index("ix_user_app_session_user_last_active", "CREATE INDEX IF NOT EXISTS ix_user_app_session_user_last_active ON user_app_session (user_id, last_active_at)")
+    ensure_index("ix_user_word_word_id", "CREATE INDEX IF NOT EXISTS ix_user_word_word_id ON user_word (word_id)")
+    ensure_index("ix_user_word_user_added_date", "CREATE INDEX IF NOT EXISTS ix_user_word_user_added_date ON user_word (user_id, added_date)")
+    ensure_index("ix_user_word_user_session_learned", "CREATE INDEX IF NOT EXISTS ix_user_word_user_session_learned ON user_word (user_id, session_id, learned)")
+    ensure_index("ix_user_word_user_learning_state", "CREATE INDEX IF NOT EXISTS ix_user_word_user_learning_state ON user_word (user_id, learned, already_known)")
+    ensure_index("ix_user_word_user_difficult", "CREATE INDEX IF NOT EXISTS ix_user_word_user_difficult ON user_word (user_id, is_difficult)")
+    ensure_index("ix_user_word_user_favorite", "CREATE INDEX IF NOT EXISTS ix_user_word_user_favorite ON user_word (user_id, is_favorite)")
+    ensure_index("ix_user_word_user_learned_at", "CREATE INDEX IF NOT EXISTS ix_user_word_user_learned_at ON user_word (user_id, learned_at)")
+    ensure_index("ix_user_word_user_last_reviewed", "CREATE INDEX IF NOT EXISTS ix_user_word_user_last_reviewed ON user_word (user_id, last_reviewed)")
+    ensure_index("ix_user_word_user_rev1", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev1 ON user_word (user_id, rev1)")
+    ensure_index("ix_user_word_user_rev2", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev2 ON user_word (user_id, rev2)")
+    ensure_index("ix_user_word_user_rev3", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev3 ON user_word (user_id, rev3)")
 
 
 def create_app():
@@ -83,6 +147,21 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{LOCAL_DB_PATH}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": _bounded_int("SQLALCHEMY_POOL_RECYCLE", 1800, 300, 3600),
+        "pool_timeout": _bounded_int("SQLALCHEMY_POOL_TIMEOUT", 30, 5, 30),
+    }
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql"):
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"].update(
+            {
+                "pool_size": _bounded_int("SQLALCHEMY_POOL_SIZE", 3, 1, 5),
+                "max_overflow": _bounded_int("SQLALCHEMY_MAX_OVERFLOW", 2, 0, 5),
+            }
+        )
+    app.config["CACHE_TYPE"] = os.environ.get("CACHE_TYPE", "SimpleCache")
+    app.config["CACHE_DEFAULT_TIMEOUT"] = _bounded_int("CACHE_DEFAULT_TIMEOUT", SEARCH_CACHE_TTL_SECONDS, 30, 120)
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = int(os.environ.get("SEND_FILE_MAX_AGE_DEFAULT", "3600"))
     app.config["ADMIN_EMAIL"] = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD") or ""
     app.config["ADMIN_PASSWORD_HASH"] = os.environ.get("ADMIN_PASSWORD_HASH") or ""
@@ -96,6 +175,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    cache.init_app(app)
 
     from app.routes import admin, auth, dashboard, flashcards, generate, quiz, review, words
 
@@ -134,9 +214,18 @@ def create_app():
             "base-uri 'self'; "
             "form-action 'self'"
         )
+        if request.endpoint == "static" and response.status_code == 200:
+            response.headers["Cache-Control"] = f"public, max-age={app.get_send_file_max_age(None) or 3600}"
+        elif response.mimetype == "text/html" and response.status_code == 200:
+            response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
         if request.endpoint and request.endpoint.startswith("admin"):
             response.headers["Cache-Control"] = "no-store"
         return response
+
+    @app.get("/health")
+    def health():
+        db.session.execute(text("SELECT 1"))
+        return {"status": "ok"}, 200
 
     @app.errorhandler(404)
     def handle_not_found(error):

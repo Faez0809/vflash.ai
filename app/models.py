@@ -4,6 +4,7 @@ import runtime_compat
 from flask import current_app
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Index
 
 
 db = SQLAlchemy()
@@ -57,8 +58,8 @@ class Word(db.Model):
     phonetic = db.Column(db.Text, nullable=True)
     synonym = db.Column(db.Text, nullable=True)
     memory_trick = db.Column(db.Text, nullable=True)
-    difficulty = db.Column(db.String(20), nullable=True)
-    topic = db.Column(db.String(120), nullable=True)
+    difficulty = db.Column(db.String(20), nullable=True, index=True)
+    topic = db.Column(db.String(120), nullable=True, index=True)
     sentence = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.Date, nullable=True)
     user_words = db.relationship(
@@ -93,11 +94,21 @@ class MasterWord(db.Model):
 class UserWord(db.Model):
     __table_args__ = (
         db.UniqueConstraint("user_id", "word_id", name="unique_user_word"),
+        Index("ix_user_word_user_added_date", "user_id", "added_date"),
+        Index("ix_user_word_user_session_learned", "user_id", "session_id", "learned"),
+        Index("ix_user_word_user_learning_state", "user_id", "learned", "already_known"),
+        Index("ix_user_word_user_difficult", "user_id", "is_difficult"),
+        Index("ix_user_word_user_favorite", "user_id", "is_favorite"),
+        Index("ix_user_word_user_learned_at", "user_id", "learned_at"),
+        Index("ix_user_word_user_last_reviewed", "user_id", "last_reviewed"),
+        Index("ix_user_word_user_rev1", "user_id", "rev1"),
+        Index("ix_user_word_user_rev2", "user_id", "rev2"),
+        Index("ix_user_word_user_rev3", "user_id", "rev3"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    word_id = db.Column(db.Integer, db.ForeignKey("word.id"), nullable=False)
+    word_id = db.Column(db.Integer, db.ForeignKey("word.id"), nullable=False, index=True)
     session_id = db.Column(db.Integer, db.ForeignKey("study_session.id"), nullable=True)
     added_date = db.Column(db.Date, nullable=False)
     learned = db.Column(db.Boolean, default=False, nullable=False)
@@ -133,6 +144,8 @@ class QuizHistory(db.Model):
 class UserAppSession(db.Model):
     __table_args__ = (
         db.UniqueConstraint("user_id", "session_key", name="unique_user_app_session"),
+        Index("ix_user_app_session_user_visit_date", "user_id", "visit_date"),
+        Index("ix_user_app_session_user_last_active", "user_id", "last_active_at"),
     )
 
     id = db.Column(db.Integer, primary_key=True)

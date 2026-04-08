@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <link rel="preload" href="{{ url_for('static', filename='style.css') }}" as="style">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preload" href="{{ url_for('static', filename='app.js') }}" as="script">
 </head>
 <body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'search_word' %}search-page tw-dark-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
     {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual', 'search_word'] %}
@@ -153,7 +155,7 @@
     </div>
 
 
-    <script src="{{ url_for('static', filename='app.js') }}?v={{ range(1, 1000000) | random }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
     <style>
         body {
             padding-bottom: max(0px, env(safe-area-inset-bottom));

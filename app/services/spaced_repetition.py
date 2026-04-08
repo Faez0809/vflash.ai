@@ -1,5 +1,8 @@
 from datetime import date, timedelta
 
+from sqlalchemy import func
+from sqlalchemy.orm import selectinload
+
 from app.models import UserWord, Word
 
 
@@ -30,7 +33,8 @@ def get_due_review_words(user_id):
     """Return learned words whose next review date is due today or overdue."""
     today = date.today()
     return (
-        UserWord.query.filter_by(user_id=user_id, learned=True, already_known=False)
+        UserWord.query.options(selectinload(UserWord.word_entry))
+        .filter_by(user_id=user_id, learned=True, already_known=False)
         .join(Word)
         .filter(
             (UserWord.rev1.isnot(None) & (UserWord.rev1 <= today))
@@ -39,4 +43,20 @@ def get_due_review_words(user_id):
         )
         .order_by(UserWord.last_reviewed.asc().nullsfirst(), Word.word.asc())
         .all()
+    )
+
+
+def get_due_review_word_count(user_id):
+    """Count due reviews without loading every row into memory."""
+    today = date.today()
+    return (
+        UserWord.query.with_entities(func.count(UserWord.id))
+        .filter_by(user_id=user_id, learned=True, already_known=False)
+        .filter(
+            (UserWord.rev1.isnot(None) & (UserWord.rev1 <= today))
+            | (UserWord.rev2.isnot(None) & (UserWord.rev2 <= today))
+            | (UserWord.rev3.isnot(None) & (UserWord.rev3 <= today))
+        )
+        .scalar()
+        or 0
     )

@@ -1,6 +1,7 @@
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 
 from app.models import UserWord, Word, db
 from app.services.learning_content import enrich_user_word_entries, get_or_create_word_lookup, touch_user_word_interaction
@@ -18,7 +19,7 @@ def register(app):
         difficult_only = request.args.get("difficult") == "1"
         favorite_only = request.args.get("favorite") == "1"
 
-        user_words_query = UserWord.query.filter_by(user_id=current_user.id).join(Word)
+        user_words_query = UserWord.query.options(selectinload(UserWord.word_entry)).filter_by(user_id=current_user.id).join(Word)
 
         if search_query:
             search_term = f"%{search_query}%"
@@ -112,7 +113,8 @@ def register(app):
     @login_required
     def difficult_words():
         difficult_items = (
-            UserWord.query.filter_by(user_id=current_user.id, is_difficult=True)
+            UserWord.query.options(selectinload(UserWord.word_entry))
+            .filter_by(user_id=current_user.id, is_difficult=True)
             .join(Word)
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()
