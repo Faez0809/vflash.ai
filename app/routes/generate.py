@@ -1,11 +1,17 @@
 from datetime import date
 
-from flask import flash, redirect, request, url_for
+from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, login_required
 
 from app.models import StudySession, UserWord, Word, db
+from app.services.learning_content import (
+    FALLBACK_CONTINUE_MESSAGE,
+    ensure_starter_pack_for_user,
+    find_cached_study_session,
+    upsert_word_from_payload,
+)
 from app.services.ai_generator import generate_vocabulary_words
-from app.services.stats import clean_text, pluralize
+from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, validate_vocabulary_query
 
 
 def register(app):
@@ -30,12 +36,36 @@ def register(app):
         if word_count not in {5, 10, 15}:
             word_count = 5
 
-        custom_prompt = request.form.get("custom_prompt", "").strip()
+        custom_prompt = clean_text(request.form.get("custom_prompt"))
+        if custom_prompt:
+            prompt_state = validate_vocabulary_query(custom_prompt)
+            if not prompt_state["valid"]:
+                flash(prompt_state["message"] or VOCAB_QUERY_MESSAGE, "error")
+                return redirect(f"{url_for('dashboard')}#generate-section")
+            custom_prompt = prompt_state["normalized"]
+
         save_as_default = request.form.get("save_as_default") == "on"
-        effective_prompt = custom_prompt or clean_text(current_user.default_study_focus)
+        default_study_focus = clean_text(current_user.default_study_focus)
+        last_search_topic = clean_text(session.get("last_search_topic"))
+        effective_prompt = custom_prompt or default_study_focus or last_search_topic or ""
 
         if save_as_default:
             current_user.default_study_focus = custom_prompt or None
+
+        if not default_study_focus and last_search_topic and not custom_prompt:
+            flash("Tip: Set a default topic for consistent results.", "info")
+
+        cached_session = find_cached_study_session(
+            current_user.id,
+            difficulty,
+            word_count,
+            effective_prompt,
+        )
+        if cached_session:
+            if save_as_default:
+                db.session.commit()
+            flash("Loaded a matching study set from your saved collection.", "info")
+            return redirect(url_for("flashcards_session", session_id=cached_session.id))
 
         learned_user_words = {
             row[0]
@@ -96,10 +126,19 @@ def register(app):
                     break
 
         if not generated_words:
+            starter_pack = ensure_starter_pack_for_user(current_user.id, effective_prompt)
             if save_as_default:
                 db.session.commit()
-            flash("Could not generate new words right now. Please try again.", "error")
-            return redirect(url_for("dashboard"))
+
+            if starter_pack["created"] and starter_pack["session_id"]:
+                flash(
+                    "Fresh AI content is still being prepared. We've opened a starter vocabulary set so you can begin immediately.",
+                    "info",
+                )
+                return redirect(url_for("flashcards_session", session_id=starter_pack["session_id"]))
+
+            flash(FALLBACK_CONTINUE_MESSAGE, "info")
+            return redirect(url_for("flashcards"))
 
         study_session = StudySession(
             user_id=current_user.id,
@@ -117,54 +156,16 @@ def register(app):
             if not normalized_word:
                 continue
 
-            word = Word.query.filter_by(word=normalized_word).first()
-            part_of_speech = clean_text(item.get("part_of_speech"))
-            meaning = clean_text(item.get("meaning"))
-            bangla_meaning = clean_text(item.get("bangla_meaning"))
-            phonetic = clean_text(item.get("phonetic"))
-            synonym = clean_text(item.get("synonym"))
-            memory_trick = clean_text(item.get("memory_trick"))
-            item_difficulty = clean_text(item.get("difficulty")) or difficulty
             topic = clean_text(item.get("topic")) or (effective_prompt[:120] if effective_prompt else "General")
-            sentence = clean_text(item.get("sentence"))
-
+            item["topic"] = topic
+            item["difficulty"] = clean_text(item.get("difficulty")) or difficulty
+            word = upsert_word_from_payload(
+                item,
+                fallback_topic=topic or "General",
+                fallback_difficulty=difficulty,
+            )
             if word is None:
-                word = Word(
-                    word=normalized_word,
-                    part_of_speech=part_of_speech or None,
-                    meaning=meaning,
-                    bangla_meaning=bangla_meaning or None,
-                    phonetic=phonetic or None,
-                    synonym=synonym or None,
-                    memory_trick=memory_trick or None,
-                    difficulty=item_difficulty,
-                    topic=topic or None,
-                    sentence=sentence,
-                    created_at=date.today(),
-                )
-                db.session.add(word)
-                db.session.flush()
-            else:
-                if not word.part_of_speech and part_of_speech:
-                    word.part_of_speech = part_of_speech
-                if not word.meaning and meaning:
-                    word.meaning = meaning
-                if not word.bangla_meaning and bangla_meaning:
-                    word.bangla_meaning = bangla_meaning
-                if not word.phonetic and phonetic:
-                    word.phonetic = phonetic
-                if not word.synonym and synonym:
-                    word.synonym = synonym
-                if not word.memory_trick and memory_trick:
-                    word.memory_trick = memory_trick
-                if not word.difficulty:
-                    word.difficulty = difficulty
-                if not word.topic and topic:
-                    word.topic = topic
-                if not word.sentence and sentence:
-                    word.sentence = sentence
-                if not word.created_at:
-                    word.created_at = date.today()
+                continue
 
             existing_user_word = UserWord.query.filter_by(
                 user_id=current_user.id,

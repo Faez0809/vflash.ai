@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Profile | VocabAI{% endblock %}
+{% block title %}Profile | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -56,9 +56,9 @@
 
 <div class="tw-scope font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2]">
     <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
-        <div class="flex justify-between items-center h-16 px-6 max-w-screen-2xl mx-auto font-headline tracking-tight">
-            <div class="flex items-center gap-8">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">VocabAI</a>
+        <div class="app-topbar-row flex justify-between items-center h-16 px-4 sm:px-6 max-w-screen-2xl mx-auto font-headline tracking-tight gap-3 sm:gap-6">
+            <div class="app-topbar-brand-group flex items-center gap-4 sm:gap-8 min-w-0">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">vflash.ai</a>
                 <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('words') }}">My Words</a>
@@ -68,18 +68,37 @@
                     <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline" href="{{ url_for('profile') }}">Profile</a>
                 </nav>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="app-topbar-actions flex items-center gap-4">
+                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                </button>
                 <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
                         <span class="material-symbols-outlined text-[1.1rem]">person</span>
                     </div>
                 </a>
+                <div class="nav-menu" data-nav-menu>
+                    <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                        <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                    </button>
+                    <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                        <span class="nav-menu-email">{{ current_user.display_name }}</span>
+                        <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+                        <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
+                        <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
+                        <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
+                        <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
+                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
+                        <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="pt-24 pb-12 px-6 max-w-screen-2xl mx-auto">
+    <main class="pt-24 pb-12 px-4 sm:px-6 max-w-screen-2xl mx-auto">
         <section class="mb-8">
             <div class="rounded-3xl border border-white/[0.05] bg-[radial-gradient(circle_at_top,rgba(157,208,205,0.12),transparent_40%),linear-gradient(180deg,rgba(30,32,32,0.98),rgba(18,20,20,0.98))] p-6 md:p-8 shadow-[0_48px_48px_-12px_rgba(45,95,93,0.16)]">
                 <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-3">Profile</p>
@@ -251,6 +270,23 @@
                     </div>
                     <p class="text-xs text-on-surface-variant mt-4 mb-0">Only active use is counted. Background tabs do not add time.</p>
                 </section>
+
+                <section class="profile-weekly-activity-mobile rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Activity</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Weekly Activity</h2>
+                    </div>
+                    <div class="dashboard-stitch-bars mini-chart-bars">
+                        {% for item in weekly_activity %}
+                            <div class="dashboard-stitch-bar-col">
+                                <div class="dashboard-stitch-bar-track">
+                                    <div class="dashboard-stitch-bar" style="height: {{ item.height * 0.6 }}px;"></div>
+                                </div>
+                                <span class="dashboard-chart-label">{{ item.label[:1] }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
             </div>
 
             <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
@@ -266,7 +302,7 @@
 
                     <div class="space-y-2">
                         <label for="default_study_focus" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Default Study Focus</label>
-                        <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">{{ current_user.default_study_focus or 'IELTS preparation words' }}</textarea>
+                        <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border" placeholder="Set a default topic such as Business English or IELTS">{{ current_user.default_study_focus or '' }}</textarea>
                     </div>
 
                     <div class="space-y-2">

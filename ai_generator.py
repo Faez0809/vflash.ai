@@ -346,6 +346,108 @@ FALLBACK_VOCABULARY = {
     ],
 }
 
+FALLBACK_RELATIONS = {
+    "achieve": {"synonym": "accomplish", "antonym": "fail"},
+    "analyze": {"synonym": "examine", "antonym": "ignore"},
+    "approach": {"synonym": "method", "antonym": "avoidance"},
+    "benefit": {"synonym": "advantage", "antonym": "drawback"},
+    "challenge": {"synonym": "difficulty", "antonym": "ease"},
+    "compelling": {"synonym": "convincing", "antonym": "weak"},
+    "concern": {"synonym": "worry", "antonym": "confidence"},
+    "confident": {"synonym": "self-assured", "antonym": "uncertain"},
+    "convenient": {"synonym": "handy", "antonym": "inconvenient"},
+    "controversial": {"synonym": "disputed", "antonym": "accepted"},
+    "develop": {"synonym": "improve", "antonym": "decline"},
+    "effective": {"synonym": "successful", "antonym": "ineffective"},
+    "efficient": {"synonym": "productive", "antonym": "wasteful"},
+    "factor": {"synonym": "element", "antonym": "result"},
+    "impact": {"synonym": "effect", "antonym": "insignificance"},
+    "improve": {"synonym": "enhance", "antonym": "worsen"},
+    "influence": {"synonym": "affect", "antonym": "deter"},
+    "inevitable": {"synonym": "unavoidable", "antonym": "avoidable"},
+    "maintain": {"synonym": "preserve", "antonym": "neglect"},
+    "opportunity": {"synonym": "chance", "antonym": "limitation"},
+    "perspective": {"synonym": "viewpoint", "antonym": "blindness"},
+    "practical": {"synonym": "useful", "antonym": "impractical"},
+    "prefer": {"synonym": "favor", "antonym": "reject"},
+    "profound": {"synonym": "deep", "antonym": "superficial"},
+    "significant": {"synonym": "important", "antonym": "minor"},
+    "solution": {"synonym": "answer", "antonym": "problem"},
+    "substantial": {"synonym": "considerable", "antonym": "minor"},
+    "suitable": {"synonym": "appropriate", "antonym": "unsuitable"},
+    "sustainable": {"synonym": "lasting", "antonym": "wasteful"},
+    "unity": {"synonym": "harmony", "antonym": "division"},
+}
+
+CURATED_WORD_CONTENT = {
+    "axis": {
+        "part_of_speech": "noun",
+        "meaning": "a real or imaginary straight line used as a point of reference or rotation",
+        "bangla_meaning": "অক্ষ",
+        "sentence": "The Earth rotates on its axis once every day.",
+        "phonetic": "AK-sis",
+        "synonym": "line",
+        "antonym": None,
+        "memory_trick": "Axis sounds like the central line an object asks to turn around.",
+        "topic": "general",
+    },
+    "complex": {
+        "part_of_speech": "adjective",
+        "meaning": "made of many connected parts and often difficult to understand",
+        "bangla_meaning": "জটিল",
+        "sentence": "The machine is complex, so new users need time to understand it.",
+        "phonetic": "KOM-pleks",
+        "synonym": "complicated",
+        "antonym": "simple",
+        "memory_trick": "Complex sounds like many pieces packed together in one place.",
+        "topic": "general",
+    },
+    "reject": {
+        "part_of_speech": "verb",
+        "meaning": "to refuse to accept, approve, or believe something",
+        "bangla_meaning": "প্রত্যাখ্যান করা",
+        "sentence": "The committee may reject the proposal if the evidence is weak.",
+        "phonetic": "ri-JEKT",
+        "synonym": "refuse",
+        "antonym": "accept",
+        "memory_trick": "Re-ject sounds like throwing something back instead of taking it.",
+        "topic": "general",
+    },
+    "rejected": {
+        "part_of_speech": "adjective",
+        "meaning": "not accepted, approved, or allowed",
+        "bangla_meaning": "প্রত্যাখ্যাত",
+        "sentence": "The rejected application was returned with feedback for improvement.",
+        "phonetic": "ri-JEK-tid",
+        "synonym": "refused",
+        "antonym": "accepted",
+        "memory_trick": "Rejected is what remains after something is turned away.",
+        "topic": "general",
+    },
+    "unique": {
+        "part_of_speech": "adjective",
+        "meaning": "being the only one of its kind",
+        "bangla_meaning": "অনন্য",
+        "sentence": "Each artist has a unique style of expression.",
+        "phonetic": "yoo-NEEK",
+        "synonym": "distinctive",
+        "antonym": "common",
+        "memory_trick": "Unique sounds like one special thing with no true copy.",
+        "topic": "general",
+    },
+    "unity": {
+        "part_of_speech": "noun",
+        "meaning": "the state of being joined together or acting as one",
+        "bangla_meaning": "ঐক্য",
+        "sentence": "The team worked in unity to finish the project on time.",
+        "phonetic": "YOO-ni-tee",
+        "synonym": "harmony",
+        "antonym": "division",
+        "memory_trick": "Unity sounds like many people moving into one shared direction.",
+        "topic": "general",
+    },
+}
+
 
 def _extract_json_text(content):
     content = content.strip()
@@ -357,15 +459,19 @@ def _extract_json_text(content):
 
 
 def _fallback_word_content(word):
+    relations = FALLBACK_RELATIONS.get(word, {})
+    curated = CURATED_WORD_CONTENT.get(word, {})
     return {
         "word": word,
-        "meaning": f"A simple meaning for {word}.",
-        "bangla_meaning": f"{word} এর সহজ বাংলা অর্থ",
-        "sentence": f"I used the word {word} in a simple sentence.",
-        "phonetic": word,
-        "synonym": None,
-        "memory_trick": f"Think of the sound of {word} and connect it with a daily example.",
-        "topic": "general",
+        "part_of_speech": curated.get("part_of_speech"),
+        "meaning": curated.get("meaning") or f"A simple meaning for {word}.",
+        "bangla_meaning": curated.get("bangla_meaning") or f"{word} এর সহজ বাংলা অর্থ",
+        "sentence": curated.get("sentence") or f"I used the word {word} in a simple sentence.",
+        "phonetic": curated.get("phonetic") or word,
+        "synonym": curated.get("synonym") or relations.get("synonym"),
+        "antonym": curated.get("antonym") or relations.get("antonym"),
+        "memory_trick": curated.get("memory_trick") or f"Think of the sound of {word} and connect it with a daily example.",
+        "topic": curated.get("topic") or "general",
     }
 
 
@@ -376,7 +482,8 @@ def _fallback_vocabulary_words(difficulty, word_count, avoid_words=None):
         if item["word"] in avoid_words:
             continue
         fallback_item = dict(item)
-        fallback_item["synonym"] = fallback_item.get("synonym")
+        relations = FALLBACK_RELATIONS.get(fallback_item["word"], {})
+        fallback_item["synonym"] = fallback_item.get("synonym") or relations.get("synonym")
         fallback_item["topic"] = fallback_item.get("topic") or "general"
         selected.append(fallback_item)
         if len(selected) >= word_count:
@@ -393,6 +500,13 @@ def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prom
     avoid_words = avoid_words or []
     avoid_words_list = ", ".join(avoid_words[:200]) if avoid_words else "None"
     user_custom_prompt = user_custom_prompt.strip() or "No extra instruction."
+    has_custom_instruction = user_custom_prompt != "No extra instruction."
+    topic_focus_section = (
+        f"Topic Focus:\nFollow this instruction strictly: {user_custom_prompt}\n"
+        "Do not mix in unrelated preset themes, general categories, or previous defaults."
+        if has_custom_instruction
+        else "Topic Focus:\neducation, technology, environment, society, culture, communication, work, business, health, daily life, travel, media, relationships, personal development, psychology, economy"
+    )
 
     prompt = f"""
 You are an English vocabulary expert, IELTS trainer, and language learning coach.
@@ -417,9 +531,9 @@ Very Important Requirements:
 - Avoid phrasal verbs.
 - Avoid extremely similar synonyms of the same word.
 - Words should be practical, meaningful, and frequently usable.
+- If the user gives a custom instruction, follow it strictly and do not mix in unrelated topics or categories.
 
-Topic Focus:
-education, technology, environment, society, culture, communication, work, business, health, daily life, travel, media, relationships, personal development, psychology, economy
+{topic_focus_section}
 
 Each word must include:
 1. word
@@ -469,6 +583,7 @@ Important:
 - Do NOT include any explanation outside JSON.
 - Return only JSON.
 - Ensure all fields are filled for every word.
+- Never ignore the custom instruction when one is provided.
 """
 
     response = requests.post(
@@ -535,7 +650,7 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
             meaning = str(item.get("english_meaning", item.get("meaning", ""))).strip()
             sentence = str(item.get("example_sentence", item.get("sentence", ""))).strip()
             phonetic = str(item.get("pronunciation", item.get("phonetic", ""))).strip() or word
-            synonym = str(item.get("synonym", "")).strip() or None
+            synonym = str(item.get("synonym", "")).strip() or FALLBACK_RELATIONS.get(word, {}).get("synonym") or None
             topic = str(item.get("topic", "")).strip() or None
 
             if not word or not meaning or not sentence or word in seen_words:
@@ -577,23 +692,34 @@ You are helping Bangla speaking students learn English vocabulary.
 Word: {word}
 
 Provide:
+- The most common modern part of speech for this word
 - Simple English meaning (very easy)
 - Bangla meaning (simple Bangla)
 - One simple English sentence (daily life example)
 - Phonetic pronunciation in English letters (like: e-BAN-don)
 - One simple synonym
+- One simple antonym when possible
 - A memory trick to remember the word easily
 
 Return ONLY JSON:
 {{
   \"word\": \"...\",
+  \"part_of_speech\": \"...\",
   \"meaning\": \"...\",
   \"bangla_meaning\": \"...\",
   \"sentence\": \"...\",
   \"phonetic\": \"...\",
   \"synonym\": \"...\",
+  \"antonym\": \"...\",
   \"memory_trick\": \"...\"
 }}
+
+Rules:
+- Give the most common modern dictionary meaning.
+- Keep the part of speech consistent with the meaning.
+- Never use placeholder text like "a simple meaning for {word}".
+- Never repeat the word itself as the definition.
+- Keep the content accurate, concise, and natural.
 """
 
     response = requests.post(
@@ -626,18 +752,21 @@ def generate_word_content(word):
     normalized_word = str(word).strip().lower()
     if not normalized_word:
         raise ValueError("word is required")
+    curated = CURATED_WORD_CONTENT.get(normalized_word, {})
 
     try:
         content = _request_word_content_from_groq(normalized_word)
         return {
             "word": str(content.get("word", normalized_word)).strip().lower() or normalized_word,
-            "meaning": str(content.get("meaning", "")).strip() or f"A simple meaning for {normalized_word}.",
-            "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or None,
-            "sentence": str(content.get("sentence", "")).strip() or f"I used the word {normalized_word} in a simple sentence.",
-            "phonetic": str(content.get("phonetic", "")).strip() or normalized_word,
-            "synonym": str(content.get("synonym", "")).strip() or None,
-            "memory_trick": str(content.get("memory_trick", "")).strip() or None,
-            "topic": str(content.get("topic", "")).strip() or "general",
+            "part_of_speech": str(content.get("part_of_speech", "")).strip() or curated.get("part_of_speech") or None,
+            "meaning": str(content.get("meaning", "")).strip() or curated.get("meaning") or f"A simple meaning for {normalized_word}.",
+            "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or curated.get("bangla_meaning") or None,
+            "sentence": str(content.get("sentence", "")).strip() or curated.get("sentence") or f"I used the word {normalized_word} in a simple sentence.",
+            "phonetic": str(content.get("phonetic", "")).strip() or curated.get("phonetic") or normalized_word,
+            "synonym": str(content.get("synonym", "")).strip() or curated.get("synonym") or FALLBACK_RELATIONS.get(normalized_word, {}).get("synonym") or None,
+            "antonym": str(content.get("antonym", "")).strip() or curated.get("antonym") or FALLBACK_RELATIONS.get(normalized_word, {}).get("antonym") or None,
+            "memory_trick": str(content.get("memory_trick", "")).strip() or curated.get("memory_trick") or None,
+            "topic": str(content.get("topic", "")).strip() or curated.get("topic") or "general",
         }
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         return _fallback_word_content(normalized_word)

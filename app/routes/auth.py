@@ -5,6 +5,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models import User, db
+from app.services.learning_content import ensure_starter_pack_for_user
 
 
 def register(app):
@@ -47,7 +48,7 @@ def register(app):
                     session.pop("is_admin", None)
                     session.pop("admin_email", None)
                     session.pop("admin_csrf_token", None)
-                flash("Welcome back.", "success")
+                flash("Signed in successfully.", "success")
                 next_page = request.args.get("next")
                 return redirect(next_page or url_for("dashboard"))
             elif user:
@@ -89,7 +90,7 @@ def register(app):
                     recovery_error = "No account was found for that email address."
                 elif user.nickname.strip().lower() != nickname_value.lower():
                     verification_failed = True
-                    recovery_error = f"Nickname did not match. Contact {support_email}."
+                    recovery_error = f"Nickname did not match. Contact support at {support_email}."
                 else:
                     session["password_reset_email"] = user.email.strip().lower()
                     verified_email = user.email.strip().lower()
@@ -156,7 +157,11 @@ def register(app):
                 )
                 db.session.add(user)
                 db.session.commit()
-                flash("Account created successfully. Please log in.", "success")
+                starter_pack = ensure_starter_pack_for_user(user.id)
+                if starter_pack["created"]:
+                    flash("Account created successfully. Starter vocabulary is ready for you.", "success")
+                else:
+                    flash("Account created successfully. Please log in.", "success")
                 return redirect(url_for("login"))
 
         return render_template("signup.html")

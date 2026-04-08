@@ -2,7 +2,7 @@
 
 WORDS_HTML = """{% extends "base.html" %}
 
-{% block title %}My Words | VocabAI{% endblock %}
+{% block title %}My Words | vflash.ai{% endblock %}
 
 {% block content %}
 <!-- TAILWIND INTEGRATION FOR THIS PAGE -->

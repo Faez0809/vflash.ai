@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title }} | vflash.ai{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="panel error-panel">
+        <p class="error-eyebrow">
+            Error {{ error_code }}
+        </p>
+        <h1 class="error-title">{{ error_title }}</h1>
+        <p class="error-copy">{{ error_message }}</p>
+        <div class="error-actions">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="error-action error-action-primary">Return to dashboard</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="error-action error-action-primary">Return to login</a>
+            {% endif %}
+            <a href="{{ url_for('user_manual') if current_user.is_authenticated else url_for('login') }}" class="error-action error-action-secondary">
+                {% if current_user.is_authenticated %}Open user manual{% else %}Open sign in{% endif %}
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

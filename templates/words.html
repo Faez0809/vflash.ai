@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}My Words | VocabAI{% endblock %}
+{% block title %}My Words | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -40,7 +40,150 @@
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    .tw-scope button {
+        background: none !important;
+        box-shadow: none !important;
+        color: inherit;
+    }
     .tw-scope input[type="search"] { padding-left: 2.5rem; }
+    .words-primary-button {
+        background: linear-gradient(135deg, #9dd0cd 0%, #78b8b4 100%) !important;
+        color: #003735 !important;
+        box-shadow: 0 18px 34px rgba(45, 95, 93, 0.18) !important;
+    }
+    .words-outline-button {
+        background: rgba(157, 208, 205, 0.08) !important;
+        color: #9dd0cd !important;
+        border: 1px solid rgba(157, 208, 205, 0.16) !important;
+    }
+    .words-icon-button {
+        width: 2.1rem;
+        height: 2.1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.8rem;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        color: #6f7e7d !important;
+        transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+    }
+    .words-icon-button:hover {
+        transform: translateY(-1px);
+    }
+    .words-icon-button.is-favorite-active {
+        border-color: rgba(222, 195, 143, 0.22) !important;
+        background: rgba(222, 195, 143, 0.1) !important;
+        color: #dec38f !important;
+    }
+    .words-icon-button.is-difficult-active {
+        border-color: rgba(255, 180, 171, 0.22) !important;
+        background: rgba(255, 180, 171, 0.1) !important;
+        color: #ffb4ab !important;
+    }
+    .words-note-button {
+        background: transparent !important;
+        color: #9dd0cd !important;
+    }
+    .word-lookup-shell {
+        margin-bottom: 2rem;
+    }
+    .word-lookup-card {
+        padding: 1.55rem;
+        border-radius: 1.8rem;
+        border: 1px solid rgba(64, 72, 72, 0.56);
+        background:
+            linear-gradient(180deg, rgba(30, 32, 32, 0.98), rgba(25, 27, 27, 0.98)),
+            radial-gradient(circle at top, rgba(157, 208, 205, 0.05), transparent 34%);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+    }
+    .word-lookup-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.25rem;
+        margin-bottom: 1.3rem;
+    }
+    .word-lookup-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+    .word-lookup-word {
+        margin: 0;
+        color: #f4f8f8;
+        font-family: "Manrope", "Inter", sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3rem);
+        font-weight: 800;
+        letter-spacing: -0.05em;
+    }
+    .word-lookup-meaning {
+        margin: 0.9rem 0 0;
+        color: #f1f6f6;
+        font-size: 1.12rem;
+        font-weight: 600;
+        line-height: 1.65;
+    }
+    .word-lookup-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+    .word-lookup-detail {
+        min-height: 7.6rem;
+        padding: 1rem 1.05rem;
+        border-radius: 1.15rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .word-lookup-detail.is-wide {
+        grid-column: 1 / -1;
+    }
+    .word-lookup-detail-label {
+        margin: 0;
+        color: #8ea5a4;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+    }
+    .word-lookup-detail-value {
+        margin: 0.8rem 0 0;
+        color: #eef4f4;
+        font-size: 1rem;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+    .word-lookup-detail-value.font-bengali {
+        font-size: 1.08rem;
+    }
+    .word-lookup-detail-synonym {
+        color: #9fe5be;
+    }
+    .word-lookup-detail-antonym {
+        color: #ffb4ab;
+    }
+    .word-lookup-detail-memory {
+        color: #f0dfba;
+    }
+    .word-lookup-pending {
+        margin: 0;
+        color: #c0c8c7;
+        font-size: 0.98rem;
+        line-height: 1.75;
+    }
+    @media (max-width: 800px) {
+        .word-lookup-head {
+            flex-direction: column;
+        }
+        .word-lookup-grid {
+            grid-template-columns: 1fr;
+        }
+        .word-lookup-detail.is-wide {
+            grid-column: auto;
+        }
+    }
     
     /* Hide base main shell padding */
     .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
@@ -80,9 +223,9 @@
 
     <!-- TopNavBar Exactly as tailored for Tailwind -->
     <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
-        <div class="flex justify-between items-center h-16 px-6 max-w-screen-2xl mx-auto font-headline tracking-tight">
-            <div class="flex items-center gap-8">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">VocabAI</a>
+        <div class="app-topbar-row flex justify-between items-center h-16 px-4 sm:px-6 max-w-screen-2xl mx-auto font-headline tracking-tight gap-3 sm:gap-6">
+            <div class="app-topbar-brand-group flex items-center gap-4 sm:gap-8 min-w-0">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">vflash.ai</a>
                 <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline" href="{{ url_for('words') }}">My Words</a>
@@ -91,25 +234,44 @@
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('quiz') }}">Quiz</a>
                 </nav>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
+            <div class="app-topbar-actions flex items-center gap-4">
+                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                </button>
+                <a href="{{ url_for('profile') }}" class="hidden md:flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
                         <span class="material-symbols-outlined text-[1.1rem]">person</span>
                     </div>
                 </a>
+                <div class="nav-menu" data-nav-menu>
+                    <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                        <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                    </button>
+                    <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                        <span class="nav-menu-email">{{ current_user.display_name }}</span>
+                        <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+                        <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
+                        <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
+                        <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
+                        <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
+                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
+                        <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="pt-24 pb-12 px-6 max-w-screen-2xl mx-auto">
+    <main class="pt-24 pb-12 px-4 sm:px-6 max-w-screen-2xl mx-auto">
         <!-- Filter Section -->
         <section class="mb-8 space-y-4">
-            <form method="get" class="flex flex-col gap-4">
-                <div class="flex grid grid-cols-1 md:grid-cols-[1fr_200px_200px_200px] gap-4">
+            <form method="get" class="flex flex-col gap-4" data-async-page="true" data-auto-submit-controls="true" data-loading-messages='["Searching...","Checking saved collection...","Generating word details..."]'>
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_200px_200px_200px] gap-4">
                     <div class="relative group h-11">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm" data-icon="search">search</span>
-                        <input name="q" value="{{ search_query }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg pl-10 text-sm h-full text-on-surface placeholder:text-on-surface-variant/40 outline-none m-0 box-border" placeholder="Search my words..." type="search"/>
+                        <input name="q" value="{{ search_query }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg pl-10 text-sm h-full text-on-surface placeholder:text-on-surface-variant/40 outline-none m-0 box-border" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" type="search"/>
                     </div>
                     <select name="difficulty" class="bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg text-sm h-11 text-on-surface-variant px-4 outline-none m-0 box-border">
                         <option value="All" {{ 'selected' if difficulty_filter == 'All' else '' }}>Difficulty: All</option>
@@ -130,8 +292,8 @@
                     </select>
                 </div>
                 
-                <div class="flex flex-col md:flex-row items-center justify-end gap-6">
-                    <div class="flex items-center gap-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-end gap-4 md:gap-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                         <label class="flex items-center gap-2 cursor-pointer group m-0">
                             <input name="difficult" type="checkbox" value="1" {{ 'checked' if difficult_only else '' }} class="w-4 h-4 rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary" style="accent-color: #9dd0cd;"/>
                             <span class="text-[0.65rem] uppercase font-bold tracking-widest text-[#8a9291] group-hover:text-primary transition-colors mt-[2px]">Difficult only</span>
@@ -141,13 +303,75 @@
                             <span class="text-[0.65rem] uppercase font-bold tracking-widest text-[#8a9291] group-hover:text-primary transition-colors mt-[2px]">Favorites only</span>
                         </label>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <a href="{{ url_for('words') }}" class="text-[0.65rem] uppercase font-bold tracking-widest text-[#8a9291] hover:text-white transition-colors cursor-pointer no-underline pt-1">Clear</a>
-                        <button type="submit" class="bg-primary text-[#003735] px-6 py-2 rounded font-bold text-[0.65rem] uppercase tracking-widest hover:brightness-110 active:scale-95 duration-200 border-none m-0" style="height: 2.25rem;">Apply Filters</button>
-                    </div>
                 </div>
             </form>
         </section>
+
+        {% if lookup_word %}
+            <section class="word-lookup-shell">
+                <article class="word-lookup-card">
+                    <div class="word-lookup-head">
+                        <div>
+                            <div class="word-lookup-title-row">
+                                <h2 class="word-lookup-word">{{ lookup_word.word }}</h2>
+                                {% if lookup_word.part_of_speech %}
+                                    <span class="flashcard-pos">{{ lookup_word.part_of_speech }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="word-lookup-meaning">
+                                {% if lookup_word.lookup_pending %}
+                                    We are preparing this word now so your flashcard stays accurate and useful.
+                                {% else %}
+                                    {{ lookup_word.meaning }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if lookup_word.lookup_pending %}
+                        <p class="word-lookup-pending">Search another word now, and check this one again shortly. We are actively preparing vocabulary across beginner, advanced, and rare levels.</p>
+                    {% else %}
+                        <div class="word-lookup-grid">
+                            <div class="word-lookup-detail">
+                                <p class="word-lookup-detail-label">Bangla meaning</p>
+                                <p class="word-lookup-detail-value font-bengali">{{ lookup_word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
+                            </div>
+                            <div class="word-lookup-detail">
+                                <p class="word-lookup-detail-label">Pronunciation</p>
+                                <p class="word-lookup-detail-value">{{ lookup_word.phonetic or 'Not added yet.' }}</p>
+                            </div>
+                            <div class="word-lookup-detail">
+                                <p class="word-lookup-detail-label">Synonym</p>
+                                <p class="word-lookup-detail-value word-lookup-detail-synonym">{{ lookup_word.synonym_hint or lookup_word.synonym or 'Not added yet.' }}</p>
+                            </div>
+                            {% if lookup_word.antonym_hint %}
+                                <div class="word-lookup-detail">
+                                    <p class="word-lookup-detail-label">Antonym</p>
+                                    <p class="word-lookup-detail-value word-lookup-detail-antonym">{{ lookup_word.antonym_hint }}</p>
+                                </div>
+                            {% endif %}
+                            <div class="word-lookup-detail">
+                                <p class="word-lookup-detail-label">Topic</p>
+                                <p class="word-lookup-detail-value">{{ lookup_word.topic or 'General' }}</p>
+                            </div>
+                            <div class="word-lookup-detail is-wide">
+                                <p class="word-lookup-detail-label">Sentence</p>
+                                <p class="word-lookup-detail-value">{{ lookup_word.sentence or 'No example sentence yet.' }}</p>
+                            </div>
+                            <div class="word-lookup-detail is-wide">
+                                <p class="word-lookup-detail-label">Memory trick</p>
+                                <p class="word-lookup-detail-value word-lookup-detail-memory">{{ lookup_word.memory_trick or 'Not added yet.' }}</p>
+                            </div>
+                            {% if lookup_note %}
+                                <div class="word-lookup-detail is-wide">
+                                    <p class="word-lookup-detail-label">Your note</p>
+                                    <p class="word-lookup-detail-value">{{ lookup_note }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </article>
+            </section>
+        {% endif %}
 
         <!-- Word List: High-Density Interactive List -->
         {% if user_words %}
@@ -189,13 +413,13 @@
                             <div class="flex justify-end items-center gap-3">
                                 <form method="post" action="{{ url_for('toggle_favorite_flag', user_word_id=item.id) }}" class="m-0 flex items-center">
                                     <input type="hidden" name="next" value="{{ request.full_path }}">
-                                    <button type="submit" class="{{ 'text-secondary' if item.is_favorite else 'text-[#404848] hover:text-secondary' }} transition-colors cursor-pointer border-none bg-transparent p-0 m-0 flex items-center outline-none" title="Favorite" onclick="event.stopPropagation();">
+                                    <button type="submit" class="words-icon-button {{ 'is-favorite-active' if item.is_favorite else '' }} cursor-pointer p-0 m-0 flex items-center outline-none" title="Favorite" onclick="event.stopPropagation();">
                                         <span class="material-symbols-outlined text-lg opacity-80" data-icon="star" {% if item.is_favorite %}style="font-variation-settings: 'FILL' 1;"{% endif %}>star</span>
                                     </button>
                                 </form>
                                 <form method="post" action="{{ url_for('toggle_difficult_flag', user_word_id=item.id) }}" class="m-0 flex items-center">
                                     <input type="hidden" name="next" value="{{ request.full_path }}">
-                                    <button type="submit" class="{{ 'text-primary' if item.is_difficult else 'text-[#404848] hover:text-primary' }} transition-colors cursor-pointer border-none bg-transparent p-0 m-0 flex items-center outline-none" title="Difficult" onclick="event.stopPropagation();">
+                                    <button type="submit" class="words-icon-button {{ 'is-difficult-active' if item.is_difficult else '' }} cursor-pointer p-0 m-0 flex items-center outline-none" title="Difficult" onclick="event.stopPropagation();">
                                         <span class="material-symbols-outlined text-lg opacity-80" data-icon="priority_high" {% if item.is_difficult %}style="font-variation-settings: 'FILL' 1;"{% endif %}>priority_high</span>
                                     </button>
                                 </form>
@@ -217,14 +441,20 @@
                                 <div class="space-y-4">
                                     <div class="m-0">
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Synonyms</span>
-                                        <p class="text-[0.85rem] text-[#dec38f] m-0">{{ item.word_entry.synonym or 'None available' }}</p>
+                                        <p class="text-[0.85rem] text-[#dec38f] m-0">{{ item.word_entry.synonym_hint or item.word_entry.synonym or 'None available' }}</p>
                                     </div>
+                                    {% if item.word_entry.antonym_hint %}
+                                        <div style="margin-top: 1.5rem;">
+                                            <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Antonym</span>
+                                            <p class="text-[0.85rem] text-[#ffb4ab] m-0">{{ item.word_entry.antonym_hint }}</p>
+                                        </div>
+                                    {% endif %}
                                     <div style="margin-top: 1.5rem;">
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Personal Note</span>
                                         <form method="post" action="{{ url_for('save_word_note', user_word_id=item.id) }}" class="bg-[#121414] rounded-lg p-3 flex flex-col gap-2 border border-white/[0.05] shadow-inner mb-0">
                                             <input type="hidden" name="next" value="{{ request.full_path }}">
                                             <textarea name="note" class="w-full bg-transparent border-none outline-none focus:ring-0 text-[0.85rem] text-[#e2e2e2] p-0 placeholder:text-[#404848] no-scrollbar m-0 min-h-[2.5rem] resize-y" placeholder="Add a personal mnemonic or memory trick..." rows="2">{{ item.note or '' }}</textarea>
-                                            <button type="submit" class="self-end text-[0.65rem] font-bold uppercase tracking-widest text-[#9dd0cd] hover:brightness-125 transition-colors bg-transparent border-none p-0 cursor-pointer m-0 mt-1">Save Note</button>
+                                            <button type="submit" class="words-note-button self-end text-[0.65rem] font-bold uppercase tracking-widest hover:brightness-125 transition-colors border-none p-0 cursor-pointer m-0 mt-1">Save Note</button>
                                         </form>
                                     </div>
                                 </div>
@@ -234,10 +464,12 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="text-center py-16 bg-[#0d0f0f] rounded-xl border border-white/[0.05]">
-                <span class="material-symbols-outlined text-4xl text-[#404848] mb-3 opacity-50">style</span>
-                <p class="text-[#8a9291]">You do not have saved words yet.</p>
-            </div>
+            {% if not lookup_word %}
+                <div class="text-center py-16 bg-[#0d0f0f] rounded-xl border border-white/[0.05]">
+                    <span class="material-symbols-outlined text-4xl text-[#404848] mb-3 opacity-50">style</span>
+                    <p class="text-[#8a9291]">{{ 'No saved words matched your search.' if search_query else 'You do not have saved words yet.' }}</p>
+                </div>
+            {% endif %}
         {% endif %}
     </main>
 </div>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Panel | VocabAI{% endblock %}
+{% block title %}Admin Panel | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com"></script>
@@ -11,20 +11,34 @@
 </style>
 <div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter']">
     <header class="sticky top-0 z-40 border-b border-white/5 bg-[#121414]/90 backdrop-blur-xl">
-        <div class="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
             <div>
                 <p class="text-[10px] uppercase tracking-[0.22em] text-[#9dd0cd] font-bold mb-1">Admin Panel</p>
-                <h1 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">VocabAI control center</h1>
+                <h1 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">vflash.ai control center</h1>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ url_for('dashboard') }}" class="rounded-2xl border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e2e2e2] no-underline">Return to User Dashboard</a>
                 <span class="hidden md:block text-sm text-[#c0c8c7]">{{ admin_email }}</span>
+                <a href="{{ url_for('dashboard') }}" class="nav-profile-link" aria-label="Profile">
+                    <span class="nav-profile-name">Admin</span>
+                    <span class="nav-profile-avatar" aria-hidden="true">A</span>
+                </a>
+                <div class="nav-menu" data-nav-menu>
+                    <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                        <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                    </button>
+                    <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                        <span class="nav-menu-email">{{ admin_email }}</span>
+                        <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>User Dashboard</span></a>
+                        <a href="{{ url_for('admin_logout') }}"><span class="material-symbols-outlined">logout</span><span>Logout</span></a>
+                    </div>
+                </div>
                 <a href="{{ url_for('admin_logout') }}" class="rounded-2xl border border-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e2e2e2] no-underline">Logout</a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-screen-2xl mx-auto px-6 py-8">
+    <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <section class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
             <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
                 <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Users</p>

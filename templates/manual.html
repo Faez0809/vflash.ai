@@ -1,61 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}User Manual | VocabAI{% endblock %}
+{% block title %}User Manual | vflash.ai{% endblock %}
 
 {% block content %}
 <section class="manual-page">
     <div class="manual-hero">
-        <div>
+        <div class="manual-hero-copy">
             <p class="manual-eyebrow">User manual</p>
-            <h1>Learn VocabAI in a few simple steps.</h1>
-            <p>Start with word generation, study with flashcards, review daily, and use quizzes to check progress.</p>
+            <h1>Use vflash.ai in one clear study flow.</h1>
+            <p>Generate useful words, study them with cards, review on time, and use quizzes to measure progress.</p>
+            <div class="manual-flow-strip">
+                <span>Generate</span>
+                <span>Word Lists</span>
+                <span>Flashcards</span>
+                <span>Review</span>
+                <span>Quiz</span>
+            </div>
         </div>
         <div class="manual-actions">
-            <a href="{{ url_for('dashboard') }}#generate-section" class="manual-primary">Start with generating words</a>
+            <a href="{{ url_for('dashboard') }}#generate-section" class="manual-primary">Generate first words</a>
             <a href="{{ url_for('dashboard') }}" class="manual-secondary">Back to dashboard</a>
+            <div class="manual-side-note">
+                <p>Best first step</p>
+                <strong>Create a word set, then open flashcards.</strong>
+            </div>
         </div>
     </div>
 
     <div class="manual-grid">
         <article class="manual-card">
-            <span class="material-symbols-outlined">neurology</span>
-            <h2>1. Generate words</h2>
-            <p>Go to the dashboard, choose a topic and difficulty, then generate your first study set.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">neurology</span></span>
+                <span class="manual-step-number">01</span>
+            </div>
+            <h2>Generate words</h2>
+            <p>Choose a topic and difficulty, then create your first study set.</p>
             <a href="{{ url_for('dashboard') }}#generate-section">Open generator</a>
         </article>
 
         <article class="manual-card">
-            <span class="material-symbols-outlined">style</span>
-            <h2>2. Check Word Lists</h2>
-            <p>Your generated words are stored in Word Lists so you can read meanings and track what you saved.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">style</span></span>
+                <span class="manual-step-number">02</span>
+            </div>
+            <h2>Open Word Lists</h2>
+            <p>Your saved words appear here with meanings, notes, and learning status.</p>
             <a href="{{ url_for('words') }}">Open Word Lists</a>
         </article>
 
         <article class="manual-card">
-            <span class="material-symbols-outlined">amp_stories</span>
-            <h2>3. Study with flashcards</h2>
-            <p>Use flashcards to go word by word and mark what you learned, already knew, or found difficult.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">amp_stories</span></span>
+                <span class="manual-step-number">03</span>
+            </div>
+            <h2>Study with flashcards</h2>
+            <p>Go word by word and mark each one as learned, known, or difficult.</p>
             <a href="{{ url_for('flashcards') }}">Open flashcards</a>
         </article>
 
         <article class="manual-card">
-            <span class="material-symbols-outlined">history</span>
-            <h2>4. Review regularly</h2>
-            <p>Review helps you revisit words at the right time so they stay in memory longer.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">history</span></span>
+                <span class="manual-step-number">04</span>
+            </div>
+            <h2>Review regularly</h2>
+            <p>Come back to due words so they stay in memory longer.</p>
             <a href="{{ url_for('review') }}">Open review</a>
         </article>
 
         <article class="manual-card">
-            <span class="material-symbols-outlined">quiz</span>
-            <h2>5. Take quizzes</h2>
-            <p>Use quizzes after studying to check accuracy and see how much you remember.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">quiz</span></span>
+                <span class="manual-step-number">05</span>
+            </div>
+            <h2>Take quizzes</h2>
+            <p>Check your accuracy after studying and track your progress.</p>
             <a href="{{ url_for('quiz') }}">Open quiz</a>
         </article>
 
         <article class="manual-card">
-            <span class="material-symbols-outlined">person</span>
-            <h2>6. Personalize your profile</h2>
-            <p>Set your nickname, daily goal, and study focus so the app matches how you learn.</p>
+            <div class="manual-card-top">
+                <span class="manual-icon-shell"><span class="material-symbols-outlined">person</span></span>
+                <span class="manual-step-number">06</span>
+            </div>
+            <h2>Adjust your profile</h2>
+            <p>Set your nickname, daily goal, and study focus for a cleaner routine.</p>
             <a href="{{ url_for('profile') }}">Open profile</a>
         </article>
     </div>

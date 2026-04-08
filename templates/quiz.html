@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Quiz Mode | VocabAI{% endblock %}
+{% block title %}Quiz Mode | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -139,9 +139,9 @@ tailwind.config = {
 
     <!-- Top Navigation Anchor (Shared) -->
     <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-[0_48px_48px_-12px_rgba(45,95,93,0.04)]">
-        <div class="flex justify-between items-center h-16 px-6 w-full max-w-screen-2xl mx-auto font-headline tracking-tight">
-            <div class="flex items-center gap-8">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">VocabAI</a>
+        <div class="app-topbar-row flex justify-between items-center h-16 px-4 sm:px-6 w-full max-w-screen-2xl mx-auto font-headline tracking-tight gap-3 sm:gap-6">
+            <div class="app-topbar-brand-group flex items-center gap-4 sm:gap-8 min-w-0">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">vflash.ai</a>
                 <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('words') }}">My Words</a>
@@ -150,13 +150,32 @@ tailwind.config = {
                     <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline" href="{{ url_for('quiz') }}">Quiz</a>
                 </nav>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
+            <div class="app-topbar-actions flex items-center gap-4">
+                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                </button>
+                <a href="{{ url_for('profile') }}" class="hidden md:flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
                         <span class="material-symbols-outlined text-[1.1rem]">person</span>
                     </div>
                 </a>
+                <div class="nav-menu" data-nav-menu>
+                    <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                        <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                    </button>
+                    <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                        <span class="nav-menu-email">{{ current_user.display_name }}</span>
+                        <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+                        <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
+                        <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
+                        <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
+                        <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
+                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
+                        <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -164,7 +183,7 @@ tailwind.config = {
 
     {% if quiz_result %}
         <!-- Quiz Result Screen -->
-        <main class="flex-1 flex items-center justify-center relative w-full pt-20 pb-12 overflow-hidden max-h-screen">
+        <main class="flex-1 flex items-center justify-center relative w-full pt-20 pb-12 md:pb-12 overflow-hidden max-h-screen">
             <div class="absolute inset-0 glow-overlay pointer-events-none"></div>
             <div class="relative z-10 w-full max-w-lg px-6 h-full flex flex-col justify-center">
                 <div class="bg-surface-container-low rounded-xl shadow-[0_48px_48px_rgba(157,208,205,0.04)] border border-white/5 overflow-hidden flex flex-col max-h-[calc(100vh-6rem)]">
@@ -250,7 +269,7 @@ tailwind.config = {
 
     {% elif quiz_setup %}
         <!-- Quiz Setup Screen -->
-        <main class="flex-1 flex items-center justify-center px-4 w-full h-[calc(100vh-4rem)] mt-16 pb-6 overflow-hidden">
+        <main class="flex-1 flex items-center justify-center px-4 w-full h-[calc(100vh-4rem)] mt-16 pb-8 overflow-hidden">
             <div class="fixed inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
                 <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary blur-[120px] rounded-full"></div>
                 <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary-container blur-[120px] rounded-full"></div>
@@ -278,7 +297,7 @@ tailwind.config = {
                         <p class="text-outline text-sm md:text-base max-w-md">Choose a source, level, and instruction to shape a more useful practice round.</p>
                     </header>
 
-                    <form method="post" action="{{ url_for('quiz_start') }}" class="space-y-8">
+                    <form method="post" action="{{ url_for('quiz_start') }}" class="space-y-8" data-async-page="true" data-loading-messages='["Preparing quiz...","Selecting questions...","Almost ready..."]'>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Quiz Type -->
                             <div class="space-y-2">
@@ -354,6 +373,27 @@ tailwind.config = {
         <div id="quiz-ajax-realm" class="flex flex-col items-center justify-center w-full min-h-screen">
             <!-- Shared JS for the Quiz Interactivity -->
             <script>
+                async function prefetchUpcomingQuizQuestions() {
+                    const prefetchUrl = "{{ url_for('quiz_prefetch') }}";
+                    if (!prefetchUrl || window.quizPrefetchActive) {
+                        return;
+                    }
+
+                    window.quizPrefetchActive = true;
+                    try {
+                        await fetch(prefetchUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                    } catch (err) {
+                        // Keep the quiz flow smooth even if prefetch is unavailable.
+                    } finally {
+                        window.quizPrefetchActive = false;
+                    }
+                }
+
                 function showQuitModal() {
                     document.getElementById('quit-modal').classList.remove('hidden');
                     document.getElementById('quit-modal').classList.add('flex');
@@ -412,10 +452,14 @@ tailwind.config = {
                 
                 // Init on load
                 if (typeof window.quizFormBound === 'undefined') {
-                    document.addEventListener("DOMContentLoaded", bindFastQuizForm);
+                    document.addEventListener("DOMContentLoaded", () => {
+                        bindFastQuizForm();
+                        prefetchUpcomingQuizQuestions();
+                    });
                     window.quizFormBound = true;
                 } else {
                     bindFastQuizForm();
+                    prefetchUpcomingQuizQuestions();
                 }
             </script>
 

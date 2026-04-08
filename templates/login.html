@@ -1,28 +1,43 @@
 {% extends "base.html" %}
 
-{% block title %}Login | VocabAI{% endblock %}
+{% block title %}Sign in | vflash.ai{% endblock %}
 
 {% block content %}
 <section class="auth-shell auth-shell-split">
     <div class="auth-pane auth-pane-form">
-        <div class="auth-brand">VocabAI</div>
+        <div class="auth-mobile-bar">
+            <a class="nav-profile-link" href="{{ url_for('login') }}" aria-label="Account">
+                <span class="nav-profile-name">Account</span>
+                <span class="nav-profile-avatar nav-profile-avatar-guest" aria-hidden="true"><span class="material-symbols-outlined">person</span></span>
+            </a>
+            <div class="nav-menu" data-nav-menu>
+                <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                    <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                </button>
+                <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                    <a href="{{ url_for('login') }}"><span class="material-symbols-outlined">person</span><span>Login</span></a>
+                    <a href="{{ url_for('signup') }}"><span class="material-symbols-outlined">person_add</span><span>Sign up</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="auth-brand">vflash.ai</div>
         <div class="auth-form-wrap">
             <header class="auth-copy">
-                <h1>Welcome back</h1>
-                <p>Pick up where you left off with a clean, focused study space.</p>
+                <h1>Sign in to your study workspace</h1>
+                <p>Pick up your flashcards, reviews, and vocabulary progress in one focused place.</p>
             </header>
             <form method="post" class="auth-form-grid">
                 <div class="auth-field">
                     <label for="email">Email address</label>
-                    <input id="email" name="email" type="email" placeholder="Enter your email" value="{{ email_value or '' }}" required>
+                    <input id="email" name="email" type="email" placeholder="Enter your email address" value="{{ email_value or '' }}" required>
                 </div>
 
                 <div class="auth-field">
                     <label for="password">Password</label>
-                    <div style="position:relative;">
-                        <input id="password" name="password" type="password" placeholder="Enter your password" required style="padding-right:2.75rem;">
-                        <button type="button" data-password-toggle-button="password" style="position:absolute; right:0.8rem; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:1.1rem; height:1.1rem; padding:0; border:0; background:transparent; color:#7f8a8a; cursor:pointer;" aria-label="Show password" aria-pressed="false">
-                            <span data-eye-open aria-hidden="true" style="display:inline-flex;">
+                    <div class="auth-field-control">
+                        <input id="password" name="password" type="password" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" data-password-toggle-button="password" aria-label="Show password" aria-pressed="false">
+                            <span data-eye-open aria-hidden="true">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
@@ -39,42 +54,43 @@
                         </button>
                     </div>
                     {% if login_error %}
-                    <p style="margin:0.55rem 0 0; font-size:0.84rem; color:#d7a7a7;">{{ login_error }}</p>
+                    <p class="auth-inline-error">{{ login_error }}</p>
                     {% endif %}
                     {% if show_forgot_password %}
-                    <p style="margin:0.45rem 0 0; font-size:0.82rem;">
-                        <a href="{{ url_for('forgot_password', email=email_value or '') }}" style="color:#9dd0cd; text-decoration:none;">Forgot password?</a>
+                    <p class="auth-inline-action">
+                        <a href="{{ url_for('forgot_password', email=email_value or '') }}">Forgot your password?</a>
                     </p>
                     {% endif %}
                 </div>
 
                 <button type="submit" class="auth-submit">Sign in</button>
             </form>
-            <p class="form-footer auth-footer-link">Don't have an account yet? <a href="{{ url_for('signup') }}">Create account</a></p>
+            <p class="form-footer auth-footer-link">New to vflash.ai? <a href="{{ url_for('signup') }}">Create account</a></p>
         </div>
         <footer class="auth-meta">
-            <span>VocabAI · Vocabulary learning platform · by Faez Mahmud</span>
+            <span>vflash.ai - Flashcard-based vocabulary learning - by Faez Mahmud</span>
         </footer>
     </div>
 
     <aside class="auth-pane auth-pane-feature">
         <div class="auth-feature-surface">
-            <span class="auth-eyebrow">Calm learning space</span>
-            <h2>Learn with less clutter and better focus.</h2>
-            <p>VocabAI keeps your words, practice, and progress in one smooth routine.</p>
+            <span class="auth-eyebrow">Focused flashcards</span>
+            <h2>Review vocabulary with clarity and consistency.</h2>
+            <p>vflash.ai keeps your flashcards, practice sessions, and progress in one streamlined workspace.</p>
             <div class="auth-feature-grid">
                 <article class="auth-feature-card">
-                    <span class="auth-feature-label">Simple flow</span>
-                    <strong>Generate, study, review</strong>
-                    <p>Move from new words to revision without jumping between tools.</p>
+                    <span class="auth-feature-label">Clear workflow</span>
+                    <strong>Create, study, and review flashcards</strong>
+                    <p>Move from new vocabulary to active recall without breaking your learning flow.</p>
                 </article>
                 <article class="auth-feature-card">
-                    <span class="auth-feature-label">Clear direction</span>
-                    <strong>Practice that fits your goal</strong>
-                    <p>Focus each session by topic, difficulty, and the words you need most.</p>
+                    <span class="auth-feature-label">Targeted practice</span>
+                    <strong>Study the words that matter most</strong>
+                    <p>Keep each session aligned with your goals, weak points, and review priorities.</p>
                 </article>
             </div>
         </div>
     </aside>
 </section>
 {% endblock %}
+

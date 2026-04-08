@@ -4,6 +4,7 @@ from flask import jsonify, redirect, render_template, request, url_for, flash
 from flask_login import current_user, login_required
 
 from app.models import UserWord, Word, db
+from app.services.learning_content import enrich_user_word_entries, touch_user_word_interaction
 from app.services.spaced_repetition import schedule_word_for_review
 
 
@@ -18,6 +19,7 @@ def register(app):
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()
         )
+        enrich_user_word_entries(user_words, allow_ai=True)
         return render_template("flashcards.html", user_words=user_words)
 
     @app.route("/flashcards/session/<int:session_id>")
@@ -40,6 +42,7 @@ def register(app):
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()
         )
+        enrich_user_word_entries(user_words, allow_ai=True)
         return render_template(
             "flashcards.html",
             user_words=user_words,
@@ -88,6 +91,7 @@ def register(app):
         ).first_or_404()
 
         user_word.is_difficult = not user_word.is_difficult
+        touch_user_word_interaction(user_word)
         db.session.commit()
 
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":

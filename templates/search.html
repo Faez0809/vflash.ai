@@ -1,53 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}Word Search | VocabAI{% endblock %}
+{% block title %}Word Search | vflash.ai{% endblock %}
 
 {% block content %}
-<section class="panel search-page-panel">
-    <div class="section-heading">
-        <div>
-            <span class="eyebrow">Word search</span>
-            <h1>{{ word.word }}</h1>
-            <p class="muted section-copy">Search result for "{{ search_query }}".</p>
+<section class="search-flashcard-wrap">
+    <div class="flashcard-panel search-flashcard-panel search-direct-panel">
+        <div class="search-direct-toolbar">
+            <form class="search-page-form" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Checking database...","Generating word details..."]'>
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" maxlength="60" autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            <a class="search-page-back" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
         </div>
-        <a class="button-secondary" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
-    </div>
 
-    <article class="search-word-card">
-        <div class="flashcard-word-wrap search-word-heading">
-            <h2>{{ word.word }}</h2>
-            {% if word.part_of_speech %}
-                <span class="flashcard-pos">{{ word.part_of_speech }}</span>
+        <article class="search-flashcard-card search-direct-card">
+            <div class="search-direct-head">
+                <div class="search-word-heading">
+                    <h1>{{ word.word }}</h1>
+                    {% if word.part_of_speech %}
+                        <span class="flashcard-pos">{{ word.part_of_speech }}</span>
+                    {% endif %}
+                </div>
+                <p class="search-flashcard-meaning">
+                    {% if word.lookup_pending %}
+                        We are preparing this word now so your card stays accurate and useful.
+                    {% else %}
+                        {{ word.meaning }}
+                    {% endif %}
+                </p>
+            </div>
+
+            {% if word.lookup_pending %}
+                <section class="search-pending-state search-flashcard-detail-wide" aria-live="polite">
+                    <p class="search-pending-badge">Preparing this entry</p>
+                    <h2 class="search-pending-title">This word is in our AI vocabulary queue.</h2>
+                    <p class="search-pending-copy">Search another word now, and come back to <strong>{{ word.word }}</strong> shortly. We keep preparing all levels of vocabulary, including advanced and rare words.</p>
+                    <p class="search-pending-note">Tip: try a close spelling or a related form while this entry finishes.</p>
+                </section>
+            {% else %}
+                <div class="flashcard-back-grid search-flashcard-grid search-direct-grid">
+                    <div class="flashcard-detail">
+                        <p class="stitch-label">Bangla meaning</p>
+                        <p>{{ word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
+                    </div>
+                    <div class="flashcard-detail">
+                        <p class="stitch-label">Pronunciation</p>
+                        <p>{{ word.phonetic or 'Not added yet.' }}</p>
+                    </div>
+                    <div class="flashcard-detail">
+                        <p class="stitch-label">Synonym</p>
+                        <p>{{ word.synonym_hint or word.synonym or 'Not added yet.' }}</p>
+                    </div>
+                    {% if word.antonym_hint %}
+                        <div class="flashcard-detail">
+                            <p class="stitch-label">Antonym</p>
+                            <p>{{ word.antonym_hint }}</p>
+                        </div>
+                    {% endif %}
+                    <div class="flashcard-detail">
+                        <p class="stitch-label">Topic</p>
+                        <p>{{ word.topic or 'General' }}</p>
+                    </div>
+                    <div class="flashcard-detail search-flashcard-detail-wide">
+                        <p class="stitch-label">Sentence</p>
+                        <p>{{ word.sentence or 'No example sentence yet.' }}</p>
+                    </div>
+                    <div class="flashcard-detail search-flashcard-detail-wide">
+                        <p class="stitch-label">Memory trick</p>
+                        <p>{{ word.memory_trick or 'No memory trick yet.' }}</p>
+                    </div>
+                </div>
             {% endif %}
-        </div>
-        <div class="search-word-grid">
-            <div class="search-word-detail">
-                <span class="detail-label">Meaning</span>
-                <p>{{ word.meaning }}</p>
-            </div>
-            <div class="search-word-detail">
-                <span class="detail-label">Bangla meaning</span>
-                <p>{{ word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
-            </div>
-            <div class="search-word-detail search-word-detail-inline">
-                <div>
-                    <span class="detail-label">Pronunciation</span>
-                    <p>{{ word.phonetic or 'Not added yet.' }}</p>
-                </div>
-                <div>
-                    <span class="detail-label">Topic</span>
-                    <p>{{ word.topic or 'General' }}</p>
-                </div>
-            </div>
-            <div class="search-word-detail">
-                <span class="detail-label">Sentence</span>
-                <p>{{ word.sentence or 'No example sentence yet.' }}</p>
-            </div>
-            <div class="search-word-detail">
-                <span class="detail-label">Memory trick</span>
-                <p>{{ word.memory_trick or 'No memory trick yet.' }}</p>
-            </div>
-        </div>
-    </article>
+        </article>
+    </div>
 </section>
 {% endblock %}

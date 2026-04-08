@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Login | VocabAI{% endblock %}
+{% block title %}Admin Login | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com"></script>
@@ -8,7 +8,22 @@
 <style>
     .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
 </style>
-<div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter'] flex items-center justify-center px-6 py-12">
+<div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter'] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+    <div class="auth-mobile-bar absolute top-4 left-4 right-4">
+        <a class="nav-profile-link" href="{{ url_for('admin_login') }}" aria-label="Admin Account">
+            <span class="nav-profile-name">Admin</span>
+            <span class="nav-profile-avatar" aria-hidden="true">A</span>
+        </a>
+        <div class="nav-menu" data-nav-menu>
+            <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+            </button>
+            <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                <a href="{{ url_for('login') }}"><span class="material-symbols-outlined">person</span><span>User Login</span></a>
+                <a href="{{ url_for('signup') }}"><span class="material-symbols-outlined">person_add</span><span>Sign up</span></a>
+            </div>
+        </div>
+    </div>
     <div class="w-full max-w-md rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(30,32,32,0.98),rgba(18,20,20,0.98))] p-8 shadow-[0_48px_48px_-12px_rgba(45,95,93,0.18)]">
         <p class="text-[10px] uppercase tracking-[0.22em] text-[#9dd0cd] font-bold mb-3">Admin</p>
         <h1 class="font-['Manrope'] text-3xl font-extrabold tracking-tight mb-2">Secure control panel access</h1>

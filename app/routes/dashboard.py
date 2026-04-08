@@ -1,15 +1,38 @@
 from datetime import date, datetime, timedelta
 
-from flask import flash, jsonify, redirect, render_template, request, url_for
+from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
 from app.models import QuizHistory, StudySession, UserAppSession, UserWord, Word, db
-from app.services.ai_generator import generate_word_content
+from app.services.learning_content import ensure_starter_pack_for_user, get_or_create_word_lookup, touch_user_word_interaction
 from app.services.spaced_repetition import get_due_review_words
-from app.services.stats import clean_text, get_study_streak, get_weekly_activity, pluralize
+from app.services.stats import (
+    VOCAB_QUERY_MESSAGE,
+    clean_text,
+    get_study_streak,
+    get_weekly_activity,
+    pluralize,
+    suggest_vocabulary_correction,
+    validate_vocabulary_query,
+)
 
 
 def register(app):
+    def available_topic_suggestions(user_id, limit=6):
+        return [
+            row[0]
+            for row in (
+                db.session.query(Word.topic)
+                .join(UserWord, UserWord.word_id == Word.id)
+                .filter(UserWord.user_id == user_id, Word.topic.isnot(None))
+                .distinct()
+                .order_by(Word.topic.asc())
+                .limit(limit)
+                .all()
+            )
+            if row[0]
+        ]
+
     def get_total_active_seconds(user_id):
         return int(
             db.session.query(db.func.coalesce(db.func.sum(UserAppSession.active_seconds), 0))
@@ -166,7 +189,7 @@ def register(app):
                 {
                     "icon": "menu_book",
                     "title": "Quick help",
-                    "body": "Open the user manual for a short guide to the main VocabAI workflow.",
+                    "body": "Open the user manual for a short guide to the main vflash.ai workflow.",
                     "href": url_for("user_manual"),
                     "label": "Open manual",
                 }
@@ -283,6 +306,13 @@ def register(app):
     @app.route("/dashboard")
     @login_required
     def dashboard():
+        starter_pack = ensure_starter_pack_for_user(
+            current_user.id,
+            current_user.default_study_focus or "",
+        )
+        if starter_pack["created"]:
+            flash("Starter vocabulary has been added so you can begin right away.", "info")
+
         user_words = (
             UserWord.query.filter_by(user_id=current_user.id)
             .join(Word)
@@ -368,8 +398,41 @@ def register(app):
                 }
             )
 
-        recent_words = user_words[:6]
+        recent_words = sorted(
+            user_words,
+            key=lambda item: (
+                item.last_reviewed or item.learned_at or item.added_date or date.min,
+                item.id,
+            ),
+            reverse=True,
+        )[:6]
         weekly_activity = get_weekly_activity(current_user.id)
+        last_search_topic = clean_text(session.get("last_search_topic"))
+        default_study_focus = clean_text(current_user.default_study_focus)
+        initial_generate_topic = default_study_focus or last_search_topic
+        topic_suggestions = []
+        seen_topics = set()
+        for candidate in [
+            default_study_focus,
+            last_search_topic,
+            "IELTS preparation",
+            "Business English",
+            "Academic writing",
+            "Daily conversation",
+            "Travel English",
+        ]:
+            cleaned_candidate = clean_text(candidate)
+            lowered_candidate = cleaned_candidate.lower()
+            if not cleaned_candidate or lowered_candidate in seen_topics:
+                continue
+            seen_topics.add(lowered_candidate)
+            topic_suggestions.append(cleaned_candidate)
+        for topic in available_topic_suggestions(current_user.id, limit=6):
+            lowered_topic = topic.lower()
+            if lowered_topic in seen_topics:
+                continue
+            seen_topics.add(lowered_topic)
+            topic_suggestions.append(topic)
         dashboard_messages = []
 
         if words_to_review_today:
@@ -404,7 +467,10 @@ def register(app):
             progress_percentage=progress_percentage,
             daily_goal=daily_goal,
             daily_goal_percentage=daily_goal_percentage,
-            default_study_focus=current_user.default_study_focus or "IELTS preparation words",
+            default_study_focus=default_study_focus,
+            initial_generate_topic=initial_generate_topic,
+            show_default_topic_tip=not bool(default_study_focus) and bool(last_search_topic),
+            topic_suggestions=topic_suggestions[:8],
             last_session=last_session,
             last_session_remaining=last_session_remaining,
             difficulty_progress=difficulty_progress,
@@ -420,26 +486,32 @@ def register(app):
     @app.route("/search")
     @login_required
     def search_word():
-        query = clean_text(request.args.get("q")).lower()
-        if not query:
-            flash("Type a word to search.", "info")
+        query_state = validate_vocabulary_query(request.args.get("q"))
+        query = clean_text(query_state["normalized"])
+        if not query_state["valid"]:
+            flash(query_state["message"] or VOCAB_QUERY_MESSAGE, "error")
             return redirect(url_for("dashboard"))
 
-        word = Word.query.filter_by(word=query).first()
-        if word is None:
-            content = generate_word_content(query)
-            word = Word(
-                word=query,
-                meaning=clean_text(content.get("meaning")) or f"A simple meaning for {query}.",
-                bangla_meaning=clean_text(content.get("bangla_meaning")) or None,
-                phonetic=clean_text(content.get("phonetic")) or None,
-                synonym=clean_text(content.get("synonym")) or None,
-                memory_trick=clean_text(content.get("memory_trick")) or None,
-                topic=clean_text(content.get("topic")) or "general",
-                sentence=clean_text(content.get("sentence")) or None,
-                created_at=date.today(),
-            )
-            db.session.add(word)
+        session["last_search_topic"] = query
+        normalized_query = query.lower()
+
+        candidate_words = [row[0] for row in db.session.query(Word.word).distinct().all() if row[0]]
+        corrected_query = suggest_vocabulary_correction(normalized_query, candidate_words)
+        exact_match_exists = db.session.query(Word.id).filter(Word.word == normalized_query).first() is not None
+        if corrected_query and not exact_match_exists:
+            flash(f"Showing results for '{corrected_query}' instead of '{query}'.", "info")
+            query = corrected_query
+            session["last_search_topic"] = query
+            normalized_query = corrected_query
+
+        word = get_or_create_word_lookup(normalized_query)
+        exact_user_word = (
+            UserWord.query.filter_by(user_id=current_user.id)
+            .join(Word)
+            .filter(Word.word == normalized_query)
+            .first()
+        )
+        if exact_user_word and touch_user_word_interaction(exact_user_word):
             db.session.commit()
 
         return render_template("search.html", word=word, search_query=query)
@@ -542,6 +614,7 @@ def register(app):
         )
         quiz_metrics = build_quiz_profile_metrics(quiz_history)
         usage_metrics = build_usage_metrics(app_sessions)
+        weekly_activity = get_weekly_activity(current_user.id)
         return render_template(
             "profile.html",
             total_sessions=total_sessions,
@@ -550,4 +623,5 @@ def register(app):
             latest_quiz=quiz_metrics["latest_quiz"],
             quiz_metrics=quiz_metrics,
             usage_metrics=usage_metrics,
+            weekly_activity=weekly_activity,
         )

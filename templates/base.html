@@ -3,29 +3,33 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}VocabAI{% endblock %}</title>
+    <title>{% block title %}vflash.ai{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}"{% endif %}>
-    {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual'] %}
+<body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'search_word' %}search-page tw-dark-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
+    {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual', 'search_word'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
         <div class="container nav-shell">
             <div class="brand-lockup">
-                <a class="brand" href="{{ url_for('index') }}">VocabAI</a>
+                <a class="brand" href="{{ url_for('index') }}">vflash.ai</a>
                 {% if current_user.is_authenticated %}
                     <span class="brand-tag">AI vocabulary trainer</span>
                 {% endif %}
             </div>
-            <form class="nav-search" action="{{ url_for('search_word') }}" method="get">
-                <input type="search" name="q" placeholder="Search any word" value="{{ request.args.get('q', '') if request.endpoint == 'search_word' else '' }}">
+            <form class="nav-search" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Checking database...","Generating word details..."]'>
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" name="q" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" value="{{ request.args.get('q', '') if request.endpoint == 'search_word' else '' }}" maxlength="60" autocomplete="off">
             </form>
-            <nav class="nav-links nav-links-primary">
+            <nav class="nav-links nav-links-primary nav-links-primary-shell">
                 {% if current_user.is_authenticated %}
+                    <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                        <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                    </button>
                     <a class="{{ 'is-active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
                     <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
@@ -34,30 +38,53 @@
                     {% if admin_session_active %}
                         <a class="{{ 'is-active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}">Admin</a>
                     {% endif %}
+                    <a class="nav-profile-link {{ 'is-active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}" aria-label="Profile">
+                        <span class="nav-profile-name">{{ current_user.display_name }}</span>
+                        <span class="nav-profile-avatar" aria-hidden="true">{{ current_user.display_name[:1]|upper }}</span>
+                    </a>
+                    <div class="nav-menu" data-nav-menu>
+                        <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                            <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                        </button>
+                        <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                            <span class="nav-menu-email">{{ current_user.display_name }}</span>
+                            <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                            <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
+                            <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
+                            <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
+                            <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
+                            <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
+                            <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
+                        </div>
+                    </div>
+                {% else %}
+                    <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                        <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                    </button>
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('signup') }}">Sign up</a>
+                    <a class="nav-profile-link" href="{{ url_for('login') }}" aria-label="Account">
+                        <span class="nav-profile-name">Account</span>
+                        <span class="nav-profile-avatar nav-profile-avatar-guest" aria-hidden="true">
+                            <span class="material-symbols-outlined">person</span>
+                        </span>
+                    </a>
                     <div class="nav-menu" data-nav-menu>
                         <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
                             <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
                         </button>
                         <div class="nav-menu-panel" aria-hidden="true">
-                            <span class="nav-menu-email">{{ current_user.display_name }}</span>
-                            <a href="{{ url_for('dashboard') }}#generate-section">Generate Words</a>
-                            <a href="{{ url_for('words') }}">My Words</a>
-                            <a href="{{ url_for('difficult_words') }}">Difficult Words</a>
-                            <a href="{{ url_for('user_manual') }}">User Manual</a>
-                            <a href="{{ url_for('profile') }}">Profile</a>
-                            <a href="{{ url_for('logout') }}">Logout</a>
+                            <a href="{{ url_for('login') }}"><span class="material-symbols-outlined">person</span><span>Login</span></a>
+                            <a href="{{ url_for('signup') }}"><span class="material-symbols-outlined">person_add</span><span>Sign up</span></a>
                         </div>
                     </div>
-                {% else %}
-                    <a href="{{ url_for('login') }}">Login</a>
-                    <a href="{{ url_for('signup') }}">Sign up</a>
                 {% endif %}
             </nav>
         </div>
     </header>
     {% endif %}
 
-    <main class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
+    <main class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual', 'search_word'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <section class="flash-stack">
@@ -114,7 +141,149 @@
         </details>
     {% endif %}
 
+    <div class="loading-overlay" data-loading-overlay aria-hidden="true">
+        <div class="loading-overlay-backdrop"></div>
+        <div class="loading-overlay-card" role="status" aria-live="polite" aria-atomic="true">
+            <div class="loading-overlay-spinner" aria-hidden="true"></div>
+            <p class="loading-overlay-label">vflash.ai</p>
+            <h2 class="loading-overlay-title" data-loading-status>Loading...</h2>
+            <p class="loading-overlay-copy">Please stay here while we prepare your content.</p>
+        </div>
+    </div>
+
 
     <script src="{{ url_for('static', filename='app.js') }}?v={{ range(1, 1000000) | random }}"></script>
+    <style>
+        body {
+            padding-bottom: max(0px, env(safe-area-inset-bottom));
+        }
+    </style>
+    <script type="text/javascript">
+        window.Tawk_API = window.Tawk_API || {};
+        window.Tawk_LoadStart = new Date();
+        window.__tawkOpenedByCustomButton = false;
+
+        function hideTawkDefaultLauncher() {
+            if (
+                window.Tawk_API &&
+                typeof window.Tawk_API.hideWidget === "function" &&
+                !window.__tawkOpenedByCustomButton
+            ) {
+                window.Tawk_API.hideWidget();
+            }
+        }
+
+        function keepTawkEmbedded() {
+            if (!window.Tawk_API) {
+                return;
+            }
+
+            if (typeof window.Tawk_API.toggle === "function") {
+                window.Tawk_API.toggle = function () {};
+            }
+        }
+
+        window.Tawk_API.customStyle = {
+            visibility: {
+                desktop: {
+                    position: "br",
+                    xOffset: 24,
+                    yOffset: 24
+                },
+                mobile: {
+                    position: "br",
+                    xOffset: 16,
+                    yOffset: 92
+                }
+            }
+        };
+
+        {% if current_user.is_authenticated %}
+        (function () {
+            var visitorName = {{ current_user.display_name|trim|tojson }};
+            var visitorEmail = {{ current_user.email|trim|lower|tojson }};
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            var visitor = {
+                name: visitorName
+            };
+
+            if (emailPattern.test(visitorEmail)) {
+                visitor.email = visitorEmail;
+            }
+
+            window.Tawk_API.visitor = visitor;
+        })();
+
+        window.Tawk_API.onLoad = function () {
+            var attributes = {
+                "visitor-role": "authenticated-user",
+                "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
+            };
+
+            hideTawkDefaultLauncher();
+
+            window.Tawk_API.setAttributes(
+                attributes,
+                function (error) {
+                    if (error && window.console && typeof window.console.warn === "function") {
+                        window.console.warn("Tawk.to user identification failed.", error);
+                    }
+                }
+            );
+        };
+        {% else %}
+        window.Tawk_API.onLoad = function () {
+            hideTawkDefaultLauncher();
+
+            window.Tawk_API.setAttributes(
+                {
+                    "visitor-role": "guest",
+                    "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
+                },
+                function (error) {
+                    if (error && window.console && typeof window.console.warn === "function") {
+                        window.console.warn("Tawk.to visitor metadata failed.", error);
+                    }
+                }
+            );
+        };
+        {% endif %}
+
+        window.Tawk_API.onChatMinimized = function () {
+            window.__tawkOpenedByCustomButton = false;
+            hideTawkDefaultLauncher();
+        };
+
+        window.Tawk_API.onBeforeLoad = function () {
+            keepTawkEmbedded();
+        };
+
+        window.Tawk_API.onChatHidden = function () {
+            window.__tawkOpenedByCustomButton = false;
+            hideTawkDefaultLauncher();
+        };
+
+        window.setInterval(function () {
+            keepTawkEmbedded();
+            hideTawkDefaultLauncher();
+        }, 800);
+
+        if (!window.__tawkWidgetLoaded && !document.getElementById("tawkto-script")) {
+            window.__tawkWidgetLoaded = true;
+
+            (function () {
+                var s1 = document.createElement("script");
+                var s0 = document.getElementsByTagName("script")[0];
+
+                s1.id = "tawkto-script";
+                s1.async = true;
+                s1.src = "https://embed.tawk.to/69d4db892767f61c30801122/1jljnj4bo";
+                s1.charset = "UTF-8";
+                s1.setAttribute("crossorigin", "*");
+
+                s0.parentNode.insertBefore(s1, s0);
+            })();
+        }
+    </script>
 </body>
 </html>

@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from app.models import UserWord, Word, db
+from app.services.learning_content import enrich_user_word_entries, get_or_create_word_lookup, touch_user_word_interaction
 from app.services.stats import clean_text
 
 
@@ -48,6 +49,26 @@ def register(app):
             user_words_query = user_words_query.filter(UserWord.is_favorite.is_(True))
 
         user_words = user_words_query.order_by(UserWord.added_date.desc(), Word.word.asc()).all()
+        enrich_user_word_entries(user_words, allow_ai=True)
+        lookup_word = None
+        lookup_note = None
+        if search_query and len(search_query.split()) == 1:
+            exact_user_word = (
+                UserWord.query.join(Word, UserWord.word_id == Word.id)
+                .filter(
+                    UserWord.user_id == current_user.id,
+                    Word.word == search_query.lower(),
+                )
+                .first()
+            )
+            lookup_word = get_or_create_word_lookup(search_query)
+            if exact_user_word:
+                lookup_note = clean_text(exact_user_word.note) or None
+                if touch_user_word_interaction(exact_user_word):
+                    db.session.commit()
+                if getattr(lookup_word, "lookup_pending", False):
+                    user_words = [item for item in user_words if item.id != exact_user_word.id]
+
         available_topics = [
             row[0]
             for row in (
@@ -77,6 +98,8 @@ def register(app):
             user_words=user_words,
             available_topics=available_topics,
             available_difficulties=available_difficulties,
+            lookup_word=lookup_word,
+            lookup_note=lookup_note,
             search_query=search_query,
             difficulty_filter=difficulty_filter or "All",
             topic_filter=topic_filter or "All",
@@ -105,6 +128,7 @@ def register(app):
         ).first_or_404()
 
         user_word.is_favorite = not user_word.is_favorite
+        touch_user_word_interaction(user_word)
         db.session.commit()
         flash(
             "Word added to favorites." if user_word.is_favorite else "Word removed from favorites.",
@@ -122,6 +146,7 @@ def register(app):
         ).first_or_404()
 
         user_word.note = clean_text(request.form.get("note")) or None
+        touch_user_word_interaction(user_word)
         db.session.commit()
         flash("Your note has been saved.", "success")
         next_page = request.form.get("next") or request.referrer or url_for("words")

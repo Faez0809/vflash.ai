@@ -2,7 +2,7 @@
 
 WORDS_HTML = """{% extends "base.html" %}
 
-{% block title %}My Words | VocabAI{% endblock %}
+{% block title %}My Words | vflash.ai{% endblock %}
 
 {% block content %}
 <!-- TAILWIND INTEGRATION FOR THIS PAGE -->
@@ -75,7 +75,7 @@ WORDS_HTML = """{% extends "base.html" %}
 <section class="dashboard-page-wrap">
     <header class="dashboard-topbar">
         <div class="dashboard-topbar-brand">
-            <a href="{{ url_for('dashboard') }}">VocabAI</a>
+            <a href="{{ url_for('dashboard') }}">vflash.ai</a>
         </div>
         <form class="dashboard-topbar-search" action="{{ url_for('search_word') }}" method="get">
             <span class="material-symbols-outlined">search</span>

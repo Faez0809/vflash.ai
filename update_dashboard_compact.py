@@ -2,13 +2,13 @@
 
 HTML_CONTENT = '''{% extends "base.html" %}
 
-{% block title %}Dashboard | VocabAI{% endblock %}
+{% block title %}Dashboard | vflash.ai{% endblock %}
 
 {% block content %}
 <section class="dashboard-page-wrap">
     <header class="dashboard-topbar">
         <div class="dashboard-topbar-brand">
-            <a href="{{ url_for('dashboard') }}">VocabAI</a>
+            <a href="{{ url_for('dashboard') }}">vflash.ai</a>
         </div>
         <form class="dashboard-topbar-search" action="{{ url_for('search_word') }}" method="get">
             <span class="material-symbols-outlined">search</span>

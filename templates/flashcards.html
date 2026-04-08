@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Flashcards | VocabAI{% endblock %}
+{% block title %}{{ "Review" if review_mode else "Flashcards" }} | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -106,27 +106,46 @@
     }
 </style>
 
-<div class="tw-scope font-body antialiased bg-[#121414] min-h-screen flex flex-col text-[#e2e2e2] m-0 overflow-x-hidden pt-20 pb-12">
+<div class="tw-scope font-body antialiased bg-[#121414] min-h-screen flex flex-col text-[#e2e2e2] m-0 overflow-x-hidden pt-20 pb-28 md:pb-12">
     
     <!-- TopNavBar Exactly as tailored for Tailwind -->
     <header class="bg-[#121414]/60 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
-        <div class="flex justify-between items-center h-16 px-6 max-w-screen-2xl mx-auto font-headline tracking-tight">
-            <div class="flex items-center gap-8">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline hover:text-primary">VocabAI</a>
+        <div class="app-topbar-row flex justify-between items-center h-16 px-4 sm:px-6 max-w-screen-2xl mx-auto font-headline tracking-tight gap-3 sm:gap-6">
+            <div class="app-topbar-brand-group flex items-center gap-4 sm:gap-8 min-w-0">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline hover:text-primary">vflash.ai</a>
                 <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('words') }}">My Words</a>
-                    <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline hover:text-primary" href="{{ url_for('flashcards') }}">Flashcards</a>
-                    <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('review') }}">Reviews</a>
+                    <a class="{{ 'text-primary border-b-2 border-primary pb-[0.2rem]' if not review_mode else 'text-primary/60' }} no-underline hover:text-primary transition-all" href="{{ url_for('flashcards') }}">Flashcards</a>
+                    <a class="{{ 'text-primary border-b-2 border-primary pb-[0.2rem]' if review_mode else 'text-primary/60' }} no-underline hover:text-primary transition-all" href="{{ url_for('review') }}">Review</a>
                 </nav>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
+            <div class="app-topbar-actions flex items-center gap-4">
+                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
+                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
+                </button>
+                <a href="{{ url_for('profile') }}" class="hidden md:flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
                         <span class="material-symbols-outlined text-[1.1rem]" style="font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;">person</span>
                     </div>
                 </a>
+                <div class="nav-menu" data-nav-menu>
+                    <button type="button" class="nav-menu-trigger" aria-label="Open navigation menu" aria-expanded="false" title="More options">
+                        <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+                    </button>
+                    <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
+                        <span class="nav-menu-email">{{ current_user.display_name }}</span>
+                        <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+                        <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
+                        <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
+                        <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
+                        <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
+                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
+                        <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -146,12 +165,13 @@
                     "bangla_meaning": {{ (item.word_entry.bangla_meaning or "No Bangla translation")|tojson }},
                     "sentence": {{ (item.word_entry.sentence or "No example provided.")|tojson }},
                     "phonetic": {{ (item.word_entry.phonetic or "N/A")|tojson }},
-                    "synonym": {{ (item.word_entry.synonym or "No synonyms available")|tojson }},
+                    "synonym": {{ (item.word_entry.synonym_hint or item.word_entry.synonym or "No synonyms available")|tojson }},
+                    "antonym": {{ (item.word_entry.antonym_hint or "")|tojson }},
                     "memory_trick": {{ (item.word_entry.memory_trick or "No memory trick added.")|tojson }}
                 }{{ "," if not loop.last }}
             {% endfor %}
             ]'
-            class="flex flex-col items-center w-full max-w-screen-2xl px-6 mx-auto relative my-auto"
+            class="flex flex-col items-center w-full max-w-screen-2xl px-4 sm:px-6 mx-auto relative my-auto"
         >
 
             <!-- Keyboard Shortcuts (Side Info) -->
@@ -191,7 +211,7 @@
                 </div>
 
                 <!-- 3D Flipping Card -->
-                <div id="flashcard-flip" class="w-full aspect-[3/2] sm:aspect-[16/10] perspective-1000 group cursor-pointer active:scale-[0.99] transition-transform duration-200 outline-none">
+                <div id="flashcard-flip" class="w-full aspect-[4/5] sm:aspect-[16/10] perspective-1000 group cursor-pointer active:scale-[0.99] transition-transform duration-200 outline-none">
                     <div id="flip-inner" class="relative w-full h-full transition-transform duration-500 transform-style-3d">
                         
                         <!-- FRONT OF CARD -->
@@ -200,9 +220,9 @@
                             <!-- Card Center Content -->
                             <div class="flex-grow flex flex-col items-center justify-center text-center px-6 sm:px-12 relative z-10 overflow-visible">
                                 <h1 class="text-4xl sm:text-6xl font-bold font-headline bg-gradient-to-br from-emerald-200 via-teal-200 to-cyan-400 bg-clip-text text-transparent tracking-tighter drop-shadow-sm pb-2 leading-tight" id="flashcard-word" style="word-break: break-word;"></h1>
-                                <div class="px-3 py-0.5 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-full text-[10px] font-bold text-fuchsia-300 tracking-[0.2em] uppercase mt-2 mb-8" id="flashcard-part-of-speech">
+                                <div class="px-3 py-0.5 bg-[#dec38f]/10 border border-[#dec38f]/20 rounded-full text-[10px] font-bold text-[#dec38f] tracking-[0.2em] uppercase mt-2 mb-8" id="flashcard-part-of-speech">
                                 </div>
-                                <p class="text-sm text-outline font-medium animate-pulse m-0">Tap to reveal definition</p>
+                                <p class="text-sm text-outline font-medium animate-pulse m-0">Tap to flip. Swipe left or right to change flashcards.</p>
                             </div>
                             
                             <!-- Card Footer -->
@@ -239,22 +259,28 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Synonym & Sentence -->
-                                <div class="space-y-3 sm:space-y-4">
-                                    <div class="flex flex-col items-center">
-                                        <p class="stitch-label mb-1 m-0 opacity-[0.15] text-[#8a9291]">Synonym</p>
-                                        <p class="font-body text-emerald-300 text-[0.8rem] sm:text-sm flex items-center gap-2 m-0 mt-1 capitalize" id="flashcard-synonym"></p>
+                                <!-- Synonym & Antonym -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <div class="bg-emerald-500/5 border border-emerald-500/10 p-3 sm:p-4 rounded-lg text-center">
+                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Synonym</p>
+                                        <p class="font-body text-emerald-300 text-[0.8rem] sm:text-sm leading-relaxed m-0" id="flashcard-synonym"></p>
                                     </div>
-                                    <div class="bg-sky-500/5 border border-sky-500/10 p-3 sm:p-4 text-center rounded-lg">
-                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Sentence</p>
-                                        <p class="font-body italic text-sky-200 leading-relaxed text-[0.85rem] sm:text-sm m-0" id="flashcard-sentence"></p>
+                                    <div class="bg-orange-500/5 border border-orange-500/10 p-3 sm:p-4 rounded-lg text-center" id="flashcard-antonym-card">
+                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Antonym</p>
+                                        <p class="font-body text-orange-200 text-[0.8rem] sm:text-sm leading-relaxed m-0" id="flashcard-antonym"></p>
                                     </div>
                                 </div>
-                                
+
+                                <!-- Sentence -->
+                                <div class="bg-sky-500/5 border border-sky-500/10 p-3 sm:p-4 text-center rounded-lg">
+                                    <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Sentence</p>
+                                    <p class="font-body italic text-sky-200 leading-relaxed text-[0.85rem] sm:text-sm m-0" id="flashcard-sentence"></p>
+                                </div>
+
                                 <!-- Memory Trick -->
-                                <div class="bg-rose-500/5 rounded-lg p-3 border-l-2 border-rose-500/40 text-left">
+                                <div class="bg-[#dec38f]/5 rounded-lg p-3 border-l-2 border-[#dec38f]/40 text-left">
                                     <p class="stitch-label mb-1 opacity-[0.15] text-[#8a9291] m-0">Memory Trick</p>
-                                    <p class="font-body text-xs text-rose-200/90 leading-relaxed m-0" id="flashcard-memory-trick"></p>
+                                    <p class="font-body text-xs text-[#f0dfba] leading-relaxed m-0" id="flashcard-memory-trick"></p>
                                 </div>
                             </div>
                         </div>
@@ -307,18 +333,22 @@
     {% endif %}
 
     <!-- BottomNavBar - Contextual Visibility: Mobile only -->
-    <nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center p-4 pb-safe bg-[#121414]/90 backdrop-blur-lg rounded-t-2xl z-50 border-t border-white/[0.05] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] min-h-[5rem]">
+    <nav class="md:hidden fixed bottom-0 left-0 w-full grid grid-cols-4 items-center p-3 pb-safe bg-[#121414]/90 backdrop-blur-lg rounded-t-2xl z-50 border-t border-white/[0.05] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] min-h-[5rem]">
         <a href="{{ url_for('dashboard') }}" class="flex flex-col items-center justify-center text-[#8a9291] px-4 py-1 hover:text-primary transition-colors no-underline">
             <span class="material-symbols-outlined mb-1" style="font-size: 1.5rem;">dashboard</span>
-            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Home</span>
+            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Dashboard</span>
         </a>
-        <a href="{{ url_for('flashcards') }}" class="flex flex-col items-center justify-center bg-[#2d5f5d] text-[#9dd0cd] rounded-xl px-5 py-2 no-underline shadow-lg border border-[#9dd0cd]/20">
+        <a href="{{ url_for('flashcards') }}" class="flex flex-col items-center justify-center {{ 'bg-[#2d5f5d] text-[#9dd0cd] rounded-xl px-5 py-2 shadow-lg border border-[#9dd0cd]/20' if not review_mode else 'text-[#8a9291] px-4 py-1 hover:text-primary transition-colors' }} no-underline">
             <span class="material-symbols-outlined mb-1" style="font-size: 1.5rem;">school</span>
-            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Learn</span>
+            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Flashcards</span>
         </a>
-        <a href="{{ url_for('review') }}" class="flex flex-col items-center justify-center text-[#8a9291] px-4 py-1 hover:text-primary transition-colors no-underline">
-            <span class="material-symbols-outlined mb-1" style="font-size: 1.5rem;">insights</span>
-            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Stats</span>
+        <a href="{{ url_for('review') }}" class="flex flex-col items-center justify-center {{ 'bg-[#2d5f5d] text-[#9dd0cd] rounded-xl px-5 py-2 shadow-lg border border-[#9dd0cd]/20' if review_mode else 'text-[#8a9291] px-4 py-1 hover:text-primary transition-colors' }} no-underline">
+            <span class="material-symbols-outlined mb-1" style="font-size: 1.5rem;">rule</span>
+            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Review</span>
+        </a>
+        <a href="{{ url_for('quiz') }}" class="flex flex-col items-center justify-center text-[#8a9291] px-4 py-1 hover:text-primary transition-colors no-underline">
+            <span class="material-symbols-outlined mb-1" style="font-size: 1.5rem;">quiz</span>
+            <span class="font-['Inter'] text-[0.65rem] font-bold uppercase tracking-widest">Quiz</span>
         </a>
     </nav>
 

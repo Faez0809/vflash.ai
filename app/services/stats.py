@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import date, timedelta
+import difflib
 import random
 import re
 
@@ -14,6 +15,83 @@ def clean_text(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+VOCAB_QUERY_MESSAGE = "Please enter a word or short phrase for vocabulary learning."
+VOCAB_QUERY_PATTERN = re.compile(r"^[A-Za-z]+(?:[A-Za-z\s'\-]*[A-Za-z]+)?$")
+MAX_VOCAB_QUERY_LENGTH = 60
+MAX_VOCAB_QUERY_WORDS = 5
+
+
+def normalize_spaces(value):
+    return re.sub(r"\s+", " ", clean_text(value))
+
+
+def validate_vocabulary_query(value, max_words=MAX_VOCAB_QUERY_WORDS, max_length=MAX_VOCAB_QUERY_LENGTH):
+    normalized = normalize_spaces(value)
+    if not normalized:
+        return {
+            "valid": False,
+            "normalized": "",
+            "message": VOCAB_QUERY_MESSAGE,
+            "reason": "empty",
+        }
+
+    if len(normalized) > max_length:
+        return {
+            "valid": False,
+            "normalized": normalized[:max_length],
+            "message": VOCAB_QUERY_MESSAGE,
+            "reason": "too_long",
+        }
+
+    word_count = len(normalized.split())
+    if word_count > max_words:
+        return {
+            "valid": False,
+            "normalized": normalized,
+            "message": VOCAB_QUERY_MESSAGE,
+            "reason": "too_many_words",
+        }
+
+    if not VOCAB_QUERY_PATTERN.fullmatch(normalized):
+        return {
+            "valid": False,
+            "normalized": normalized,
+            "message": VOCAB_QUERY_MESSAGE,
+            "reason": "invalid_characters",
+        }
+
+    return {
+        "valid": True,
+        "normalized": normalized,
+        "message": "",
+        "reason": "",
+    }
+
+
+def suggest_vocabulary_correction(value, candidates, cutoff=0.82):
+    normalized = normalize_spaces(value).lower()
+    if not normalized or " " in normalized:
+        return None
+
+    normalized_candidates = []
+    seen = set()
+    for candidate in candidates or []:
+        cleaned = clean_text(candidate).lower()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        normalized_candidates.append(cleaned)
+
+    if not normalized_candidates:
+        return None
+
+    matches = difflib.get_close_matches(normalized, normalized_candidates, n=1, cutoff=cutoff)
+    suggestion = matches[0] if matches else None
+    if suggestion == normalized:
+        return None
+    return suggestion
 
 
 def get_study_streak(user_id):

@@ -8,10 +8,20 @@ document.addEventListener("DOMContentLoaded", () => {
     initFlashMessages();
     initNavMenu();
     initPasswordToggles();
+    initAsyncPageForms();
+    initAutoSubmitControls();
     initAjaxDifficultForms();
+    initResponsiveSearchPlaceholders();
     initFlashcards();
     initQuizUX();
     initUsageTracking();
+    initDashboardWarmups();
+    initFeedbackAssistant();
+    initVocabularyInputs();
+});
+
+window.addEventListener("pageshow", () => {
+    hideLoadingOverlay();
 });
 
 function ensureFlashStack() {
@@ -81,6 +91,287 @@ function initFlashMessages() {
     });
 }
 
+let loadingOverlayTimer = null;
+let loadingOverlayIndex = 0;
+
+function parseLoadingMessages(rawValue) {
+    if (!rawValue) {
+        return ["Loading..."];
+    }
+
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+            const messages = parsed.map((item) => String(item || "").trim()).filter(Boolean);
+            if (messages.length) {
+                return messages;
+            }
+        }
+    } catch (error) {
+        // Fall through to a simple string-based fallback.
+    }
+
+    const fallbackMessages = String(rawValue)
+        .split("|")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    return fallbackMessages.length ? fallbackMessages : ["Loading..."];
+}
+
+function showLoadingOverlay(messages = ["Loading..."]) {
+    const overlay = document.querySelector("[data-loading-overlay]");
+    const status = overlay?.querySelector("[data-loading-status]");
+    if (!overlay || !status) {
+        return;
+    }
+
+    const resolvedMessages = Array.isArray(messages) && messages.length ? messages : ["Loading..."];
+    loadingOverlayIndex = 0;
+    status.textContent = resolvedMessages[0];
+    overlay.classList.add("is-visible");
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.classList.add("is-busy");
+
+    if (loadingOverlayTimer) {
+        window.clearInterval(loadingOverlayTimer);
+    }
+
+    if (resolvedMessages.length > 1) {
+        loadingOverlayTimer = window.setInterval(() => {
+            loadingOverlayIndex = (loadingOverlayIndex + 1) % resolvedMessages.length;
+            status.textContent = resolvedMessages[loadingOverlayIndex];
+        }, 1400);
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.querySelector("[data-loading-overlay]");
+    if (loadingOverlayTimer) {
+        window.clearInterval(loadingOverlayTimer);
+        loadingOverlayTimer = null;
+    }
+
+    if (!overlay) {
+        document.body.classList.remove("is-busy");
+        return;
+    }
+
+    overlay.classList.remove("is-visible");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("is-busy");
+}
+
+function setFormPending(form, pending) {
+    if (!form) {
+        return;
+    }
+
+    form.classList.toggle("is-pending", pending);
+    form.querySelectorAll("button[type='submit'], input[type='submit']").forEach((button) => {
+        if (pending) {
+            button.dataset.wasDisabled = button.disabled ? "true" : "false";
+            button.disabled = true;
+            return;
+        }
+
+        if (button.dataset.wasDisabled !== "true") {
+            button.disabled = false;
+        }
+        delete button.dataset.wasDisabled;
+    });
+}
+
+function initAsyncPageForms() {
+    const forms = document.querySelectorAll("form[data-async-page='true']");
+    if (!forms.length) {
+        return;
+    }
+
+    forms.forEach((form) => {
+        if (form.dataset.asyncBound === "true") {
+            return;
+        }
+
+        form.dataset.asyncBound = "true";
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            if (form.classList.contains("is-pending")) {
+                return;
+            }
+
+            if (typeof form.reportValidity === "function" && !form.reportValidity()) {
+                return;
+            }
+
+            const method = String(form.getAttribute("method") || "GET").toUpperCase();
+            const action = form.getAttribute("action") || window.location.href;
+            const formData = new FormData(form);
+            const messages = parseLoadingMessages(form.dataset.loadingMessages);
+
+            showLoadingOverlay(messages);
+            setFormPending(form, true);
+
+            if (method === "GET") {
+                const requestUrl = new URL(action, window.location.href);
+                const params = new URLSearchParams();
+                for (const [key, value] of formData.entries()) {
+                    params.append(key, value);
+                }
+                requestUrl.search = params.toString();
+                window.location.assign(requestUrl.toString());
+                return;
+            }
+
+            window.setTimeout(() => {
+                HTMLFormElement.prototype.submit.call(form);
+            }, 10);
+        });
+    });
+}
+
+function initAutoSubmitControls() {
+    const forms = document.querySelectorAll("form[data-auto-submit-controls='true']");
+    if (!forms.length) {
+        return;
+    }
+
+    forms.forEach((form) => {
+        if (form.dataset.autoSubmitBound === "true") {
+            return;
+        }
+
+        form.dataset.autoSubmitBound = "true";
+        const controls = form.querySelectorAll("select, input[type='checkbox'], input[type='radio']");
+        controls.forEach((control) => {
+            control.addEventListener("change", () => {
+                if (form.classList.contains("is-pending")) {
+                    return;
+                }
+                if (typeof form.requestSubmit === "function") {
+                    form.requestSubmit();
+                    return;
+                }
+                HTMLFormElement.prototype.submit.call(form);
+            });
+        });
+    });
+}
+
+function initFeedbackAssistant() {
+    const openChatButtons = document.querySelectorAll("[data-feedback-open-chat]");
+    if (!openChatButtons.length) {
+        return;
+    }
+
+    function pushFeedbackContextToTawk() {
+        if (!window.Tawk_API) {
+            return;
+        }
+
+        const customAttributes = {
+            "feedback-entry": "direct-message",
+            "feedback-page-title": document.title.replace(/\s*\|\s*vflash\.ai\s*$/i, "").trim() || "Unknown page",
+            "feedback-path": window.location.pathname || "/"
+        };
+
+        if (typeof window.Tawk_API.setAttributes === "function") {
+            window.Tawk_API.setAttributes(customAttributes, function (error) {
+                if (error && window.console && typeof window.console.warn === "function") {
+                    window.console.warn("Tawk.to feedback metadata failed.", error);
+                }
+            });
+        }
+
+        if (typeof window.Tawk_API.addTags === "function") {
+            const pageTag = (window.location.pathname || "home")
+                .replace(/[^a-z0-9]+/gi, "-")
+                .replace(/^-+|-+$/g, "")
+                .toLowerCase() || "home";
+
+            window.Tawk_API.addTags(["direct-message", `page-${pageTag}`], function (error) {
+                if (error && window.console && typeof window.console.warn === "function") {
+                    window.console.warn("Tawk.to feedback tags failed.", error);
+                }
+            });
+        }
+    }
+
+    function openFeedbackChat() {
+        pushFeedbackContextToTawk();
+
+        if (!window.Tawk_API || typeof window.Tawk_API.maximize !== "function") {
+            showAjaxMessage("Live chat is still loading.", "info");
+            return;
+        }
+
+        const isMaximized = typeof window.Tawk_API.isChatMaximized === "function" && window.Tawk_API.isChatMaximized();
+
+        if (isMaximized) {
+            window.__tawkOpenedByCustomButton = false;
+            if (typeof window.Tawk_API.minimize === "function") {
+                window.Tawk_API.minimize();
+            }
+            if (typeof window.Tawk_API.hideWidget === "function") {
+                window.Tawk_API.hideWidget();
+            }
+            return;
+        }
+
+        if (typeof window.Tawk_API.showWidget === "function") {
+            window.__tawkOpenedByCustomButton = true;
+            window.Tawk_API.showWidget();
+        }
+
+        window.Tawk_API.maximize();
+    }
+
+    openChatButtons.forEach((openChatButton) => {
+        if (openChatButton.dataset.feedbackBound === "true") {
+            return;
+        }
+
+        openChatButton.dataset.feedbackBound = "true";
+        openChatButton.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openFeedbackChat();
+        });
+    });
+}
+
+function initResponsiveSearchPlaceholders() {
+    const searchInputs = Array.from(document.querySelectorAll("[data-placeholder-full][data-placeholder-compact]"));
+    if (!searchInputs.length) {
+        return;
+    }
+
+    const compactMedia = window.matchMedia("(max-width: 640px)");
+
+    function updatePlaceholders() {
+        const useCompact = compactMedia.matches;
+        searchInputs.forEach((input) => {
+            const nextPlaceholder = useCompact ? input.dataset.placeholderCompact : input.dataset.placeholderFull;
+            if (!nextPlaceholder) {
+                return;
+            }
+
+            input.placeholder = nextPlaceholder;
+            input.setAttribute("aria-label", nextPlaceholder);
+            input.setAttribute("title", input.dataset.placeholderFull || nextPlaceholder);
+        });
+    }
+
+    updatePlaceholders();
+    if (typeof compactMedia.addEventListener === "function") {
+        compactMedia.addEventListener("change", updatePlaceholders);
+    } else if (typeof compactMedia.addListener === "function") {
+        compactMedia.addListener(updatePlaceholders);
+    }
+
+    window.addEventListener("resize", updatePlaceholders);
+}
+
 function initPasswordToggles() {
     const buttons = document.querySelectorAll("[data-password-toggle-button]");
     if (!buttons.length) {
@@ -138,8 +429,47 @@ function initAjaxDifficultForms() {
                         const wordList = document.querySelector(".word-list");
                         if (wordList) {
                             wordList.outerHTML = '<p class="empty-state">No difficult words right now. You are caught up.</p>';
-                        }
-                    }
+    }
+}
+
+function initVocabularyInputs() {
+    const message = "Please enter a word or short phrase for vocabulary learning.";
+    const maxWords = 5;
+    const maxLength = 60;
+    const pattern = /^[A-Za-z]+(?:[A-Za-z\s'-]*[A-Za-z]+)?$/;
+    const inputs = document.querySelectorAll("input[name='q'], input[name='custom_prompt']");
+
+    if (!inputs.length) {
+        return;
+    }
+
+    function validateInput(input) {
+        const value = String(input.value || "").trim().replace(/\s+/g, " ");
+        let nextMessage = "";
+
+        if (!value) {
+            input.setCustomValidity("");
+            return;
+        }
+
+        if (value.length > maxLength || value.split(/\s+/).filter(Boolean).length > maxWords || !pattern.test(value)) {
+            nextMessage = message;
+        }
+
+        input.setCustomValidity(nextMessage);
+    }
+
+    inputs.forEach((input) => {
+        if (input.dataset.vocabValidationBound === "true") {
+            return;
+        }
+
+        input.dataset.vocabValidationBound = "true";
+        input.setAttribute("maxlength", String(maxLength));
+        input.addEventListener("input", () => validateInput(input));
+        input.addEventListener("blur", () => validateInput(input));
+    });
+}
                 }
 
                 showAjaxMessage(payload.message || "Updated successfully.", payload.is_difficult ? "success" : "info");
@@ -155,60 +485,90 @@ function initAjaxDifficultForms() {
 }
 
 function initNavMenu() {
-    const navMenu = document.querySelector("[data-nav-menu]");
-    if (!navMenu) {
+    const navMenus = document.querySelectorAll("[data-nav-menu]");
+    if (!navMenus.length) {
         return;
     }
 
-    const trigger = navMenu.querySelector(".nav-menu-trigger");
-    const panel = navMenu.querySelector(".nav-menu-panel");
-    if (!trigger) {
-        return;
-    }
-
-    function closeMenu() {
+    function closeMenu(navMenu) {
+        const trigger = navMenu.querySelector(".nav-menu-trigger");
+        const panel = navMenu.querySelector(".nav-menu-panel");
         navMenu.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
+        if (trigger) {
+            trigger.setAttribute("aria-expanded", "false");
+        }
         if (panel) {
             panel.setAttribute("aria-hidden", "true");
         }
     }
 
-    function openMenu() {
-        navMenu.classList.add("is-open");
-        trigger.setAttribute("aria-expanded", "true");
-        if (panel) {
-            panel.setAttribute("aria-hidden", "false");
-        }
+    function closeAllMenus() {
+        navMenus.forEach((menu) => closeMenu(menu));
     }
 
-    trigger.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (navMenu.classList.contains("is-open")) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    });
-
-    document.addEventListener("click", (event) => {
-        if (!navMenu.classList.contains("is-open")) {
+    navMenus.forEach((navMenu) => {
+        if (navMenu.dataset.navMenuBound === "true") {
             return;
         }
 
-        if (!navMenu.contains(event.target)) {
-            closeMenu();
+        navMenu.dataset.navMenuBound = "true";
+        const trigger = navMenu.querySelector(".nav-menu-trigger");
+        const panel = navMenu.querySelector(".nav-menu-panel");
+        if (!trigger) {
+            return;
+        }
+
+        function openMenu() {
+            closeAllMenus();
+            navMenu.classList.add("is-open");
+            trigger.setAttribute("aria-expanded", "true");
+            if (panel) {
+                panel.setAttribute("aria-hidden", "false");
+            }
+        }
+
+        trigger.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (navMenu.classList.contains("is-open")) {
+                closeMenu(navMenu);
+            } else {
+                openMenu();
+            }
+        });
+
+        if (panel) {
+            panel.addEventListener("click", (event) => {
+                const navLink = event.target.closest("a");
+                if (navLink) {
+                    closeMenu(navMenu);
+                }
+            });
         }
     });
 
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && navMenu.classList.contains("is-open")) {
-            closeMenu();
-            trigger.focus();
-        }
-    });
+    if (!window.__navMenuGlobalBound) {
+        window.__navMenuGlobalBound = true;
+
+        document.addEventListener("click", (event) => {
+            const clickedInsideAnyMenu = event.target.closest("[data-nav-menu]");
+            if (!clickedInsideAnyMenu) {
+                closeAllMenus();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                const openMenu = document.querySelector("[data-nav-menu].is-open");
+                closeAllMenus();
+                const trigger = openMenu?.querySelector(".nav-menu-trigger");
+                if (trigger) {
+                    trigger.focus();
+                }
+            }
+        });
+    }
 }
 
 function initFlashcards() {
@@ -229,6 +589,8 @@ function initFlashcards() {
     const frontPhoneticEl = document.querySelector("#flashcard-front-phonetic");
     const wordBackEl = document.querySelector("#flashcard-word-back");
     const synonymEl = document.querySelector("#flashcard-synonym");
+    const antonymEl = document.querySelector("#flashcard-antonym");
+    const antonymCardEl = document.querySelector("#flashcard-antonym-card");
     const sentenceEl = document.querySelector("#flashcard-sentence");
     const memoryTrickEl = document.querySelector("#flashcard-memory-trick");
     const statusEl = document.querySelector("#flashcard-status");
@@ -239,17 +601,18 @@ function initFlashcards() {
     let currentIndex = 0;
     let touchStartX = 0;
     let touchStartY = 0;
+    let touchMoved = false;
+    let lastTouchInteractionAt = 0;
     let queuedStatusMessage = "";
     const swipeThreshold = 50;
-    const leftZoneRatio = 0.26;
-    const rightZoneRatio = 0.74;
+    const touchClickGuardMs = 600;
     
     // Stable counters for tracking session progress easily
     const initialTotalCards = cards.length;
     let numCompletedThisSession = 0;
     const progressEl = document.querySelector("#flashcard-progress");
     
-    const storageKey = `vocabai_last_card_id_${flashcardMode}`;
+    const storageKey = `vflash.ai_last_card_id_${flashcardMode}`;
     const savedCardId = localStorage.getItem(storageKey);
     if (savedCardId && cards.length > 0) {
         const foundIndex = cards.findIndex(c => c.id == parseInt(savedCardId, 10));
@@ -297,7 +660,7 @@ function initFlashcards() {
     }
 
     function flipCard() {
-        if (!hasActiveCard()) {
+        if (!hasActiveCard() || !flipCardEl) {
             return;
         }
         flipCardEl.classList.toggle("is-flipped");
@@ -413,6 +776,8 @@ function initFlashcards() {
             if (phoneticEl) phoneticEl.textContent = "";
             if (frontPhoneticEl) frontPhoneticEl.textContent = "";
             if (synonymEl) synonymEl.textContent = "";
+            if (antonymEl) antonymEl.textContent = "";
+            if (antonymCardEl) antonymCardEl.style.display = "";
             if (sentenceEl) sentenceEl.textContent = "";
             if (memoryTrickEl) memoryTrickEl.textContent = "";
             flipCardEl.classList.remove("is-flipped");
@@ -446,6 +811,8 @@ function initFlashcards() {
         if (phoneticEl) phoneticEl.textContent = card.phonetic;
         if (frontPhoneticEl) frontPhoneticEl.textContent = card.phonetic;
         if (synonymEl) synonymEl.textContent = card.synonym;
+        if (antonymEl) antonymEl.textContent = card.antonym;
+        if (antonymCardEl) antonymCardEl.style.display = card.antonym ? "" : "none";
         if (sentenceEl) sentenceEl.textContent = card.sentence;
         if (memoryTrickEl) memoryTrickEl.textContent = card.memory_trick;
         
@@ -477,30 +844,50 @@ function initFlashcards() {
             return;
         }
 
-        const rect = flipCardEl.getBoundingClientRect();
-        const relativeX = (event.clientX - rect.left) / rect.width;
-
-        if (relativeX <= leftZoneRatio) {
-            showPreviousCard();
-        } else if (relativeX >= rightZoneRatio) {
-            showNextCard();
-        } else {
-            flipCard();
+        if ((Date.now() - lastTouchInteractionAt) <= touchClickGuardMs) {
+            return;
         }
+
+        flipCard();
     });
 
     flipCardEl.addEventListener("touchstart", (event) => {
         const touch = event.changedTouches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
+        touchMoved = false;
+        lastTouchInteractionAt = Date.now();
+    }, { passive: true });
+
+    flipCardEl.addEventListener("touchmove", (event) => {
+        const touch = event.changedTouches[0];
+        if (!touch) {
+            return;
+        }
+
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+            touchMoved = true;
+        }
     }, { passive: true });
 
     flipCardEl.addEventListener("touchend", (event) => {
         const touch = event.changedTouches[0];
         const deltaX = touch.clientX - touchStartX;
         const deltaY = touch.clientY - touchStartY;
+        lastTouchInteractionAt = Date.now();
 
-        if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) <= Math.abs(deltaY)) {
+        if (!touchMoved) {
+            flipCard();
+            return;
+        }
+
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+            return;
+        }
+
+        if (Math.abs(deltaX) < swipeThreshold) {
             flipCard();
             return;
         }
@@ -576,7 +963,7 @@ function initUsageTracking() {
         return;
     }
 
-    const sessionStorageKey = "vocabai_usage_session";
+    const sessionStorageKey = "vflash.ai_usage_session";
     const sessionTimeoutMs = 30 * 60 * 1000;
     const activeWindowMs = 60 * 1000;
     const tickMs = 15000;
@@ -718,6 +1105,36 @@ function initUsageTracking() {
             flushUsage(true);
         }
     });
+}
+
+function initDashboardWarmups() {
+    const warmupUrl = document.body.dataset.quizWarmupEndpoint;
+    if (!warmupUrl || !document.body.classList.contains("dashboard-page")) {
+        return;
+    }
+
+    const triggerWarmup = async () => {
+        try {
+            await fetch(warmupUrl, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+            });
+        } catch (error) {
+            // Keep warmup silent so it never interrupts the dashboard.
+        }
+    };
+
+    if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(() => {
+            window.setTimeout(triggerWarmup, 400);
+        }, { timeout: 2200 });
+        return;
+    }
+
+    window.setTimeout(triggerWarmup, 1200);
 }
 
 function initQuizUX() {

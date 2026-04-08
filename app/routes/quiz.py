@@ -4,24 +4,129 @@ from flask import flash, jsonify, redirect, render_template, request, session, u
 from flask_login import current_user, login_required
 
 from app.models import QuizHistory, db
+from app.services.learning_content import FALLBACK_CONTINUE_MESSAGE, ensure_starter_pack_for_user
 from app.services.stats import build_quiz_questions, clean_text
 
 
 def register(app):
+    def build_quiz_warmup_signature(
+        quiz_type="multiple_choice",
+        word_source="my_words",
+        difficulty="All",
+        question_count=10,
+        custom_instruction="",
+    ):
+        return "::".join(
+            [
+                clean_text(quiz_type) or "multiple_choice",
+                clean_text(word_source) or "my_words",
+                clean_text(difficulty) or "All",
+                str(question_count or 10),
+                clean_text(custom_instruction),
+            ]
+        )
+
+    def build_quiz_questions_with_fallback(
+        *,
+        total_questions,
+        quiz_type,
+        difficulty,
+        word_source,
+        custom_instruction="",
+    ):
+        source_candidates = []
+        for candidate in [word_source, "weak_words", "difficult_words", "my_words", "todays_words"]:
+            if candidate not in source_candidates:
+                source_candidates.append(candidate)
+
+        difficulty_candidates = []
+        for candidate in [difficulty, "All"]:
+            if candidate and candidate not in difficulty_candidates:
+                difficulty_candidates.append(candidate)
+        if not difficulty_candidates:
+            difficulty_candidates.append("All")
+
+        for source_candidate in source_candidates:
+            for difficulty_candidate in difficulty_candidates:
+                questions = build_quiz_questions(
+                    current_user.id,
+                    total_questions=total_questions,
+                    quiz_type=quiz_type,
+                    difficulty=difficulty_candidate,
+                    word_source=source_candidate,
+                    custom_instruction=custom_instruction,
+                )
+                if questions:
+                    return {
+                        "questions": questions,
+                        "word_source": source_candidate,
+                        "difficulty": difficulty_candidate,
+                        "used_fallback": source_candidate != word_source or difficulty_candidate != difficulty,
+                    }
+
+        starter_pack = ensure_starter_pack_for_user(current_user.id, custom_instruction)
+        if starter_pack["created"]:
+            questions = build_quiz_questions(
+                current_user.id,
+                total_questions=total_questions,
+                quiz_type=quiz_type,
+                difficulty="All",
+                word_source="my_words",
+                custom_instruction=custom_instruction,
+            )
+            if questions:
+                return {
+                    "questions": questions,
+                    "word_source": "my_words",
+                    "difficulty": "All",
+                    "used_fallback": True,
+                }
+
+        return {
+            "questions": [],
+            "word_source": word_source,
+            "difficulty": difficulty,
+            "used_fallback": False,
+        }
+
     def append_quiz_batch(quiz_state, batch_size=3):
         remaining = max(0, quiz_state["target_count"] - len(quiz_state["questions"]))
         if remaining == 0:
             return 0
 
-        new_questions = build_quiz_questions(
-            current_user.id,
-            total_questions=min(batch_size, remaining),
-            quiz_type=quiz_state.get("quiz_type", "multiple_choice"),
-            difficulty=quiz_state.get("difficulty", "All"),
-            word_source=quiz_state.get("word_source", "my_words"),
-            custom_instruction=quiz_state.get("custom_instruction", ""),
-            exclude_user_word_ids=quiz_state.get("used_word_ids", []),
-        )
+        source_candidates = []
+        for candidate in [
+            quiz_state.get("word_source", "my_words"),
+            "weak_words",
+            "difficult_words",
+            "my_words",
+            "todays_words",
+        ]:
+            if candidate not in source_candidates:
+                source_candidates.append(candidate)
+
+        difficulty_candidates = []
+        for candidate in [quiz_state.get("difficulty", "All"), "All"]:
+            if candidate and candidate not in difficulty_candidates:
+                difficulty_candidates.append(candidate)
+
+        new_questions = []
+        for source_candidate in source_candidates:
+            for difficulty_candidate in difficulty_candidates:
+                new_questions = build_quiz_questions(
+                    current_user.id,
+                    total_questions=min(batch_size, remaining),
+                    quiz_type=quiz_state.get("quiz_type", "multiple_choice"),
+                    difficulty=difficulty_candidate,
+                    word_source=source_candidate,
+                    custom_instruction=quiz_state.get("custom_instruction", ""),
+                    exclude_user_word_ids=quiz_state.get("used_word_ids", []),
+                )
+                if new_questions:
+                    break
+            if new_questions:
+                break
+
         if not new_questions:
             return 0
 
@@ -173,17 +278,41 @@ def register(app):
             if question_count not in {5, 10, 15}:
                 question_count = 10
 
-            questions = build_quiz_questions(
-                current_user.id,
-                total_questions=min(3, question_count),
+            warmup_signature = build_quiz_warmup_signature(
                 quiz_type=quiz_type,
-                difficulty=difficulty,
                 word_source=word_source,
+                difficulty=difficulty,
+                question_count=question_count,
                 custom_instruction=custom_instruction,
             )
+            warmup_cache = session.pop("quiz_warmup", None)
+            warmup_questions = []
+            if warmup_cache and warmup_cache.get("signature") == warmup_signature:
+                warmup_questions = warmup_cache.get("questions", [])
+
+            if warmup_questions:
+                resolution = {
+                    "questions": warmup_questions,
+                    "word_source": word_source,
+                    "difficulty": difficulty,
+                    "used_fallback": False,
+                }
+            else:
+                resolution = build_quiz_questions_with_fallback(
+                    total_questions=min(3, question_count),
+                    quiz_type=quiz_type,
+                    difficulty=difficulty,
+                    word_source=word_source,
+                    custom_instruction=custom_instruction,
+                )
+
+            questions = resolution["questions"]
             if not questions:
-                flash("You need enough saved words in that source and difficulty to start this quiz.", "info")
+                flash("We could not prepare a quiz right now. Try again in a moment.", "info")
                 return redirect(url_for("quiz"))
+
+            if resolution["used_fallback"]:
+                flash(FALLBACK_CONTINUE_MESSAGE, "info")
 
             session["quiz_state"] = {
                 "questions": questions,
@@ -192,8 +321,8 @@ def register(app):
                 "score": 0,
                 "answers": [],
                 "quiz_type": quiz_type,
-                "difficulty": difficulty,
-                "word_source": word_source,
+                "difficulty": resolution["difficulty"],
+                "word_source": resolution["word_source"],
                 "custom_instruction": custom_instruction,
                 "used_word_ids": [question.get("user_word_id") for question in questions if question.get("user_word_id")],
             }
@@ -266,6 +395,30 @@ def register(app):
                 "word_source": quiz_state.get("word_source", "my_words"),
                 "custom_instruction": quiz_state.get("custom_instruction", ""),
             },
+        )
+
+    @app.route("/quiz/warmup", methods=["POST"])
+    @login_required
+    def quiz_warmup():
+        question_count = 10
+        resolution = build_quiz_questions_with_fallback(
+            total_questions=min(3, question_count),
+            quiz_type="multiple_choice",
+            difficulty="All",
+            word_source="my_words",
+            custom_instruction="",
+        )
+        session["quiz_warmup"] = {
+            "signature": build_quiz_warmup_signature(),
+            "questions": resolution["questions"],
+        }
+        session.modified = True
+        return jsonify(
+            {
+                "status": "ok",
+                "generated": len(resolution["questions"]),
+                "used_fallback": resolution["used_fallback"],
+            }
         )
 
     @app.route("/quiz/prefetch", methods=["POST"])

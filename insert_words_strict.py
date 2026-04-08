@@ -23,7 +23,7 @@ with open('templates/base.html', 'w', encoding='utf-8') as f:
 # 2. Re-write words.html with EXACT Tailwind layout including the Top Navbar
 WORDS_HTML = """{% extends "base.html" %}
 
-{% block title %}My Words | VocabAI{% endblock %}
+{% block title %}My Words | vflash.ai{% endblock %}
 
 {% block content %}
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -105,7 +105,7 @@ WORDS_HTML = """{% extends "base.html" %}
     <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
         <div class="flex justify-between items-center h-16 px-6 max-w-screen-2xl mx-auto font-headline tracking-tight">
             <div class="flex items-center gap-8">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">VocabAI</a>
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold tracking-tighter text-primary no-underline">vflash.ai</a>
                 <nav class="hidden md:flex items-center gap-6 text-sm font-semibold pt-1">
                     <a class="text-primary/60 hover:text-primary transition-all no-underline" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="text-primary border-b-2 border-primary pb-[0.2rem] no-underline" href="{{ url_for('words') }}">My Words</a>

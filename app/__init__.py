@@ -4,7 +4,7 @@ import secrets
 
 import runtime_compat
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, logout_user
 from sqlalchemy import inspect, text
 
@@ -117,11 +117,12 @@ def create_app():
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://embed.tawk.to https://*.tawk.to; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.tawk.to https://*.tawk.to; "
             "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data:; "
-            "connect-src 'self'; "
+            "img-src 'self' data: https://embed.tawk.to https://*.tawk.to; "
+            "connect-src 'self' https://embed.tawk.to https://*.tawk.to wss://*.tawk.to; "
+            "frame-src 'self' https://embed.tawk.to https://*.tawk.to; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "form-action 'self'"
@@ -129,6 +130,31 @@ def create_app():
         if request.endpoint and request.endpoint.startswith("admin"):
             response.headers["Cache-Control"] = "no-store"
         return response
+
+    @app.errorhandler(404)
+    def handle_not_found(error):
+        return (
+            render_template(
+                "error.html",
+                error_code=404,
+                error_title="Page not found",
+                error_message="The page you are looking for is not available.",
+            ),
+            404,
+        )
+
+    @app.errorhandler(500)
+    def handle_server_error(error):
+        db.session.rollback()
+        return (
+            render_template(
+                "error.html",
+                error_code=500,
+                error_title="Something went wrong",
+                error_message="We are preparing a safe recovery path. Please return to your dashboard and continue from there.",
+            ),
+            500,
+        )
 
     with app.app_context():
         db.create_all()
