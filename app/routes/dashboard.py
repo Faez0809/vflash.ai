@@ -1,9 +1,10 @@
 from datetime import date, datetime, timedelta
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
-from flask_login import current_user, login_required
+from flask_login import current_user, login_required, login_user
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import selectinload
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import SEARCH_CACHE_TTL_SECONDS, cache
 from app.models import QuizHistory, StudySession, UserAppSession, UserWord, Word, db
@@ -620,16 +621,36 @@ def register(app):
     @login_required
     def profile():
         if request.method == "POST":
-            nickname = clean_text(request.form.get("nickname"))
-            current_user.default_study_focus = clean_text(request.form.get("default_study_focus")) or None
-            try:
-                daily_goal = int(request.form.get("daily_goal", current_user.daily_goal or 10))
-            except (TypeError, ValueError):
-                daily_goal = current_user.daily_goal or 10
-            current_user.nickname = nickname[:80] if nickname else current_user.display_name
-            current_user.daily_goal = max(1, min(daily_goal, 100))
-            db.session.commit()
-            flash("Profile updated successfully.", "success")
+            action = request.form.get("action", "profile").strip().lower()
+            if action == "password":
+                current_password = request.form.get("current_password", "")
+                new_password = request.form.get("new_password", "")
+                confirm_password = request.form.get("confirm_password", "")
+
+                if not check_password_hash(current_user.password, current_password):
+                    flash("Current password is incorrect.", "error")
+                elif len(new_password) < 8:
+                    flash("New password must be at least 8 characters long.", "error")
+                elif new_password != confirm_password:
+                    flash("New passwords do not match.", "error")
+                elif check_password_hash(current_user.password, new_password):
+                    flash("Choose a new password different from your current one.", "error")
+                else:
+                    current_user.password = generate_password_hash(new_password)
+                    db.session.commit()
+                    login_user(current_user, remember=True)
+                    flash("Password updated successfully.", "success")
+            else:
+                nickname = clean_text(request.form.get("nickname"))
+                current_user.default_study_focus = clean_text(request.form.get("default_study_focus")) or None
+                try:
+                    daily_goal = int(request.form.get("daily_goal", current_user.daily_goal or 10))
+                except (TypeError, ValueError):
+                    daily_goal = current_user.daily_goal or 10
+                current_user.nickname = nickname[:80] if nickname else current_user.display_name
+                current_user.daily_goal = max(1, min(daily_goal, 100))
+                db.session.commit()
+                flash("Profile updated successfully.", "success")
             return redirect(url_for("profile"))
 
         total_sessions = StudySession.query.filter_by(user_id=current_user.id).count()

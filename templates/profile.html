@@ -295,30 +295,58 @@
                 </section>
             </div>
 
-            <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
-                <div class="mb-4">
-                    <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Defaults</p>
-                    <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Study Settings</h2>
-                </div>
-                <form method="post" class="space-y-5">
-                    <div class="space-y-2">
-                        <label for="nickname" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Nickname</label>
-                        <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+            <div class="space-y-6">
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Defaults</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Study Settings</h2>
                     </div>
+                    <form method="post" class="space-y-5">
+                        <input type="hidden" name="action" value="profile">
+                        <div class="space-y-2">
+                            <label for="nickname" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Nickname</label>
+                            <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                        </div>
 
-                    <div class="space-y-2">
-                        <label for="default_study_focus" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Default Study Focus</label>
-                        <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border" placeholder="Set a default topic such as Business English or IELTS">{{ current_user.default_study_focus or '' }}</textarea>
+                        <div class="space-y-2">
+                            <label for="default_study_focus" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Default Study Focus</label>
+                            <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border" placeholder="Set a default topic such as Business English or IELTS">{{ current_user.default_study_focus or '' }}</textarea>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="daily_goal" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Daily Goal</label>
+                            <input id="daily_goal" name="daily_goal" type="number" min="1" max="100" value="{{ current_user.daily_goal or 10 }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-container text-[#00201f] px-6 py-4 rounded-2xl font-headline font-extrabold text-sm uppercase tracking-[0.18em] hover:brightness-110 active:scale-[0.99] duration-200 border-none cursor-pointer">Save Profile</button>
+                    </form>
+                </section>
+
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Security</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Change Password</h2>
+                        <p class="mt-2 mb-0 text-sm text-on-surface-variant">Update your password here. Your account will stay signed in on this device after the change.</p>
                     </div>
+                    <form method="post" class="space-y-5">
+                        <input type="hidden" name="action" value="password">
+                        <div class="space-y-2">
+                            <label for="current_password" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Current Password</label>
+                            <input id="current_password" name="current_password" type="password" autocomplete="current-password" required class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="new_password" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">New Password</label>
+                            <input id="new_password" name="new_password" type="password" minlength="8" autocomplete="new-password" required class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="confirm_password" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Confirm New Password</label>
+                            <input id="confirm_password" name="confirm_password" type="password" minlength="8" autocomplete="new-password" required class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
+                        </div>
 
-                    <div class="space-y-2">
-                        <label for="daily_goal" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Daily Goal</label>
-                        <input id="daily_goal" name="daily_goal" type="number" min="1" max="100" value="{{ current_user.daily_goal or 10 }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
-                    </div>
-
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-container text-[#00201f] px-6 py-4 rounded-2xl font-headline font-extrabold text-sm uppercase tracking-[0.18em] hover:brightness-110 active:scale-[0.99] duration-200 border-none cursor-pointer">Save Profile</button>
-                </form>
-            </section>
+                        <button type="submit" class="w-full bg-gradient-to-r from-secondary to-primary text-[#1f1708] px-6 py-4 rounded-2xl font-headline font-extrabold text-sm uppercase tracking-[0.18em] hover:brightness-110 active:scale-[0.99] duration-200 border-none cursor-pointer">Update Password</button>
+                    </form>
+                </section>
+            </div>
         </section>
     </main>
 </div>

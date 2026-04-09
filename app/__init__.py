@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 import os
 import secrets
@@ -169,6 +170,8 @@ def create_app():
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["REMEMBER_COOKIE_HTTPONLY"] = True
     app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
+    app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=_bounded_int("REMEMBER_COOKIE_DAYS", 365, 7, 365))
+    app.config["REMEMBER_COOKIE_REFRESH_EACH_REQUEST"] = True
     app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {"1", "true", "yes"}
     app.config["REMEMBER_COOKIE_SECURE"] = app.config["SESSION_COOKIE_SECURE"]
 

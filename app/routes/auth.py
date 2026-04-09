@@ -38,7 +38,7 @@ def register(app):
             elif user and check_password_hash(user.password, password):
                 user.last_login_at = datetime.utcnow()
                 db.session.commit()
-                login_user(user)
+                login_user(user, remember=True)
                 clear_password_reset_state()
                 if matches_admin_credentials(email, password):
                     session["is_admin"] = True
