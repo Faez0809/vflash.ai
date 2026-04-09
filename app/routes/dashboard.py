@@ -393,15 +393,22 @@ def register(app):
             "Intermediate": 0,
             "Advanced": 0,
         }
+        # PostgreSQL requires the GROUP BY expression to match the non-aggregated
+        # SELECT expression exactly. SQLite is more permissive here, which is why
+        # this could appear to work locally but fail on Supabase/PostgreSQL.
+        difficulty_expr = func.coalesce(Word.difficulty, "Beginner")
         difficulty_rows = (
             db.session.query(
-                func.coalesce(Word.difficulty, "Beginner"),
-                func.count(UserWord.id),
-                func.coalesce(func.sum(case((UserWord.learned.is_(True), 1), else_=0)), 0),
+                difficulty_expr.label("difficulty"),
+                func.count(UserWord.id).label("total_words"),
+                func.coalesce(
+                    func.sum(case((UserWord.learned.is_(True), 1), else_=0)),
+                    0,
+                ).label("learned_words"),
             )
             .join(UserWord, UserWord.word_id == Word.id)
             .filter(UserWord.user_id == current_user.id)
-            .group_by(func.coalesce(Word.difficulty, "Beginner"))
+            .group_by(difficulty_expr)
             .all()
         )
         for difficulty, total_for_level, learned_for_level in difficulty_rows:
