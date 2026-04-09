@@ -548,6 +548,8 @@ function initFlashcards() {
     let queuedStatusMessage = "";
     const swipeThreshold = 50;
     const touchClickGuardMs = 600;
+    const desktopFlashcardMedia = window.matchMedia("(min-width: 768px) and (hover: hover) and (pointer: fine)");
+    let flashcardPressReleaseTimer = null;
     
     // Stable counters for tracking session progress easily
     const initialTotalCards = cards.length;
@@ -599,6 +601,63 @@ function initFlashcards() {
 
     function hasActiveCard() {
         return cards.length && currentIndex < cards.length;
+    }
+
+    function isDesktopFlashcardInteraction() {
+        return desktopFlashcardMedia.matches;
+    }
+
+    function syncFlashcardInteractionMode() {
+        if (!flipCardEl) {
+            return;
+        }
+        flipCardEl.classList.toggle("is-desktop-clickable", isDesktopFlashcardInteraction());
+        if (!isDesktopFlashcardInteraction()) {
+            flipCardEl.classList.remove("is-pressing");
+        }
+    }
+
+    function setFlashcardPressState(isPressing) {
+        if (!flipCardEl || !isDesktopFlashcardInteraction()) {
+            return;
+        }
+        flipCardEl.classList.toggle("is-pressing", isPressing);
+    }
+
+    function releaseFlashcardPressState() {
+        if (flashcardPressReleaseTimer) {
+            window.clearTimeout(flashcardPressReleaseTimer);
+        }
+        flashcardPressReleaseTimer = window.setTimeout(() => {
+            setFlashcardPressState(false);
+        }, 120);
+    }
+
+    function handleDesktopFlashcardClick(event) {
+        if (!flipCardEl) {
+            return;
+        }
+
+        const bounds = flipCardEl.getBoundingClientRect();
+        if (!bounds.width) {
+            flipCard();
+            return;
+        }
+
+        const relativeX = event.clientX - bounds.left;
+        const clickRatio = relativeX / bounds.width;
+
+        if (clickRatio <= 0.3) {
+            showPreviousCard();
+            return;
+        }
+
+        if (clickRatio >= 0.7) {
+            showNextCard();
+            return;
+        }
+
+        flipCard();
     }
 
     function flipCard() {
@@ -790,7 +849,50 @@ function initFlashcards() {
             return;
         }
 
+        if (isDesktopFlashcardInteraction()) {
+            handleDesktopFlashcardClick(event);
+            return;
+        }
+
         flipCard();
+    });
+
+    flipCardEl.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "mouse" || !isDesktopFlashcardInteraction()) {
+            return;
+        }
+
+        if (flashcardPressReleaseTimer) {
+            window.clearTimeout(flashcardPressReleaseTimer);
+        }
+        setFlashcardPressState(true);
+    });
+
+    flipCardEl.addEventListener("pointerup", (event) => {
+        if (event.pointerType !== "mouse" || !isDesktopFlashcardInteraction()) {
+            return;
+        }
+        releaseFlashcardPressState();
+    });
+
+    flipCardEl.addEventListener("pointerleave", () => {
+        if (!isDesktopFlashcardInteraction()) {
+            return;
+        }
+        if (flashcardPressReleaseTimer) {
+            window.clearTimeout(flashcardPressReleaseTimer);
+        }
+        setFlashcardPressState(false);
+    });
+
+    flipCardEl.addEventListener("pointercancel", () => {
+        if (!isDesktopFlashcardInteraction()) {
+            return;
+        }
+        if (flashcardPressReleaseTimer) {
+            window.clearTimeout(flashcardPressReleaseTimer);
+        }
+        setFlashcardPressState(false);
     });
 
     flipCardEl.addEventListener("touchstart", (event) => {
@@ -895,6 +997,14 @@ function initFlashcards() {
             completeCurrentCard();
         });
     }
+
+    syncFlashcardInteractionMode();
+    if (typeof desktopFlashcardMedia.addEventListener === "function") {
+        desktopFlashcardMedia.addEventListener("change", syncFlashcardInteractionMode);
+    } else if (typeof desktopFlashcardMedia.addListener === "function") {
+        desktopFlashcardMedia.addListener(syncFlashcardInteractionMode);
+    }
+    window.addEventListener("resize", syncFlashcardInteractionMode);
 
     renderCard();
 }

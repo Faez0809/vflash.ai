@@ -238,6 +238,9 @@
                 <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
                     <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
                 </button>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
+                {% endif %}
                 <a href="{{ url_for('profile') }}" class="hidden md:flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
@@ -251,6 +254,9 @@
                     <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
                         <span class="nav-menu-email">{{ current_user.display_name }}</span>
                         <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}"><span class="material-symbols-outlined">shield_person</span><span>Admin Panel</span></a>
+                        {% endif %}
                         <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
                         <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>

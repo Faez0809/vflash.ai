@@ -17,8 +17,8 @@
                 <button type="button" class="dashboard-topbar-icon nav-chat-trigger" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
                     <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
                 </button>
-                {% if current_user.is_admin and admin_session_active %}
-                <a class="dashboard-topbar-cta" href="{{ url_for('admin_dashboard') }}">Switch to Admin Panel</a>
+                {% if current_user.is_admin %}
+                <a class="dashboard-topbar-cta" href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
                 {% endif %}
                 <a class="dashboard-topbar-cta" href="#generate-section">New Session</a>
                 <a class="dashboard-avatar" href="{{ url_for('profile') }}" aria-label="Profile">
@@ -31,6 +31,9 @@
                     <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
                         <span class="nav-menu-email">{{ display_name }}</span>
                         <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_dashboard') }}"><span class="material-symbols-outlined">shield_person</span><span>Admin Panel</span></a>
+                        {% endif %}
                         <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
                         <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>

@@ -38,8 +38,8 @@
                     <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
                     <a class="{{ 'is-active' if request.endpoint in ['quiz', 'quiz_start'] else '' }}" href="{{ url_for('quiz') }}">Quiz</a>
                     <a class="{{ 'is-active' if request.endpoint == 'user_manual' else '' }}" href="{{ url_for('user_manual') }}">Manual</a>
-                    {% if admin_session_active %}
-                        <a class="{{ 'is-active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}">Admin</a>
+                    {% if current_user.is_admin %}
+                        <a class="{{ 'is-active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
                     {% endif %}
                     <a class="nav-profile-link {{ 'is-active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}" aria-label="Profile">
                         <span class="nav-profile-name">{{ current_user.display_name }}</span>
@@ -52,6 +52,9 @@
                         <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
                             <span class="nav-menu-email">{{ current_user.display_name }}</span>
                             <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                            {% if current_user.is_admin %}
+                                <a href="{{ url_for('admin_dashboard') }}"><span class="material-symbols-outlined">shield_person</span><span>Admin Panel</span></a>
+                            {% endif %}
                             <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
                             <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                             <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>

@@ -91,6 +91,26 @@
     #flashcard-flip.is-flipped #flip-inner {
         transform: rotateY(180deg);
     }
+    #flashcard-flip {
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        will-change: transform;
+    }
+    @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+        #flashcard-flip.is-desktop-clickable {
+            cursor: pointer;
+        }
+        #flashcard-flip.is-desktop-clickable:hover {
+            transform: scale(1.01);
+            filter: brightness(1.02);
+        }
+        #flashcard-flip.is-desktop-clickable:hover .flashcard-glow,
+        #flashcard-flip.is-desktop-clickable:hover .editorial-shadow {
+            box-shadow: 0 56px 60px -16px rgba(157, 208, 205, 0.08);
+        }
+        #flashcard-flip.is-desktop-clickable.is-pressing {
+            transform: scale(0.95);
+        }
+    }
     
     /* Zero scroll styling but without breaking short screens */
     body {
@@ -124,6 +144,9 @@
                 <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
                     <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
                 </button>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
+                {% endif %}
                 <a href="{{ url_for('profile') }}" class="hidden md:flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
@@ -137,6 +160,9 @@
                     <div class="nav-menu-panel nav-menu-panel-mobile" aria-hidden="true">
                         <span class="nav-menu-email">{{ current_user.display_name }}</span>
                         <a href="{{ url_for('profile') }}"><span class="material-symbols-outlined">person</span><span>Profile</span></a>
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}"><span class="material-symbols-outlined">shield_person</span><span>Admin Panel</span></a>
+                        {% endif %}
                         <a href="{{ url_for('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
                         <a href="{{ url_for('words') }}"><span class="material-symbols-outlined">style</span><span>My Words</span></a>
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
@@ -222,7 +248,8 @@
                                 <h1 class="text-4xl sm:text-6xl font-bold font-headline bg-gradient-to-br from-emerald-200 via-teal-200 to-cyan-400 bg-clip-text text-transparent tracking-tighter drop-shadow-sm pb-2 leading-tight" id="flashcard-word" style="word-break: break-word;"></h1>
                                 <div class="px-3 py-0.5 bg-[#dec38f]/10 border border-[#dec38f]/20 rounded-full text-[10px] font-bold text-[#dec38f] tracking-[0.2em] uppercase mt-2 mb-8" id="flashcard-part-of-speech">
                                 </div>
-                                <p class="text-sm text-outline font-medium animate-pulse m-0">Tap to flip. Swipe left or right to change flashcards.</p>
+                                <p class="text-sm text-outline font-medium animate-pulse m-0 md:hidden">Tap to flip. Swipe left or right to change flashcards.</p>
+                                <p class="hidden md:block text-sm text-outline font-medium animate-pulse m-0">Click left for previous, center to flip, and right for next.</p>
                             </div>
                             
                             <!-- Card Footer -->
