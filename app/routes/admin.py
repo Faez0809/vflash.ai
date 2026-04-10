@@ -4,6 +4,7 @@ from functools import wraps
 from hmac import compare_digest
 
 from flask import current_app, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user
 from app.models import QuizHistory, User, UserAppSession, UserWord, db
 
 
@@ -23,6 +24,14 @@ def register(app):
         admin_email = get_admin_email()
         return bool(admin_email) and session.get("is_admin") is True and session.get("admin_email") == admin_email
 
+    def grant_admin_session():
+        admin_email = get_admin_email()
+        if current_user.is_authenticated and current_user.is_admin and admin_email:
+            session["is_admin"] = True
+            session["admin_email"] = admin_email
+            return True
+        return False
+
     def get_admin_csrf_token():
         token = session.get("admin_csrf_token")
         if not token:
@@ -40,8 +49,13 @@ def register(app):
             if not get_admin_email():
                 flash("Admin access is not configured.", "error")
                 return redirect(url_for("login"))
-            if not is_admin_authenticated():
+            if not current_user.is_authenticated:
                 return redirect(url_for("login", next=request.path))
+            if not current_user.is_admin:
+                flash("You do not have permission to access the admin panel.", "error")
+                return redirect(url_for("dashboard"))
+            if not is_admin_authenticated():
+                grant_admin_session()
             return view(*args, **kwargs)
 
         return wrapped

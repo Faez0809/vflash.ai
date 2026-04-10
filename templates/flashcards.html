@@ -225,6 +225,20 @@
                 </div>
             </div>
 
+            {% if study_session and not review_mode %}
+            <form method="post" action="{{ url_for('generate_words') }}" class="w-full max-w-[600px] mb-4">
+                <input type="hidden" name="difficulty" value="{{ study_session.difficulty }}">
+                <input type="hidden" name="word_count" value="{{ study_session.word_count }}">
+                <input type="hidden" name="custom_prompt" value="{{ study_session.custom_prompt or '' }}">
+                <button
+                    type="submit"
+                    class="w-full rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-bold uppercase tracking-[0.18em] text-primary transition-all hover:bg-primary/15 hover:brightness-110"
+                >
+                    Generate More On This Topic
+                </button>
+            </form>
+            {% endif %}
+
             <!-- Main Flashcard Container -->
             <div class="relative w-full max-w-[600px]">
                 

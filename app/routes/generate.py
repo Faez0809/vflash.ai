@@ -2,12 +2,12 @@ from datetime import date
 
 from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import and_
 
 from app.models import StudySession, UserWord, Word, db
 from app.services.learning_content import (
     FALLBACK_CONTINUE_MESSAGE,
     ensure_starter_pack_for_user,
-    find_cached_study_session,
     invalidate_word_list_cache,
     upsert_word_from_payload,
 )
@@ -16,6 +16,69 @@ from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, valid
 
 
 def register(app):
+    def serialize_word_payload(word, fallback_topic, fallback_difficulty):
+        return {
+            "word": clean_text(getattr(word, "word", "")).lower(),
+            "part_of_speech": clean_text(getattr(word, "part_of_speech", "")) or None,
+            "meaning": clean_text(getattr(word, "meaning", "")) or None,
+            "bangla_meaning": clean_text(getattr(word, "bangla_meaning", "")) or None,
+            "bangla_pronunciation": clean_text(getattr(word, "bangla_pronunciation", "")) or None,
+            "phonetic": clean_text(getattr(word, "phonetic", "")) or None,
+            "synonym": clean_text(getattr(word, "synonym", "")) or None,
+            "memory_trick": clean_text(getattr(word, "memory_trick", "")) or None,
+            "sentence": clean_text(getattr(word, "sentence", "")) or None,
+            "topic": clean_text(getattr(word, "topic", "")) or fallback_topic,
+            "difficulty": clean_text(getattr(word, "difficulty", "")) or fallback_difficulty,
+        }
+
+    def fetch_reusable_words_for_user(user_id, difficulty, topic_hint, seen_words, limit):
+        if limit <= 0:
+            return []
+
+        normalized_topic = clean_text(topic_hint)
+        base_query = (
+            Word.query.outerjoin(
+                UserWord,
+                and_(UserWord.word_id == Word.id, UserWord.user_id == user_id),
+            )
+            .filter(UserWord.id.is_(None))
+            .filter(Word.word.isnot(None))
+        )
+
+        difficulty_query = base_query
+        if difficulty:
+            difficulty_query = difficulty_query.filter(Word.difficulty == difficulty)
+
+        collected = []
+
+        def collect(query):
+            for word in query.limit(max(limit * 3, 20)).all():
+                normalized_word = clean_text(getattr(word, "word", "")).lower()
+                if not normalized_word or normalized_word in seen_words:
+                    continue
+                collected.append(
+                    serialize_word_payload(
+                        word,
+                        fallback_topic=normalized_topic or "General",
+                        fallback_difficulty=difficulty or "Beginner",
+                    )
+                )
+                seen_words.add(normalized_word)
+                if len(collected) >= limit:
+                    break
+
+        if normalized_topic:
+            collect(
+                difficulty_query.filter(Word.topic.isnot(None))
+                .filter(Word.topic.ilike(f"%{normalized_topic}%"))
+                .order_by(Word.created_at.desc().nullslast(), Word.id.desc())
+            )
+            if len(collected) >= limit:
+                return collected
+
+        collect(difficulty_query.order_by(Word.created_at.desc().nullslast(), Word.id.desc()))
+        return collected
+
     @app.route("/generate-words", methods=["POST"])
     @login_required
     def generate_words():
@@ -56,43 +119,27 @@ def register(app):
         if not default_study_focus and last_search_topic and not custom_prompt:
             flash("Tip: Set a default topic for consistent results.", "info")
 
-        cached_session = find_cached_study_session(
-            current_user.id,
-            difficulty,
-            word_count,
-            effective_prompt,
-        )
-        if cached_session:
-            if save_as_default:
-                db.session.commit()
-            flash("Loaded a matching study set from your saved collection.", "info")
-            return redirect(url_for("flashcards_session", session_id=cached_session.id))
-
-        learned_user_words = {
-            row[0]
-            for row in (
-                db.session.query(Word.word)
-                .join(UserWord, UserWord.word_id == Word.id)
-                .filter(
-                    UserWord.user_id == current_user.id,
-                    UserWord.learned.is_(True),
-                )
-                .all()
-            )
-        }
         existing_user_words = {
-            row[0]
+            clean_text(row[0]).lower()
             for row in (
                 db.session.query(Word.word)
                 .join(UserWord, UserWord.word_id == Word.id)
                 .filter(UserWord.user_id == current_user.id)
                 .all()
             )
+            if clean_text(row[0])
         }
-        generated_words = []
-        seen_words = set(existing_user_words)
+        generated_words = fetch_reusable_words_for_user(
+            current_user.id,
+            difficulty,
+            effective_prompt,
+            set(existing_user_words),
+            word_count,
+        )
+        seen_words = {clean_text(item.get("word")).lower() for item in generated_words if clean_text(item.get("word"))}
+        seen_words.update(existing_user_words)
         attempts = 0
-        max_attempts = max(6, word_count * 3)
+        max_attempts = max(2, min(4, word_count))
 
         while len(generated_words) < word_count and attempts < max_attempts:
             attempts += 1
@@ -101,7 +148,7 @@ def register(app):
                 difficulty=difficulty,
                 word_count=remaining,
                 user_custom_prompt=effective_prompt,
-                avoid_words=sorted(learned_user_words),
+                avoid_words=sorted(seen_words),
             )
 
             for item in ai_words:
