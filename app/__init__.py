@@ -185,6 +185,21 @@ def create_app():
     for module in (auth, dashboard, flashcards, generate, review, quiz, words, admin):
         module.register(app)
 
+
+@app.before_request
+def maintenance_mode():
+    if os.getenv("MAINTENANCE_MODE", "").lower() in {"1", "true", "yes"}:
+        return (
+            render_template(
+                "error.html",
+                error_code=503,
+                error_title="🚧 Under Maintenance",
+                error_message="We are improving the system. Please come back later.",
+            ),
+            503,
+        )
+
+
     @app.before_request
     def enforce_restrictions():
         if not current_user.is_authenticated:
