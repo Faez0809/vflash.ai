@@ -186,8 +186,8 @@ def create_app():
         module.register(app)
 
 
-@app.before_request
-def maintenance_mode():
+    @app.before_request
+    def maintenance_mode():
     if (
         os.getenv("MAINTENANCE_MODE", "").lower() in {"1", "true", "yes"}
         and not (current_user.is_authenticated and current_user.email == app.config["ADMIN_EMAIL"])
