@@ -313,66 +313,100 @@
             </form>
         </section>
 
-        {% if lookup_word %}
+        {% if lookup_word or lookup_status in ['suggestions', 'not_found'] %}
             <section class="word-lookup-shell">
                 <article class="word-lookup-card">
-                    <div class="word-lookup-head">
-                        <div>
-                            <div class="word-lookup-title-row">
-                                <h2 class="word-lookup-word">{{ lookup_word.word }}</h2>
-                                {% if lookup_word.part_of_speech %}
-                                    <span class="flashcard-pos">{{ lookup_word.part_of_speech }}</span>
-                                {% endif %}
+                    {% if lookup_word %}
+                        <div class="word-lookup-head">
+                            <div>
+                                <div class="word-lookup-title-row">
+                                    <h2 class="word-lookup-word">{{ lookup_word.word }}</h2>
+                                    {% if lookup_word.part_of_speech %}
+                                        <span class="flashcard-pos">{{ lookup_word.part_of_speech }}</span>
+                                    {% endif %}
+                                </div>
+                                <p class="word-lookup-meaning">
+                                    {% if lookup_word.lookup_pending %}
+                                        We are preparing this word now so your flashcard stays accurate and useful.
+                                    {% else %}
+                                        {{ lookup_word.meaning }}
+                                    {% endif %}
+                                </p>
                             </div>
-                            <p class="word-lookup-meaning">
-                                {% if lookup_word.lookup_pending %}
-                                    We are preparing this word now so your flashcard stays accurate and useful.
-                                {% else %}
-                                    {{ lookup_word.meaning }}
-                                {% endif %}
-                            </p>
                         </div>
-                    </div>
-                    {% if lookup_word.lookup_pending %}
-                        <p class="word-lookup-pending">Search another word now, and check this one again shortly. We are actively preparing vocabulary across beginner, advanced, and rare levels.</p>
-                    {% else %}
-                        <div class="word-lookup-grid">
-                            <div class="word-lookup-detail">
-                                <p class="word-lookup-detail-label">Bangla meaning</p>
-                                <p class="word-lookup-detail-value font-bengali">{{ lookup_word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
-                            </div>
-                            <div class="word-lookup-detail">
-                                <p class="word-lookup-detail-label">Pronunciation</p>
-                                <p class="word-lookup-detail-value">{{ lookup_word.phonetic or 'Not added yet.' }}</p>
-                            </div>
-                            <div class="word-lookup-detail">
-                                <p class="word-lookup-detail-label">Synonym</p>
-                                <p class="word-lookup-detail-value word-lookup-detail-synonym">{{ lookup_word.synonym_hint or lookup_word.synonym or 'Not added yet.' }}</p>
-                            </div>
-                            {% if lookup_word.antonym_hint %}
+                        {% if lookup_word.lookup_pending %}
+                            <p class="word-lookup-pending">Search another word now, and check this one again shortly. We are actively preparing vocabulary across beginner, advanced, and rare levels.</p>
+                        {% else %}
+                            <div class="word-lookup-grid">
                                 <div class="word-lookup-detail">
-                                    <p class="word-lookup-detail-label">Antonym</p>
-                                    <p class="word-lookup-detail-value word-lookup-detail-antonym">{{ lookup_word.antonym_hint }}</p>
+                                    <p class="word-lookup-detail-label">Bangla meaning</p>
+                                    <p class="word-lookup-detail-value font-bengali">{{ lookup_word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
                                 </div>
-                            {% endif %}
-                            <div class="word-lookup-detail">
-                                <p class="word-lookup-detail-label">Topic</p>
-                                <p class="word-lookup-detail-value">{{ lookup_word.topic or 'General' }}</p>
-                            </div>
-                            <div class="word-lookup-detail is-wide">
-                                <p class="word-lookup-detail-label">Sentence</p>
-                                <p class="word-lookup-detail-value">{{ lookup_word.sentence or 'No example sentence yet.' }}</p>
-                            </div>
-                            <div class="word-lookup-detail is-wide">
-                                <p class="word-lookup-detail-label">Memory trick</p>
-                                <p class="word-lookup-detail-value word-lookup-detail-memory">{{ lookup_word.memory_trick or 'Not added yet.' }}</p>
-                            </div>
-                            {% if lookup_note %}
+                                <div class="word-lookup-detail">
+                                    <p class="word-lookup-detail-label">Pronunciation</p>
+                                    <p class="word-lookup-detail-value">{{ lookup_word.phonetic or 'Not added yet.' }}</p>
+                                </div>
+                                <div class="word-lookup-detail">
+                                    <p class="word-lookup-detail-label">Synonym</p>
+                                    <p class="word-lookup-detail-value word-lookup-detail-synonym">{{ lookup_word.synonym_hint or lookup_word.synonym or 'Not added yet.' }}</p>
+                                </div>
+                                {% if lookup_word.antonym_hint %}
+                                    <div class="word-lookup-detail">
+                                        <p class="word-lookup-detail-label">Antonym</p>
+                                        <p class="word-lookup-detail-value word-lookup-detail-antonym">{{ lookup_word.antonym_hint }}</p>
+                                    </div>
+                                {% endif %}
+                                <div class="word-lookup-detail">
+                                    <p class="word-lookup-detail-label">Topic</p>
+                                    <p class="word-lookup-detail-value">{{ lookup_word.topic or 'General' }}</p>
+                                </div>
                                 <div class="word-lookup-detail is-wide">
-                                    <p class="word-lookup-detail-label">Your note</p>
-                                    <p class="word-lookup-detail-value">{{ lookup_note }}</p>
+                                    <p class="word-lookup-detail-label">Sentence</p>
+                                    <p class="word-lookup-detail-value">{{ lookup_word.sentence or 'No example sentence yet.' }}</p>
                                 </div>
-                            {% endif %}
+                                <div class="word-lookup-detail is-wide">
+                                    <p class="word-lookup-detail-label">Memory trick</p>
+                                    <p class="word-lookup-detail-value word-lookup-detail-memory">{{ lookup_word.memory_trick or 'Not added yet.' }}</p>
+                                </div>
+                                {% if related_words %}
+                                    <div class="word-lookup-detail is-wide">
+                                        <p class="word-lookup-detail-label">Related forms</p>
+                                        <p class="word-lookup-detail-value">{{ related_words|join(', ') }}</p>
+                                    </div>
+                                {% endif %}
+                                {% if lookup_note %}
+                                    <div class="word-lookup-detail is-wide">
+                                        <p class="word-lookup-detail-label">Your note</p>
+                                        <p class="word-lookup-detail-value">{{ lookup_note }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="word-lookup-head">
+                            <div>
+                                <div class="word-lookup-title-row">
+                                    <h2 class="word-lookup-word">{{ search_query }}</h2>
+                                </div>
+                                <p class="word-lookup-meaning">
+                                    {% if lookup_status == 'suggestions' %}
+                                        We could not safely match that spelling to a valid word.
+                                    {% else %}
+                                        This word was not found in the database or fallback dictionary.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="word-lookup-grid">
+                            <div class="word-lookup-detail is-wide">
+                                <p class="word-lookup-detail-label">Search guidance</p>
+                                {% if lookup_suggestions %}
+                                    <p class="word-lookup-detail-value">You entered: '{{ search_query }}'</p>
+                                    <p class="word-lookup-detail-value">Did you mean: {{ lookup_suggestions|join(', ') }}</p>
+                                {% else %}
+                                    <p class="word-lookup-detail-value">We did not generate a definition because the spelling could not be verified safely.</p>
+                                {% endif %}
+                            </div>
                         </div>
                     {% endif %}
                 </article>

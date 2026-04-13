@@ -391,6 +391,17 @@ CURATED_WORD_CONTENT = {
         "memory_trick": "Axis sounds like the central line an object asks to turn around.",
         "topic": "general",
     },
+    "enumeration": {
+        "part_of_speech": "noun",
+        "meaning": "the act of listing items one by one",
+        "bangla_meaning": "তালিকাভুক্ত করা বা একে একে উল্লেখ",
+        "sentence": "The report included a clear enumeration of the main causes.",
+        "phonetic": "ee-noo-muh-RAY-shun",
+        "synonym": "listing",
+        "antonym": None,
+        "memory_trick": "Enumeration sounds like numbering each item in order.",
+        "topic": "general",
+    },
     "complex": {
         "part_of_speech": "adjective",
         "meaning": "made of many connected parts and often difficult to understand",
@@ -400,6 +411,39 @@ CURATED_WORD_CONTENT = {
         "synonym": "complicated",
         "antonym": "simple",
         "memory_trick": "Complex sounds like many pieces packed together in one place.",
+        "topic": "general",
+    },
+    "follow": {
+        "part_of_speech": "verb",
+        "meaning": "to go after someone or something, or to understand and accept an idea",
+        "bangla_meaning": "অনুসরণ করা",
+        "sentence": "Please follow the instructions carefully during the test.",
+        "phonetic": "FOL-oh",
+        "synonym": "obey",
+        "antonym": "ignore",
+        "memory_trick": "Follow means going after a path or idea step by step.",
+        "topic": "general",
+    },
+    "power": {
+        "part_of_speech": "noun",
+        "meaning": "the ability to control, influence, or produce an effect",
+        "bangla_meaning": "শক্তি বা ক্ষমতা",
+        "sentence": "Education has the power to change a person's future.",
+        "phonetic": "POW-er",
+        "synonym": "strength",
+        "antonym": "weakness",
+        "memory_trick": "Power is the force that lets something happen strongly.",
+        "topic": "general",
+    },
+    "radial": {
+        "part_of_speech": "adjective",
+        "meaning": "spreading outward from a center point like a radius",
+        "bangla_meaning": "কেন্দ্র থেকে চারদিকে বিস্তৃত",
+        "sentence": "The road map showed a radial pattern around the city center.",
+        "phonetic": "RAY-dee-ul",
+        "synonym": "radiating",
+        "antonym": None,
+        "memory_trick": "Radial comes from radius, so think of lines moving out from the middle.",
         "topic": "general",
     },
     "reject": {
@@ -422,6 +466,28 @@ CURATED_WORD_CONTENT = {
         "synonym": "refused",
         "antonym": "accepted",
         "memory_trick": "Rejected is what remains after something is turned away.",
+        "topic": "general",
+    },
+    "remuneration": {
+        "part_of_speech": "noun",
+        "meaning": "payment given for work or services",
+        "bangla_meaning": "পারিশ্রমিক",
+        "sentence": "The company offered fair remuneration for overtime work.",
+        "phonetic": "ri-myoo-nuh-RAY-shun",
+        "synonym": "payment",
+        "antonym": None,
+        "memory_trick": "Remuneration is the money you receive in return for work.",
+        "topic": "general",
+    },
+    "run": {
+        "part_of_speech": "verb",
+        "meaning": "to move quickly on foot; as a noun, it can also mean a period of movement or operation",
+        "bangla_meaning": "দৌড়ানো; দৌড়",
+        "sentence": "She goes for a short run every morning before work.",
+        "phonetic": "RUN",
+        "synonym": "sprint",
+        "antonym": "walk",
+        "memory_trick": "Run is what you do when your feet move faster than walking.",
         "topic": "general",
     },
     "unique": {
@@ -770,6 +836,78 @@ def generate_word_content(word):
         }
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         return _fallback_word_content(normalized_word)
+
+
+def suggest_word_corrections(word, max_suggestions=3):
+    normalized_word = str(word).strip().lower()
+    if not normalized_word:
+        return []
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    if not api_key:
+        return []
+
+    prompt = f"""
+You are a dictionary-quality English spelling assistant.
+
+Input: {normalized_word}
+
+Task:
+- If the input is already a valid English word, return an empty list.
+- If the input is misspelled, return up to {max_suggestions} likely valid English corrections.
+- Suggestions must be real English words only.
+- Do not explain anything.
+- Do not include the original misspelling unless it is a valid word.
+- Prefer modern common words over rare or obscure ones.
+
+Return ONLY valid JSON:
+["word1", "word2", "word3"]
+"""
+
+    try:
+        response = requests.post(
+            GROQ_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "temperature": 0.1,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You return compact JSON spelling suggestions.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        content = payload["choices"][0]["message"]["content"]
+        parsed = json.loads(_extract_json_text(content))
+    except (requests.RequestException, ValueError, KeyError, RuntimeError):
+        return []
+
+    suggestions = []
+    seen = set()
+    for item in parsed if isinstance(parsed, list) else []:
+        cleaned = str(item or "").strip().lower()
+        if (
+            not cleaned
+            or cleaned == normalized_word
+            or cleaned in seen
+            or not cleaned.isalpha()
+        ):
+            continue
+        seen.add(cleaned)
+        suggestions.append(cleaned)
+        if len(suggestions) >= max_suggestions:
+            break
+    return suggestions
 
 
 def _request_quiz_question_support_from_groq(word, meaning, sentence, difficulty="", custom_instruction="", quiz_type="multiple_choice"):

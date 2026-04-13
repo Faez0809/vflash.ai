@@ -4,8 +4,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
 from app.models import UserWord, Word, db
-from app.services.learning_content import enrich_user_word_entries, get_or_create_word_lookup, touch_user_word_interaction
-from app.services.stats import clean_text
+from app.services.learning_content import enrich_user_word_entries, resolve_vocabulary_lookup, touch_user_word_interaction
+from app.services.stats import clean_text, parse_vocabulary_lookup_query
 
 
 def register(app):
@@ -53,16 +53,35 @@ def register(app):
         enrich_user_word_entries(user_words, allow_ai=True)
         lookup_word = None
         lookup_note = None
-        if search_query and len(search_query.split()) == 1:
+        lookup_status = None
+        lookup_suggestions = []
+        related_words = []
+        requested_part_of_speech = None
+        if search_query:
+            parsed_query = parse_vocabulary_lookup_query(search_query)
+            if len(parsed_query["lookup_query"].split()) != 1:
+                parsed_query = None
+        else:
+            parsed_query = None
+
+        if parsed_query:
+            requested_part_of_speech = parsed_query["part_of_speech"]
             exact_user_word = (
                 UserWord.query.join(Word, UserWord.word_id == Word.id)
                 .filter(
                     UserWord.user_id == current_user.id,
-                    Word.word == search_query.lower(),
+                    Word.word == parsed_query["lookup_query"],
                 )
                 .first()
             )
-            lookup_word = get_or_create_word_lookup(search_query)
+            lookup = resolve_vocabulary_lookup(
+                parsed_query["lookup_query"],
+                preferred_part_of_speech=requested_part_of_speech,
+            )
+            lookup_word = lookup["word"]
+            lookup_status = lookup["status"]
+            lookup_suggestions = lookup["suggestions"]
+            related_words = lookup["related_words"]
             if exact_user_word:
                 lookup_note = clean_text(exact_user_word.note) or None
                 if touch_user_word_interaction(exact_user_word):
@@ -101,6 +120,10 @@ def register(app):
             available_difficulties=available_difficulties,
             lookup_word=lookup_word,
             lookup_note=lookup_note,
+            lookup_status=lookup_status,
+            lookup_suggestions=lookup_suggestions,
+            related_words=related_words,
+            requested_part_of_speech=requested_part_of_speech,
             search_query=search_query,
             difficulty_filter=difficulty_filter or "All",
             topic_filter=topic_filter or "All",

@@ -6,7 +6,6 @@ from sqlalchemy import and_
 
 from app.models import StudySession, UserWord, Word, db
 from app.services.learning_content import (
-    FALLBACK_CONTINUE_MESSAGE,
     ensure_starter_pack_for_user,
     invalidate_word_list_cache,
     upsert_word_from_payload,
@@ -16,6 +15,12 @@ from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, valid
 
 
 def register(app):
+    def difficulty_fallback_sequence(difficulty):
+        order = ["Beginner", "Intermediate", "Advanced"]
+        index_map = {label: position for position, label in enumerate(order)}
+        start_index = index_map.get(difficulty, 0)
+        return list(reversed(order[: start_index + 1]))
+
     def serialize_word_payload(word, fallback_topic, fallback_difficulty):
         return {
             "word": clean_text(getattr(word, "word", "")).lower(),
@@ -36,19 +41,6 @@ def register(app):
             return []
 
         normalized_topic = clean_text(topic_hint)
-        base_query = (
-            Word.query.outerjoin(
-                UserWord,
-                and_(UserWord.word_id == Word.id, UserWord.user_id == user_id),
-            )
-            .filter(UserWord.id.is_(None))
-            .filter(Word.word.isnot(None))
-        )
-
-        difficulty_query = base_query
-        if difficulty:
-            difficulty_query = difficulty_query.filter(Word.difficulty == difficulty)
-
         collected = []
 
         def collect(query):
@@ -67,16 +59,29 @@ def register(app):
                 if len(collected) >= limit:
                     break
 
-        if normalized_topic:
-            collect(
-                difficulty_query.filter(Word.topic.isnot(None))
-                .filter(Word.topic.ilike(f"%{normalized_topic}%"))
-                .order_by(Word.created_at.desc().nullslast(), Word.id.desc())
+        for difficulty_candidate in difficulty_fallback_sequence(difficulty or "Beginner"):
+            difficulty_query = (
+                Word.query.outerjoin(
+                    UserWord,
+                    and_(UserWord.word_id == Word.id, UserWord.user_id == user_id),
+                )
+                .filter(UserWord.id.is_(None))
+                .filter(Word.word.isnot(None))
+                .filter(Word.difficulty == difficulty_candidate)
             )
+
+            if normalized_topic:
+                collect(
+                    difficulty_query.filter(Word.topic.isnot(None))
+                    .filter(Word.topic.ilike(f"%{normalized_topic}%"))
+                    .order_by(Word.created_at.desc().nullslast(), Word.id.desc())
+                )
+                if len(collected) >= limit:
+                    return collected
+
+            collect(difficulty_query.order_by(Word.created_at.desc().nullslast(), Word.id.desc()))
             if len(collected) >= limit:
                 return collected
-
-        collect(difficulty_query.order_by(Word.created_at.desc().nullslast(), Word.id.desc()))
         return collected
 
     @app.route("/generate-words", methods=["POST"])
@@ -141,26 +146,36 @@ def register(app):
         attempts = 0
         max_attempts = max(2, min(4, word_count))
 
+        requested_sequence = difficulty_fallback_sequence(difficulty)
+        used_lower_level_fallback = False
+
         while len(generated_words) < word_count and attempts < max_attempts:
             attempts += 1
             remaining = word_count - len(generated_words)
-            ai_words = generate_vocabulary_words(
-                difficulty=difficulty,
-                word_count=remaining,
-                user_custom_prompt=effective_prompt,
-                avoid_words=sorted(seen_words),
-            )
+            for difficulty_candidate in requested_sequence:
+                ai_words = generate_vocabulary_words(
+                    difficulty=difficulty_candidate,
+                    word_count=remaining,
+                    user_custom_prompt=effective_prompt,
+                    avoid_words=sorted(seen_words),
+                )
 
-            for item in ai_words:
-                normalized_word = clean_text(item.get("word")).lower()
-                if not normalized_word or normalized_word in seen_words:
-                    continue
+                for item in ai_words:
+                    normalized_word = clean_text(item.get("word")).lower()
+                    if not normalized_word or normalized_word in seen_words:
+                        continue
 
-                item["word"] = normalized_word
-                generated_words.append(item)
-                seen_words.add(normalized_word)
+                    item["word"] = normalized_word
+                    generated_words.append(item)
+                    seen_words.add(normalized_word)
+                    if difficulty_candidate != difficulty:
+                        used_lower_level_fallback = True
 
-                if len(generated_words) >= word_count:
+                    if len(generated_words) >= word_count:
+                        break
+
+                remaining = word_count - len(generated_words)
+                if remaining <= 0:
                     break
 
         if not generated_words:
@@ -175,7 +190,7 @@ def register(app):
                 )
                 return redirect(url_for("flashcards_session", session_id=starter_pack["session_id"]))
 
-            flash(FALLBACK_CONTINUE_MESSAGE, "info")
+            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
             return redirect(url_for("flashcards"))
 
         study_session = StudySession(
@@ -230,12 +245,16 @@ def register(app):
         if save_as_default:
             flash("Your default study focus has been updated.", "info")
         if added_count == word_count:
-            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
+            if used_lower_level_fallback:
+                flash(
+                    f"{pluralize(added_count, 'new word')} generated for your study list. Lower-level words were included to keep the topic set complete.",
+                    "success",
+                )
+            else:
+                flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
         elif added_count:
-            flash(
-                f"{pluralize(added_count, 'new word')} generated. The AI repeated too many existing words before reaching {pluralize(word_count, 'word')}.",
-                "info",
-            )
+            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
+            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
         else:
-            flash("No new words were added because they already exist in your study list.", "info")
+            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
         return redirect(url_for("flashcards_session", session_id=study_session.id))

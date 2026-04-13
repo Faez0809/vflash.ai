@@ -1,6 +1,7 @@
 from collections import Counter
 from datetime import date, timedelta
 import difflib
+import os
 import random
 import re
 
@@ -22,6 +23,16 @@ VOCAB_QUERY_MESSAGE = "Please enter a word or short phrase for vocabulary learni
 VOCAB_QUERY_PATTERN = re.compile(r"^[A-Za-z]+(?:[A-Za-z\s'\-]*[A-Za-z]+)?$")
 MAX_VOCAB_QUERY_LENGTH = 60
 MAX_VOCAB_QUERY_WORDS = 5
+LOOKUP_PARTS_OF_SPEECH = {
+    "noun": "noun",
+    "nouns": "noun",
+    "verb": "verb",
+    "verbs": "verb",
+    "adjective": "adjective",
+    "adjectives": "adjective",
+    "adverb": "adverb",
+    "adverbs": "adverb",
+}
 
 
 def normalize_spaces(value):
@@ -71,28 +82,95 @@ def validate_vocabulary_query(value, max_words=MAX_VOCAB_QUERY_WORDS, max_length
     }
 
 
-def suggest_vocabulary_correction(value, candidates, cutoff=0.82):
+def parse_vocabulary_lookup_query(value):
+    normalized = normalize_spaces(value)
+    lowered = normalized.lower()
+    tokens = lowered.split()
+    part_of_speech = None
+    lookup_query = lowered
+
+    if len(tokens) >= 2 and tokens[-1] in LOOKUP_PARTS_OF_SPEECH:
+        lookup_query = " ".join(tokens[:-1]).strip()
+        part_of_speech = LOOKUP_PARTS_OF_SPEECH[tokens[-1]]
+
+    return {
+        "normalized": normalized,
+        "lookup_query": lookup_query,
+        "part_of_speech": part_of_speech,
+    }
+
+
+def _levenshtein_distance(left, right):
+    if left == right:
+        return 0
+    if not left:
+        return len(right)
+    if not right:
+        return len(left)
+
+    previous_row = list(range(len(right) + 1))
+    for left_index, left_char in enumerate(left, start=1):
+        current_row = [left_index]
+        for right_index, right_char in enumerate(right, start=1):
+            insert_cost = current_row[right_index - 1] + 1
+            delete_cost = previous_row[right_index] + 1
+            replace_cost = previous_row[right_index - 1] + (left_char != right_char)
+            current_row.append(min(insert_cost, delete_cost, replace_cost))
+        previous_row = current_row
+    return previous_row[-1]
+
+
+def get_vocabulary_suggestions(value, candidates, limit=3, cutoff=0.78):
     normalized = normalize_spaces(value).lower()
     if not normalized or " " in normalized:
-        return None
+        return []
 
     normalized_candidates = []
     seen = set()
     for candidate in candidates or []:
         cleaned = clean_text(candidate).lower()
-        if not cleaned or cleaned in seen:
+        if not cleaned or cleaned == normalized or cleaned in seen:
             continue
         seen.add(cleaned)
         normalized_candidates.append(cleaned)
 
-    if not normalized_candidates:
+    ranked = []
+    for candidate in normalized_candidates:
+        distance = _levenshtein_distance(normalized, candidate)
+        ratio = difflib.SequenceMatcher(None, normalized, candidate).ratio()
+        shared_prefix = len(os.path.commonprefix([normalized, candidate]))
+        shares_boundary = normalized[:1] == candidate[:1] or normalized[-1:] == candidate[-1:]
+        if ratio < cutoff:
+            continue
+        if distance > 3:
+            continue
+        if shared_prefix < 2 and not shares_boundary:
+            continue
+        ranked.append(
+            {
+                "word": candidate,
+                "distance": distance,
+                "ratio": ratio,
+                "length_delta": abs(len(candidate) - len(normalized)),
+            }
+        )
+
+    ranked.sort(key=lambda item: (item["distance"], -item["ratio"], item["length_delta"], item["word"]))
+    return ranked[:limit]
+
+
+def suggest_vocabulary_correction(value, candidates, cutoff=0.82):
+    suggestions = get_vocabulary_suggestions(value, candidates, limit=2, cutoff=cutoff)
+    if not suggestions:
         return None
 
-    matches = difflib.get_close_matches(normalized, normalized_candidates, n=1, cutoff=cutoff)
-    suggestion = matches[0] if matches else None
-    if suggestion == normalized:
+    best = suggestions[0]
+    runner_up = suggestions[1] if len(suggestions) > 1 else None
+    if best["distance"] > 1 or best["ratio"] < 0.88:
         return None
-    return suggestion
+    if runner_up and runner_up["distance"] == best["distance"] and (best["ratio"] - runner_up["ratio"]) < 0.08:
+        return None
+    return best["word"]
 
 
 def get_study_streak(user_id):

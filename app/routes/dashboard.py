@@ -8,15 +8,20 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import SEARCH_CACHE_TTL_SECONDS, cache
 from app.models import QuizHistory, StudySession, UserAppSession, UserWord, Word, db
-from app.services.learning_content import ensure_starter_pack_for_user, get_or_create_word_lookup, touch_user_word_interaction
+from app.services.learning_content import (
+    ensure_starter_pack_for_user,
+    get_reference_vocabulary_candidates,
+    resolve_vocabulary_lookup,
+    touch_user_word_interaction,
+)
 from app.services.spaced_repetition import get_due_review_word_count
 from app.services.stats import (
     VOCAB_QUERY_MESSAGE,
     clean_text,
     get_study_streak,
     get_weekly_activity,
+    parse_vocabulary_lookup_query,
     pluralize,
-    suggest_vocabulary_correction,
     validate_vocabulary_query,
 )
 
@@ -52,7 +57,7 @@ def register(app):
         if cached_words is not None:
             return cached_words
 
-        fresh_words = [row[0] for row in db.session.query(Word.word).distinct().all() if row[0]]
+        fresh_words = get_reference_vocabulary_candidates()
         cache.set(search_cache_key, fresh_words, timeout=SEARCH_CACHE_TTL_SECONDS)  # Global-only cache with finite TTL.
         return fresh_words
 
@@ -526,28 +531,38 @@ def register(app):
             return redirect(url_for("dashboard"))
 
         session["last_search_topic"] = query
-        normalized_query = query.lower()
+        parsed_query = parse_vocabulary_lookup_query(query)
+        normalized_query = parsed_query["lookup_query"]
+        session["last_search_topic"] = normalized_query or query
 
-        candidate_words = get_search_candidate_words()
-        corrected_query = suggest_vocabulary_correction(normalized_query, candidate_words)
-        exact_match_exists = db.session.query(Word.id).filter(Word.word == normalized_query).first() is not None
-        if corrected_query and not exact_match_exists:
-            flash(f"Showing results for '{corrected_query}' instead of '{query}'.", "info")
-            query = corrected_query
-            session["last_search_topic"] = query
-            normalized_query = corrected_query
+        lookup = resolve_vocabulary_lookup(
+            normalized_query,
+            preferred_part_of_speech=parsed_query["part_of_speech"],
+            correction_candidates=get_search_candidate_words(),
+        )
+        word = lookup["word"]
+        if lookup["status"] == "corrected" and lookup["resolved_word"]:
+            flash(f"Showing results for '{lookup['resolved_word']}' instead of '{lookup['searched_word']}'.", "info")
 
-        word = get_or_create_word_lookup(normalized_query)
         exact_user_word = (
             UserWord.query.filter_by(user_id=current_user.id)
             .join(Word)
-            .filter(Word.word == normalized_query)
+            .filter(Word.word == lookup["resolved_word"])
             .first()
         )
         if exact_user_word and touch_user_word_interaction(exact_user_word):
             db.session.commit()
 
-        return render_template("search.html", word=word, search_query=query)
+        return render_template(
+            "search.html",
+            word=word,
+            search_query=query,
+            lookup_status=lookup["status"],
+            lookup_suggestions=lookup["suggestions"],
+            related_words=lookup["related_words"],
+            requested_part_of_speech=parsed_query["part_of_speech"],
+            resolved_query=lookup["resolved_word"],
+        )
 
     @app.route("/usage/ping", methods=["POST"])
     @login_required

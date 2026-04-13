@@ -53,8 +53,9 @@ function showAjaxMessage(message, category = "info") {
     flashStack.prepend(flash);
 
     window.setTimeout(() => {
-        flash.remove();
-    }, 2500);
+        flash.classList.add("is-fading");
+        window.setTimeout(() => flash.remove(), 320);
+    }, 5500);
 }
 
 async function postJson(url, formData = null) {
@@ -87,7 +88,7 @@ function initFlashMessages() {
         window.setTimeout(() => {
             flash.classList.add("is-fading");
             window.setTimeout(() => flash.remove(), 320);
-        }, 1400 + (index * 150));
+        }, 4400 + (index * 150));
     });
 }
 
