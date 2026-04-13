@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import requests
 
@@ -541,7 +542,38 @@ def _fallback_word_content(word):
     }
 
 
-def _fallback_vocabulary_words(difficulty, word_count, avoid_words=None):
+TOPIC_FILTER_STOPWORDS = {"a", "an", "and", "for", "from", "in", "of", "on", "or", "the", "to", "with"}
+
+
+def _normalize_topic_text(value):
+    return str(value or "").strip().lower()
+
+
+def _topic_terms(value):
+    return {
+        token
+        for token in re.findall(r"[a-z]+", _normalize_topic_text(value))
+        if len(token) >= 3 and token not in TOPIC_FILTER_STOPWORDS
+    }
+
+
+def _is_topic_relevant(item, topic_hint):
+    if not _normalize_topic_text(topic_hint):
+        return True
+
+    haystack = " ".join(
+        str((item or {}).get(field_name) or "")
+        for field_name in ("topic", "meaning", "sentence", "memory_trick")
+    ).lower()
+    topic_terms = _topic_terms(topic_hint)
+    if not topic_terms:
+        return True
+    if _normalize_topic_text(topic_hint) in haystack:
+        return True
+    return bool(topic_terms.intersection(_topic_terms(haystack)))
+
+
+def _fallback_vocabulary_words(difficulty, word_count, avoid_words=None, user_custom_prompt=""):
     avoid_words = avoid_words or set()
     selected = []
     for item in FALLBACK_VOCABULARY.get(difficulty, FALLBACK_VOCABULARY["Beginner"]):
@@ -551,6 +583,8 @@ def _fallback_vocabulary_words(difficulty, word_count, avoid_words=None):
         relations = FALLBACK_RELATIONS.get(fallback_item["word"], {})
         fallback_item["synonym"] = fallback_item.get("synonym") or relations.get("synonym")
         fallback_item["topic"] = fallback_item.get("topic") or "general"
+        if not _is_topic_relevant(fallback_item, user_custom_prompt):
+            continue
         selected.append(fallback_item)
         if len(selected) >= word_count:
             break
@@ -568,10 +602,11 @@ def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prom
     user_custom_prompt = user_custom_prompt.strip() or "No extra instruction."
     has_custom_instruction = user_custom_prompt != "No extra instruction."
     topic_focus_section = (
-        f"Topic Focus:\nFollow this instruction strictly: {user_custom_prompt}\n"
-        "Do not mix in unrelated preset themes, general categories, or previous defaults."
+        f"Generate vocabulary STRICTLY related to:\n{user_custom_prompt}\n"
+        "DO NOT include generic words, unrelated words, or filler vocabulary.\n"
+        "If the topic is narrow, you may expand only slightly into closely related subtopics while staying clearly relevant."
         if has_custom_instruction
-        else "Topic Focus:\neducation, technology, environment, society, culture, communication, work, business, health, daily life, travel, media, relationships, personal development, psychology, economy"
+        else "Generate useful vocabulary for broad modern communication topics such as education, technology, environment, society, culture, communication, work, business, health, daily life, travel, media, relationships, personal development, psychology, and economy."
     )
 
     prompt = f"""
@@ -579,7 +614,7 @@ You are an English vocabulary expert, IELTS trainer, and language learning coach
 
 Your task is to generate high-quality English vocabulary words for a learner.
 
-Generate {word_count} vocabulary words for a {difficulty} level learner.
+Generate EXACTLY {word_count} unique vocabulary words for a {difficulty} level learner.
 
 Difficulty Guidelines:
 - Beginner -> Easy but useful words (daily conversation + simple IELTS words)
@@ -598,6 +633,9 @@ Very Important Requirements:
 - Avoid extremely similar synonyms of the same word.
 - Words should be practical, meaningful, and frequently usable.
 - If the user gives a custom instruction, follow it strictly and do not mix in unrelated topics or categories.
+- Every returned word must be unique within the same response.
+- Every returned word must be a valid modern English word.
+- Return exactly {word_count} items in the JSON array.
 
 {topic_focus_section}
 
@@ -641,11 +679,12 @@ Rules for memory_trick:
 User Custom Instruction:
 {user_custom_prompt}
 
-Words to Avoid (already learned by the user):
+Do NOT include ANY of these words:
 {avoid_words_list}
 
 Important:
 - Do NOT repeat words from the avoid list.
+- Do NOT return any duplicate word inside the same response.
 - Do NOT include any explanation outside JSON.
 - Return only JSON.
 - Ensure all fields are filled for every word.
@@ -660,7 +699,7 @@ Important:
         },
         json={
             "model": model,
-            "temperature": 0.5,
+            "temperature": 0,
             "messages": [
                 {
                     "role": "system",
@@ -688,8 +727,9 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
     except (TypeError, ValueError):
         word_count = 5
 
-    if word_count not in {5, 10, 15}:
+    if word_count < 1:
         word_count = 5
+    word_count = min(word_count, 15)
 
     avoid_words = {
         str(word).strip().lower()
@@ -743,7 +783,12 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         pass
 
-    return _fallback_vocabulary_words(difficulty, word_count, avoid_words=avoid_words)
+    return _fallback_vocabulary_words(
+        difficulty,
+        word_count,
+        avoid_words=avoid_words,
+        user_custom_prompt=user_custom_prompt,
+    )
 
 
 def _request_word_content_from_groq(word):

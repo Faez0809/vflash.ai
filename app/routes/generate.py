@@ -2,21 +2,18 @@ from datetime import date
 
 from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import and_
 
 from app.models import StudySession, UserWord, Word, db
-from app.services.learning_content import (
-    ensure_starter_pack_for_user,
-    invalidate_word_list_cache,
-    upsert_word_from_payload,
-)
+from app.services.learning_content import invalidate_word_list_cache, upsert_word_from_payload
 from app.services.ai_generator import generate_vocabulary_words
 from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, validate_vocabulary_query
 from app.services.word_validation import validate_word_payload
 
 
 def register(app):
-    exhausted_topic_message = "We’ve covered all meaningful words for this topic. Try a broader or different topic."
+    general_exhausted_message = "We could not generate enough new valid words right now. Please try again."
+    max_generation_attempts = 6
+    exhausted_topic_message = "You have already explored most meaningful words for this topic."
 
     def difficulty_fallback_sequence(difficulty):
         order = ["Beginner", "Intermediate", "Advanced"]
@@ -24,74 +21,32 @@ def register(app):
         start_index = index_map.get(difficulty, 0)
         return list(reversed(order[: start_index + 1]))
 
-    def serialize_word_payload(word, fallback_topic, fallback_difficulty):
+    def normalize_generated_payload(item, fallback_topic, fallback_difficulty):
         return {
-            "word": clean_text(getattr(word, "word", "")).lower(),
-            "part_of_speech": clean_text(getattr(word, "part_of_speech", "")) or None,
-            "meaning": clean_text(getattr(word, "meaning", "")) or None,
-            "bangla_meaning": clean_text(getattr(word, "bangla_meaning", "")) or None,
-            "bangla_pronunciation": clean_text(getattr(word, "bangla_pronunciation", "")) or None,
-            "phonetic": clean_text(getattr(word, "phonetic", "")) or None,
-            "synonym": clean_text(getattr(word, "synonym", "")) or None,
-            "memory_trick": clean_text(getattr(word, "memory_trick", "")) or None,
-            "sentence": clean_text(getattr(word, "sentence", "")) or None,
-            "topic": clean_text(getattr(word, "topic", "")) or fallback_topic,
-            "difficulty": clean_text(getattr(word, "difficulty", "")) or fallback_difficulty,
+            "word": clean_text((item or {}).get("word")).lower(),
+            "part_of_speech": clean_text((item or {}).get("part_of_speech")) or None,
+            "meaning": clean_text((item or {}).get("meaning")) or None,
+            "bangla_meaning": clean_text((item or {}).get("bangla_meaning")) or None,
+            "bangla_pronunciation": clean_text((item or {}).get("bangla_pronunciation")) or None,
+            "phonetic": clean_text((item or {}).get("phonetic")) or None,
+            "synonym": clean_text((item or {}).get("synonym")) or None,
+            "memory_trick": clean_text((item or {}).get("memory_trick")) or None,
+            "sentence": clean_text((item or {}).get("sentence")) or None,
+            "topic": clean_text((item or {}).get("topic")) or fallback_topic,
+            "difficulty": clean_text((item or {}).get("difficulty")) or fallback_difficulty,
         }
 
-    def fetch_reusable_words_for_user(user_id, difficulty, topic_hint, seen_words, limit):
-        if limit <= 0:
-            return []
-
-        normalized_topic = clean_text(topic_hint)
-        collected = []
-
-        def collect(query):
-            for word in query.limit(max(limit * 3, 20)).all():
-                normalized_word = clean_text(getattr(word, "word", "")).lower()
-                if not normalized_word or normalized_word in seen_words:
-                    continue
-                serialized = serialize_word_payload(
-                    word,
-                    fallback_topic=normalized_topic or "General",
-                    fallback_difficulty=difficulty or "Beginner",
-                )
-                validation = validate_word_payload(
-                    normalized_word,
-                    payload=serialized,
-                    topic_hint=normalized_topic,
-                )
-                if not validation["is_valid"]:
-                    continue
-                collected.append(serialized)
-                seen_words.add(normalized_word)
-                if len(collected) >= limit:
-                    break
-
-        for difficulty_candidate in difficulty_fallback_sequence(difficulty or "Beginner"):
-            difficulty_query = (
-                Word.query.outerjoin(
-                    UserWord,
-                    and_(UserWord.word_id == Word.id, UserWord.user_id == user_id),
-                )
-                .filter(UserWord.id.is_(None))
-                .filter(Word.word.isnot(None), Word.is_valid.is_(True))
-                .filter(Word.difficulty == difficulty_candidate)
+    def get_excluded_words_for_user(user_id):
+        return {
+            clean_text(row[0]).lower()
+            for row in (
+                db.session.query(Word.word)
+                .join(UserWord, UserWord.word_id == Word.id)
+                .filter(UserWord.user_id == user_id)
+                .all()
             )
-
-            if normalized_topic:
-                collect(
-                    difficulty_query.filter(Word.topic.isnot(None))
-                    .filter(Word.topic.ilike(f"%{normalized_topic}%"))
-                    .order_by(Word.created_at.desc().nullslast(), Word.id.desc())
-                )
-                if len(collected) >= limit:
-                    return collected
-
-            collect(difficulty_query.order_by(Word.created_at.desc().nullslast(), Word.id.desc()))
-            if len(collected) >= limit:
-                return collected
-        return collected
+            if clean_text(row[0])
+        }
 
     @app.route("/generate-words", methods=["POST"])
     @login_required
@@ -133,87 +88,86 @@ def register(app):
         if not default_study_focus and last_search_topic and not custom_prompt:
             flash("Tip: Set a default topic for consistent results.", "info")
 
-        existing_user_words = {
-            clean_text(row[0]).lower()
-            for row in (
-                db.session.query(Word.word)
-                .join(UserWord, UserWord.word_id == Word.id)
-                .filter(Word.is_valid.is_(True))
-                .filter(UserWord.user_id == current_user.id)
-                .all()
-            )
-            if clean_text(row[0])
-        }
-        generated_words = fetch_reusable_words_for_user(
-            current_user.id,
-            difficulty,
-            effective_prompt,
-            set(existing_user_words),
-            word_count,
-        )
-        seen_words = {clean_text(item.get("word")).lower() for item in generated_words if clean_text(item.get("word"))}
-        seen_words.update(existing_user_words)
-        attempts = 0
-        max_attempts = max(2, min(4, word_count))
-
-        requested_sequence = difficulty_fallback_sequence(difficulty)
+        excluded_words = get_excluded_words_for_user(current_user.id)
+        session_words = set()
+        final_words = []
         used_lower_level_fallback = False
+        attempts = 0
+        stalled_attempts = 0
 
-        while len(generated_words) < word_count and attempts < max_attempts:
+        while len(final_words) < word_count and attempts < max_generation_attempts:
             attempts += 1
-            remaining = word_count - len(generated_words)
-            for difficulty_candidate in requested_sequence:
+            accepted_before_attempt = len(final_words)
+            remaining = word_count - len(final_words)
+            batch_size = min(15, max(5, remaining * 2))
+            difficulty_sequence = [difficulty]
+
+            if attempts >= 3:
+                difficulty_sequence.extend(
+                    candidate
+                    for candidate in difficulty_fallback_sequence(difficulty)
+                    if candidate != difficulty
+                )
+
+            for difficulty_candidate in difficulty_sequence:
                 ai_words = generate_vocabulary_words(
                     difficulty=difficulty_candidate,
-                    word_count=remaining,
+                    word_count=batch_size,
                     user_custom_prompt=effective_prompt,
-                    avoid_words=sorted(seen_words),
+                    avoid_words=sorted(excluded_words.union(session_words)),
                 )
 
                 for item in ai_words:
-                    normalized_word = clean_text(item.get("word")).lower()
-                    if not normalized_word or normalized_word in seen_words:
+                    normalized_item = normalize_generated_payload(
+                        item,
+                        fallback_topic=effective_prompt or "General",
+                        fallback_difficulty=difficulty_candidate,
+                    )
+                    normalized_word = normalized_item["word"]
+                    if (
+                        not normalized_word
+                        or normalized_word in excluded_words
+                        or normalized_word in session_words
+                    ):
                         continue
+
                     validation = validate_word_payload(
                         normalized_word,
-                        payload=item,
+                        payload=normalized_item,
                         topic_hint=effective_prompt,
                     )
                     if not validation["is_valid"]:
                         continue
 
-                    item["word"] = normalized_word
-                    generated_words.append(item)
-                    seen_words.add(normalized_word)
+                    final_words.append(normalized_item)
+                    session_words.add(normalized_word)
                     if difficulty_candidate != difficulty:
                         used_lower_level_fallback = True
 
-                    if len(generated_words) >= word_count:
+                    if len(final_words) >= word_count:
                         break
 
-                remaining = word_count - len(generated_words)
-                if remaining <= 0:
+                if len(final_words) >= word_count:
                     break
 
-        if not generated_words:
-            starter_pack = ensure_starter_pack_for_user(current_user.id, effective_prompt)
+            if len(final_words) == accepted_before_attempt:
+                stalled_attempts += 1
+            else:
+                stalled_attempts = 0
+
+            if stalled_attempts >= 2 and attempts >= 4:
+                break
+
+        if len(final_words) != word_count:
             if save_as_default:
                 db.session.commit()
-
-            if starter_pack["created"] and starter_pack["session_id"]:
-                flash(
-                    "Fresh AI content is still being prepared. We've opened a starter vocabulary set so you can begin immediately.",
-                    "info",
-                )
-                return redirect(url_for("flashcards_session", session_id=starter_pack["session_id"]))
-
-            flash(exhausted_topic_message, "info")
+            flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
             return redirect(url_for("flashcards"))
 
         study_session = StudySession(
             user_id=current_user.id,
             difficulty=difficulty,
-            word_count=len(generated_words),
+            word_count=word_count,
             custom_prompt=effective_prompt or None,
             created_at=date.today(),
         )
@@ -224,15 +178,23 @@ def register(app):
             row[0]
             for row in db.session.query(UserWord.word_id).filter(UserWord.user_id == current_user.id).all()
         }
+        saved_words = set()
 
-        for item in generated_words:
+        for item in final_words:
             normalized_word = clean_text(item.get("word")).lower()
-            if not normalized_word:
+            if not normalized_word or normalized_word in excluded_words or normalized_word in saved_words:
                 continue
 
             topic = clean_text(item.get("topic")) or (effective_prompt[:120] if effective_prompt else "General")
             item["topic"] = topic
             item["difficulty"] = clean_text(item.get("difficulty")) or difficulty
+            validation = validate_word_payload(
+                normalized_word,
+                payload=item,
+                topic_hint=effective_prompt,
+            )
+            if not validation["is_valid"]:
+                continue
             word = upsert_word_from_payload(
                 item,
                 fallback_topic=topic or "General",
@@ -254,24 +216,26 @@ def register(app):
                 )
             )
             existing_word_links.add(word.id)
+            saved_words.add(normalized_word)
             added_count += 1
 
+        if added_count != word_count:
+            db.session.rollback()
+            if save_as_default:
+                db.session.add(current_user)
+                db.session.commit()
+            flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
+            return redirect(url_for("flashcards"))
+
         db.session.commit()
-        if added_count:
-            invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
+        invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
         if save_as_default:
             flash("Your default study focus has been updated.", "info")
-        if added_count == word_count:
-            if used_lower_level_fallback:
-                flash(
-                    f"{pluralize(added_count, 'new word')} generated for your study list. Lower-level words were included to keep the topic set complete.",
-                    "success",
-                )
-            else:
-                flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
-        elif added_count:
-            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
-            flash(exhausted_topic_message, "info")
+        if used_lower_level_fallback:
+            flash(
+                f"{pluralize(added_count, 'new word')} generated for your study list. Lower-level words were included to keep the topic set complete.",
+                "success",
+            )
         else:
-            flash(exhausted_topic_message, "info")
+            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
         return redirect(url_for("flashcards_session", session_id=study_session.id))
