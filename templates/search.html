@@ -16,6 +16,14 @@
 
         <article class="search-flashcard-card search-direct-card">
             {% if word %}
+                {% if autocorrected_from and resolved_query %}
+                    <section class="search-guidance-panel search-guidance-panel-success" aria-live="polite">
+                        <p class="search-guidance-eyebrow">Showing results for</p>
+                        <h2 class="search-guidance-title">{{ resolved_query }}</h2>
+                        <p class="search-guidance-copy">We couldn’t find an exact match for <strong>"{{ autocorrected_from }}"</strong>, so we used the closest verified word.</p>
+                    </section>
+                {% endif %}
+
                 <div class="search-direct-head">
                     <div class="search-word-heading">
                         <h1>{{ word.word }}</h1>
@@ -93,20 +101,26 @@
                     </div>
                     <p class="search-flashcard-meaning">
                         {% if lookup_status == 'suggestions' %}
-                            We could not safely match that spelling to a valid word.
+                            We couldn’t find an exact match for your input.
                         {% else %}
-                            This word was not found in the database or fallback dictionary.
+                            This word is not available in our verified vocabulary.
                         {% endif %}
                     </p>
                 </div>
 
-                <section class="flashcard-detail search-flashcard-detail-wide" aria-live="polite">
-                    <p class="stitch-label">Search guidance</p>
+                <section class="search-guidance-panel search-flashcard-detail-wide" aria-live="polite">
+                    <p class="search-guidance-eyebrow">Search guidance</p>
+                    <h2 class="search-guidance-title">{{ search_query }}</h2>
                     {% if lookup_suggestions %}
-                        <p>You entered: <strong>{{ search_query }}</strong></p>
-                        <p>Did you mean: {{ lookup_suggestions|join(', ') }}</p>
+                        <p class="search-guidance-copy">You entered: <strong>"{{ search_query }}"</strong></p>
+                        <p class="search-guidance-status">This word could not be matched to a verified English entry.</p>
+                        <div class="search-suggestion-list">
+                            {% for suggestion in lookup_suggestions %}
+                                <button type="button" class="search-suggestion-chip" data-search-suggestion="{{ suggestion }}">{{ suggestion }}</button>
+                            {% endfor %}
+                        </div>
                     {% else %}
-                        <p>We did not generate a definition because the spelling could not be verified safely.</p>
+                        <p class="search-guidance-status">We didn’t generate a definition because the spelling could not be verified safely.</p>
                     {% endif %}
                 </section>
             {% endif %}

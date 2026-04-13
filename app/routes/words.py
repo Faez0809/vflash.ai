@@ -19,7 +19,12 @@ def register(app):
         difficult_only = request.args.get("difficult") == "1"
         favorite_only = request.args.get("favorite") == "1"
 
-        user_words_query = UserWord.query.options(selectinload(UserWord.word_entry)).filter_by(user_id=current_user.id).join(Word)
+        user_words_query = (
+            UserWord.query.options(selectinload(UserWord.word_entry))
+            .filter_by(user_id=current_user.id)
+            .join(Word)
+            .filter(Word.is_valid.is_(True))
+        )
 
         if search_query:
             search_term = f"%{search_query}%"
@@ -70,6 +75,7 @@ def register(app):
                 UserWord.query.join(Word, UserWord.word_id == Word.id)
                 .filter(
                     UserWord.user_id == current_user.id,
+                    Word.is_valid.is_(True),
                     Word.word == parsed_query["lookup_query"],
                 )
                 .first()
@@ -94,7 +100,7 @@ def register(app):
             for row in (
                 db.session.query(Word.topic)
                 .join(UserWord, UserWord.word_id == Word.id)
-                .filter(UserWord.user_id == current_user.id, Word.topic.isnot(None))
+                .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True), Word.topic.isnot(None))
                 .distinct()
                 .order_by(Word.topic.asc())
                 .all()
@@ -106,7 +112,7 @@ def register(app):
             for row in (
                 db.session.query(Word.difficulty)
                 .join(UserWord, UserWord.word_id == Word.id)
-                .filter(UserWord.user_id == current_user.id, Word.difficulty.isnot(None))
+                .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True), Word.difficulty.isnot(None))
                 .distinct()
                 .order_by(Word.difficulty.asc())
                 .all()
@@ -139,6 +145,7 @@ def register(app):
             UserWord.query.options(selectinload(UserWord.word_entry))
             .filter_by(user_id=current_user.id, is_difficult=True)
             .join(Word)
+            .filter(Word.is_valid.is_(True))
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()
         )

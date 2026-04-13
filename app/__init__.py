@@ -88,6 +88,7 @@ def ensure_index(index_name, ddl):
 
 def run_migrations():
     """Keep SQLite schemas compatible without requiring Alembic."""
+    ensure_column("word", "is_valid", "ALTER TABLE word ADD COLUMN is_valid BOOLEAN DEFAULT 1")
     ensure_column("word", "bangla_meaning", "ALTER TABLE word ADD COLUMN bangla_meaning TEXT")
     ensure_column("word", "difficulty", "ALTER TABLE word ADD COLUMN difficulty VARCHAR(20)")
     ensure_column("word", "part_of_speech", "ALTER TABLE word ADD COLUMN part_of_speech VARCHAR(50)")
@@ -115,6 +116,7 @@ def run_migrations():
     ensure_column("quiz_history", "configured_total_questions", "ALTER TABLE quiz_history ADD COLUMN configured_total_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "was_quit", "ALTER TABLE quiz_history ADD COLUMN was_quit BOOLEAN DEFAULT 0")
     ensure_index("ix_word_difficulty", "CREATE INDEX IF NOT EXISTS ix_word_difficulty ON word (difficulty)")
+    ensure_index("ix_word_is_valid", "CREATE INDEX IF NOT EXISTS ix_word_is_valid ON word (is_valid)")
     ensure_index("ix_word_topic", "CREATE INDEX IF NOT EXISTS ix_word_topic ON word (topic)")
     ensure_index("ix_study_session_user_created", "CREATE INDEX IF NOT EXISTS ix_study_session_user_created ON study_session (user_id, created_at)")
     ensure_index("ix_quiz_history_user_created", "CREATE INDEX IF NOT EXISTS ix_quiz_history_user_created ON quiz_history (user_id, created_at)")
@@ -277,6 +279,7 @@ def create_app():
     with app.app_context():
         if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
             db.create_all()
+        if auto_bootstrap_db:
             run_migrations()
 
     return app

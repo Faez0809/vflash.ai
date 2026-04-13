@@ -36,6 +36,7 @@ def get_due_review_words(user_id):
         UserWord.query.options(selectinload(UserWord.word_entry))
         .filter_by(user_id=user_id, learned=True, already_known=False)
         .join(Word)
+        .filter(Word.is_valid.is_(True))
         .filter(
             (UserWord.rev1.isnot(None) & (UserWord.rev1 <= today))
             | (UserWord.rev2.isnot(None) & (UserWord.rev2 <= today))
@@ -52,6 +53,8 @@ def get_due_review_word_count(user_id):
     return (
         UserWord.query.with_entities(func.count(UserWord.id))
         .filter_by(user_id=user_id, learned=True, already_known=False)
+        .join(Word)
+        .filter(Word.is_valid.is_(True))
         .filter(
             (UserWord.rev1.isnot(None) & (UserWord.rev1 <= today))
             | (UserWord.rev2.isnot(None) & (UserWord.rev2 <= today))

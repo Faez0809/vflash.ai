@@ -7,9 +7,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from app import cache
-from app.models import MasterWord, StudySession, UserWord, Word, db
+from app.models import StudySession, UserWord, Word, db
 from app.services.ai_generator import generate_word_content, suggest_word_corrections
 from app.services.stats import clean_text, get_vocabulary_suggestions, suggest_vocabulary_correction
+from app.services.word_validation import (
+    is_valid_english_word,
+    mark_word_invalid,
+    reference_candidates,
+    validate_word_payload,
+)
 
 
 FALLBACK_CONTINUE_MESSAGE = (
@@ -21,6 +27,34 @@ FALLBACK_CONTINUE_MESSAGE = (
 def invalidate_word_list_cache():
     # Refresh the shared search dictionary after word inserts.
     cache.delete("search:candidate_words:v1")
+
+
+def _invalidate_stored_word_if_needed(normalized_word):
+    stored_word = Word.query.filter_by(word=normalized_word).first()
+    if stored_word is None:
+        return None
+
+    validation = validate_word_payload(
+        normalized_word,
+        payload={
+            "part_of_speech": getattr(stored_word, "part_of_speech", ""),
+            "meaning": getattr(stored_word, "meaning", ""),
+            "sentence": getattr(stored_word, "sentence", ""),
+            "memory_trick": getattr(stored_word, "memory_trick", ""),
+            "topic": getattr(stored_word, "topic", ""),
+        },
+    )
+    if validation["is_valid"]:
+        if stored_word.is_valid is False:
+            stored_word.is_valid = True
+            db.session.commit()
+            invalidate_word_list_cache()
+        return stored_word
+
+    if mark_word_invalid(stored_word):
+        db.session.commit()
+        invalidate_word_list_cache()
+    return None
 
 
 def _fallback_vocabulary_index():
@@ -107,7 +141,7 @@ def _best_generated_payload(normalized_word, allow_variants=False):
         if curated_payload:
             return dict(curated_payload)
 
-        candidate_word = Word.query.filter_by(word=candidate).first()
+        candidate_word = Word.query.filter_by(word=candidate, is_valid=True).first()
         if candidate_word is not None:
             payload = _word_payload_from_model(candidate_word)
             if not is_low_confidence_word_payload(payload, candidate):
@@ -228,30 +262,11 @@ def _payload_to_word_stub(payload):
 
 
 def get_reference_vocabulary_candidates():
-    candidates = set(CURATED_WORD_CONTENT.keys())
-    candidates.update(FALLBACK_VOCABULARY_INDEX.keys())
-    candidates.update(
-        clean_text(row[0]).lower()
-        for row in db.session.query(Word.word).distinct().all()
-        if clean_text(row[0])
-    )
-    candidates.update(
-        clean_text(row[0]).lower()
-        for row in db.session.query(MasterWord.word).distinct().all()
-        if clean_text(row[0])
-    )
-    return sorted(candidates)
+    return reference_candidates()
 
 
 def is_known_dictionary_word(normalized_word):
-    normalized_word = clean_text(normalized_word).lower()
-    if not normalized_word:
-        return False
-    if normalized_word in CURATED_WORD_CONTENT or normalized_word in FALLBACK_VOCABULARY_INDEX:
-        return True
-    if db.session.query(Word.id).filter(Word.word == normalized_word).first() is not None:
-        return True
-    return db.session.query(MasterWord.id).filter(MasterWord.word == normalized_word).first() is not None
+    return is_valid_english_word(normalized_word)
 
 
 def find_related_word_forms(normalized_word, preferred_part_of_speech=None, limit=4):
@@ -274,7 +289,7 @@ def find_related_word_forms(normalized_word, preferred_part_of_speech=None, limi
 
     for row in (
         db.session.query(Word.word, Word.part_of_speech)
-        .filter(Word.word != normalized_word)
+        .filter(Word.word != normalized_word, Word.is_valid.is_(True))
         .filter((Word.word.ilike(f"{normalized_word}%")) | (Word.word.ilike(f"%{normalized_word}")))
         .limit(16)
         .all()
@@ -311,6 +326,7 @@ def resolve_vocabulary_lookup(raw_word, preferred_part_of_speech=None, correctio
             "related_words": [],
         }
 
+    _invalidate_stored_word_if_needed(normalized_word)
     exact_match_exists = is_known_dictionary_word(normalized_word)
     candidates = correction_candidates or get_reference_vocabulary_candidates()
     autocorrected_from = None
@@ -353,7 +369,7 @@ def resolve_vocabulary_lookup(raw_word, preferred_part_of_speech=None, correctio
             "related_words": [],
         }
 
-    ai_suggestions = suggest_word_corrections(normalized_word, max_suggestions=3)
+    ai_suggestions = [item for item in suggest_word_corrections(normalized_word, max_suggestions=3) if is_valid_english_word(item)]
     if ai_suggestions:
         return {
             "searched_word": normalized_word,
@@ -363,18 +379,6 @@ def resolve_vocabulary_lookup(raw_word, preferred_part_of_speech=None, correctio
             "autocorrected_from": None,
             "suggestions": ai_suggestions,
             "related_words": [],
-        }
-
-    word = get_or_create_word_lookup(normalized_word, allow_unverified_generation=True)
-    if word is not None:
-        return {
-            "searched_word": normalized_word,
-            "resolved_word": normalized_word,
-            "word": word,
-            "status": "exact",
-            "autocorrected_from": None,
-            "suggestions": [],
-            "related_words": find_related_word_forms(normalized_word, preferred_part_of_speech=preferred_part_of_speech),
         }
 
     return {
@@ -400,6 +404,7 @@ def apply_word_payload(word, payload, replace_existing=False):
         "phonetic",
         "synonym",
         "memory_trick",
+        "bangla_pronunciation",
         "topic",
         "sentence",
     ]
@@ -447,7 +452,24 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
     if not normalized_word:
         return None
 
-    word = Word.query.filter_by(word=normalized_word).first()
+    validation = validate_word_payload(
+        normalized_word,
+        payload={
+            "part_of_speech": item.get("part_of_speech"),
+            "meaning": item.get("meaning"),
+            "sentence": item.get("sentence"),
+            "memory_trick": item.get("memory_trick"),
+            "topic": clean_text(item.get("topic")) or fallback_topic,
+        },
+        topic_hint=clean_text(item.get("topic")) or fallback_topic,
+    )
+    existing_word = Word.query.filter_by(word=normalized_word).first()
+    if not validation["is_valid"]:
+        if existing_word is not None and mark_word_invalid(existing_word):
+            invalidate_word_list_cache()
+        return None
+
+    word = existing_word
     curated_payload = _curated_word_payload(normalized_word) or {}
     relations = FALLBACK_RELATIONS.get(normalized_word, {})
     payload = {
@@ -462,6 +484,7 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
         "topic": clean_text(curated_payload.get("topic")) or clean_text(item.get("topic")) or fallback_topic,
         "sentence": clean_text(curated_payload.get("sentence")) or clean_text(item.get("sentence")) or None,
         "created_at": date.today(),
+        "is_valid": True,
     }
 
     if word is None:
@@ -485,6 +508,7 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
             setattr(word, field_name, field_value)
     if not word.created_at:
         word.created_at = date.today()
+    word.is_valid = True
     setattr(word, "synonym_hint", _clean_relation_candidate(curated_payload.get("synonym"), normalized_word, allow_phrase=True) or _clean_relation_candidate(payload.get("synonym"), normalized_word, allow_phrase=True) or _clean_relation_candidate(relations.get("synonym"), normalized_word, allow_phrase=True) or None)
     setattr(word, "antonym_hint", _clean_relation_candidate(curated_payload.get("antonym"), normalized_word, allow_phrase=True) or _clean_relation_candidate(relations.get("antonym"), normalized_word, allow_phrase=True) or None)
     setattr(word, "lookup_pending", False)
@@ -492,7 +516,11 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
 
 
 def ensure_starter_pack_for_user(user_id, preferred_focus=""):
-    existing_count = UserWord.query.filter_by(user_id=user_id).count()
+    existing_count = (
+        UserWord.query.join(Word, UserWord.word_id == Word.id)
+        .filter(UserWord.user_id == user_id, Word.is_valid.is_(True))
+        .count()
+    )
     if existing_count:
         return {"created": False, "session_id": None, "added_count": 0}
 
@@ -577,6 +605,7 @@ def find_cached_study_session(user_id, difficulty, word_count, custom_prompt="")
 
 def get_existing_collection_words(user_id, limit=10, difficulty=None, topic_hint=""):
     query = UserWord.query.options(selectinload(UserWord.word_entry)).filter_by(user_id=user_id).join(Word)
+    query = query.filter(Word.is_valid.is_(True))
 
     if difficulty and difficulty != "All":
         query = query.filter(Word.difficulty == difficulty)
@@ -700,10 +729,12 @@ def get_or_create_word_lookup(raw_word, allow_unverified_generation=False):
         return None
 
     curated_payload = _curated_word_payload(normalized_word)
-    word = Word.query.filter_by(word=normalized_word).first()
+    _invalidate_stored_word_if_needed(normalized_word)
+    word = Word.query.filter_by(word=normalized_word, is_valid=True).first()
     if word is not None:
         if curated_payload:
             apply_word_payload(word, curated_payload, replace_existing=True)
+            word.is_valid = True
             db.session.commit()
             enrich_word_collection([word], allow_ai=False)
             return word
@@ -723,6 +754,7 @@ def get_or_create_word_lookup(raw_word, allow_unverified_generation=False):
     if curated_payload:
         word = Word(
             word=normalized_word,
+            is_valid=True,
             part_of_speech=clean_text(curated_payload.get("part_of_speech")) or None,
             meaning=clean_text(curated_payload.get("meaning")) or f"A simple meaning for {normalized_word}.",
             bangla_meaning=clean_text(curated_payload.get("bangla_meaning")) or None,
@@ -740,21 +772,24 @@ def get_or_create_word_lookup(raw_word, allow_unverified_generation=False):
         return word
 
     if not is_known_dictionary_word(normalized_word):
-        if not allow_unverified_generation:
-            return None
-        generated = generate_word_content(normalized_word)
-        if not generated or is_low_confidence_word_payload(generated, normalized_word):
-            return None
-        content = dict(generated)
-        content["word"] = normalized_word
-    else:
-        content = _best_generated_payload(normalized_word, allow_variants=False)
+        return None
+
+    content = _best_generated_payload(normalized_word, allow_variants=False)
 
     if not content:
         return _payload_to_word_stub(_build_transient_word_payload(normalized_word))
 
+    generated_validation = validate_word_payload(
+        normalized_word,
+        payload=content,
+        topic_hint=clean_text(content.get("topic")),
+    )
+    if not generated_validation["is_valid"]:
+        return None
+
     word = Word(
         word=normalized_word,
+        is_valid=True,
         part_of_speech=clean_text(content.get("part_of_speech")) or None,
         meaning=clean_text(content.get("meaning")) or f"A simple meaning for {normalized_word}.",
         bangla_meaning=clean_text(content.get("bangla_meaning")) or None,

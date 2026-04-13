@@ -5531,6 +5531,95 @@ body.search-page .dashboard-page-shell {
     line-height: 1.55;
 }
 
+.search-guidance-panel {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1.15rem 1.15rem 1.05rem;
+    border: 1px solid rgba(157, 208, 205, 0.24);
+    border-radius: 20px;
+    background:
+        linear-gradient(180deg, rgba(20, 24, 24, 0.98), rgba(15, 18, 18, 0.98)),
+        radial-gradient(circle at top right, rgba(157, 208, 205, 0.12), transparent 42%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    opacity: 1;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-guidance-panel:hover {
+    transform: translateY(-1px);
+    border-color: rgba(157, 208, 205, 0.34);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        0 18px 32px rgba(0, 0, 0, 0.18);
+}
+
+.search-guidance-panel-success {
+    border-color: rgba(116, 212, 171, 0.3);
+    background:
+        linear-gradient(180deg, rgba(19, 25, 22, 0.98), rgba(14, 18, 17, 0.98)),
+        radial-gradient(circle at top right, rgba(116, 212, 171, 0.14), transparent 42%);
+}
+
+.search-guidance-eyebrow {
+    margin: 0;
+    color: #9dd0cd;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.search-guidance-title {
+    margin: 0;
+    color: #f4f8f8;
+    font-family: "Manrope", "Inter", sans-serif;
+    font-size: clamp(1.25rem, 2.4vw, 1.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.search-guidance-copy,
+.search-guidance-status {
+    margin: 0;
+    color: #e4efee;
+    font-size: 0.98rem;
+    line-height: 1.7;
+}
+
+.search-guidance-status {
+    color: #ffd2d2;
+}
+
+.search-suggestion-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+}
+
+.search-suggestion-chip {
+    min-height: 42px;
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(157, 208, 205, 0.28);
+    border-radius: 999px;
+    background: rgba(157, 208, 205, 0.08);
+    color: #c7f4f1;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.search-suggestion-chip:hover,
+.search-suggestion-chip:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(157, 208, 205, 0.55);
+    background: rgba(157, 208, 205, 0.18);
+    color: #efffff;
+    outline: none;
+}
+
 .search-flashcard-grid .stitch-label {
     margin: 0 0 0.55rem;
     color: #8ea5a4;
@@ -5601,6 +5690,20 @@ body.search-page .dashboard-page-shell {
     .search-word-heading {
         gap: 0.6rem;
         flex-wrap: wrap;
+    }
+
+    .search-guidance-panel {
+        padding: 1rem;
+    }
+
+    .search-suggestion-list {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .search-suggestion-chip {
+        width: 100%;
+        justify-content: center;
     }
 
     .manual-flow-strip span {

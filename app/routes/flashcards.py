@@ -17,6 +17,7 @@ def register(app):
             UserWord.query.options(selectinload(UserWord.word_entry))
             .filter_by(user_id=current_user.id)
             .join(Word)
+            .filter(Word.is_valid.is_(True))
             .filter(UserWord.learned.is_(False))
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()
@@ -41,6 +42,7 @@ def register(app):
                 session_id=study_session.id,
             )
             .join(Word)
+            .filter(Word.is_valid.is_(True))
             .filter(UserWord.learned.is_(False))
             .order_by(UserWord.added_date.desc(), Word.word.asc())
             .all()

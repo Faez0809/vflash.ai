@@ -35,7 +35,7 @@ def register(app):
             for row in (
                 db.session.query(Word.topic)
                 .join(UserWord, UserWord.word_id == Word.id)
-                .filter(UserWord.user_id == user_id, Word.topic.isnot(None))
+                .filter(UserWord.user_id == user_id, Word.is_valid.is_(True), Word.topic.isnot(None))
                 .distinct()
                 .order_by(Word.topic.asc())
                 .limit(limit)
@@ -353,7 +353,8 @@ def register(app):
                     0,
                 ),
             )
-            .filter(UserWord.user_id == current_user.id)
+            .join(Word, UserWord.word_id == Word.id)
+            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
             .one()
         )
         (
@@ -385,6 +386,8 @@ def register(app):
                     session_id=last_session.id,
                     learned=False,
                 )
+                .join(Word, UserWord.word_id == Word.id)
+                .filter(Word.is_valid.is_(True))
                 .scalar()
                 or 0
             )
@@ -413,7 +416,7 @@ def register(app):
                 ).label("learned_words"),
             )
             .join(UserWord, UserWord.word_id == Word.id)
-            .filter(UserWord.user_id == current_user.id)
+            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
             .group_by(difficulty_expr)
             .all()
         )
@@ -441,6 +444,7 @@ def register(app):
             UserWord.query.options(selectinload(UserWord.word_entry))
             .filter_by(user_id=current_user.id)
             .join(Word)
+            .filter(Word.is_valid.is_(True))
             .order_by(func.coalesce(UserWord.last_reviewed, UserWord.learned_at, UserWord.added_date).desc(), UserWord.id.desc())
             .limit(6)
             .all()
@@ -547,7 +551,7 @@ def register(app):
         exact_user_word = (
             UserWord.query.filter_by(user_id=current_user.id)
             .join(Word)
-            .filter(Word.word == lookup["resolved_word"])
+            .filter(Word.is_valid.is_(True), Word.word == lookup["resolved_word"])
             .first()
         )
         if exact_user_word and touch_user_word_interaction(exact_user_word):
@@ -562,6 +566,7 @@ def register(app):
             related_words=lookup["related_words"],
             requested_part_of_speech=parsed_query["part_of_speech"],
             resolved_query=lookup["resolved_word"],
+            autocorrected_from=lookup["autocorrected_from"],
         )
 
     @app.route("/usage/ping", methods=["POST"])
@@ -669,7 +674,11 @@ def register(app):
             return redirect(url_for("profile"))
 
         total_sessions = StudySession.query.filter_by(user_id=current_user.id).count()
-        total_words = UserWord.query.filter_by(user_id=current_user.id).count()
+        total_words = (
+            UserWord.query.join(Word, UserWord.word_id == Word.id)
+            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
+            .count()
+        )
         quiz_history = (
             QuizHistory.query.filter_by(user_id=current_user.id)
             .order_by(QuizHistory.created_at.desc(), QuizHistory.id.desc())

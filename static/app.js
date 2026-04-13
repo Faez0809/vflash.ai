@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initDashboardWarmups();
     initFeedbackAssistant();
     initVocabularyInputs();
+    initSearchSuggestions();
 });
 
 window.addEventListener("pageshow", () => {
@@ -424,6 +425,41 @@ function initVocabularyInputs() {
         input.setAttribute("maxlength", String(maxLength));
         input.addEventListener("input", () => validateInput(input));
         input.addEventListener("blur", () => validateInput(input));
+    });
+}
+
+function initSearchSuggestions() {
+    const suggestionButtons = document.querySelectorAll("[data-search-suggestion]");
+    if (!suggestionButtons.length) {
+        return;
+    }
+
+    const searchForm = document.querySelector(".search-page-form");
+    const searchInput = searchForm?.querySelector("input[name='q']");
+    if (!searchForm || !searchInput) {
+        return;
+    }
+
+    suggestionButtons.forEach((button) => {
+        if (button.dataset.searchSuggestionBound === "true") {
+            return;
+        }
+
+        button.dataset.searchSuggestionBound = "true";
+        button.addEventListener("click", () => {
+            const suggestion = String(button.dataset.searchSuggestion || "").trim();
+            if (!suggestion) {
+                return;
+            }
+
+            searchInput.value = suggestion;
+            searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+            if (typeof searchForm.requestSubmit === "function") {
+                searchForm.requestSubmit();
+                return;
+            }
+            HTMLFormElement.prototype.submit.call(searchForm);
+        });
     });
 }
 

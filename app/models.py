@@ -51,6 +51,7 @@ class User(UserMixin, db.Model):
 class Word(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     word = db.Column(db.String(120), unique=True, nullable=False)
+    is_valid = db.Column(db.Boolean, nullable=False, default=True, index=True)
     part_of_speech = db.Column(db.String(50), nullable=True)
     meaning = db.Column(db.Text, nullable=False)
     bangla_meaning = db.Column(db.Text, nullable=True)

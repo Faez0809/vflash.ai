@@ -308,6 +308,7 @@ def build_quiz_questions(
         UserWord.query.options(selectinload(UserWord.word_entry))
         .filter_by(user_id=user_id)
         .join(Word)
+        .filter(Word.is_valid.is_(True))
         .order_by(UserWord.added_date.desc(), Word.word.asc())
     )
     exclude_user_word_ids = {

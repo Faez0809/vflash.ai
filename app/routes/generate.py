@@ -12,9 +12,12 @@ from app.services.learning_content import (
 )
 from app.services.ai_generator import generate_vocabulary_words
 from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, validate_vocabulary_query
+from app.services.word_validation import validate_word_payload
 
 
 def register(app):
+    exhausted_topic_message = "We’ve covered all meaningful words for this topic. Try a broader or different topic."
+
     def difficulty_fallback_sequence(difficulty):
         order = ["Beginner", "Intermediate", "Advanced"]
         index_map = {label: position for position, label in enumerate(order)}
@@ -48,13 +51,19 @@ def register(app):
                 normalized_word = clean_text(getattr(word, "word", "")).lower()
                 if not normalized_word or normalized_word in seen_words:
                     continue
-                collected.append(
-                    serialize_word_payload(
-                        word,
-                        fallback_topic=normalized_topic or "General",
-                        fallback_difficulty=difficulty or "Beginner",
-                    )
+                serialized = serialize_word_payload(
+                    word,
+                    fallback_topic=normalized_topic or "General",
+                    fallback_difficulty=difficulty or "Beginner",
                 )
+                validation = validate_word_payload(
+                    normalized_word,
+                    payload=serialized,
+                    topic_hint=normalized_topic,
+                )
+                if not validation["is_valid"]:
+                    continue
+                collected.append(serialized)
                 seen_words.add(normalized_word)
                 if len(collected) >= limit:
                     break
@@ -66,7 +75,7 @@ def register(app):
                     and_(UserWord.word_id == Word.id, UserWord.user_id == user_id),
                 )
                 .filter(UserWord.id.is_(None))
-                .filter(Word.word.isnot(None))
+                .filter(Word.word.isnot(None), Word.is_valid.is_(True))
                 .filter(Word.difficulty == difficulty_candidate)
             )
 
@@ -129,6 +138,7 @@ def register(app):
             for row in (
                 db.session.query(Word.word)
                 .join(UserWord, UserWord.word_id == Word.id)
+                .filter(Word.is_valid.is_(True))
                 .filter(UserWord.user_id == current_user.id)
                 .all()
             )
@@ -164,6 +174,13 @@ def register(app):
                     normalized_word = clean_text(item.get("word")).lower()
                     if not normalized_word or normalized_word in seen_words:
                         continue
+                    validation = validate_word_payload(
+                        normalized_word,
+                        payload=item,
+                        topic_hint=effective_prompt,
+                    )
+                    if not validation["is_valid"]:
+                        continue
 
                     item["word"] = normalized_word
                     generated_words.append(item)
@@ -190,7 +207,7 @@ def register(app):
                 )
                 return redirect(url_for("flashcards_session", session_id=starter_pack["session_id"]))
 
-            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
+            flash(exhausted_topic_message, "info")
             return redirect(url_for("flashcards"))
 
         study_session = StudySession(
@@ -254,7 +271,7 @@ def register(app):
                 flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
         elif added_count:
             flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
-            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
+            flash(exhausted_topic_message, "info")
         else:
-            flash("All significant vocabulary for this topic has been covered. Try a new topic to continue learning.", "info")
+            flash(exhausted_topic_message, "info")
         return redirect(url_for("flashcards_session", session_id=study_session.id))
