@@ -1,4 +1,5 @@
 from datetime import date
+import random
 
 from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, login_required
@@ -11,7 +12,14 @@ from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, valid
 
 def register(app):
     general_exhausted_message = "We could not generate enough new valid words right now. Please try again."
-    max_generation_attempts = 6
+    max_generation_attempts = 8
+    default_topic_messages = [
+        "Tip: Add a topic (e.g., business, travel) to explore more diverse vocabulary.",
+        "Want more variety? Try entering a custom topic.",
+        "You're learning IELTS vocabulary. Add a topic to focus your learning.",
+        "Explore more words by choosing a specific topic.",
+        "Tip: Custom topics can make learning more interesting.",
+    ]
 
     def normalize_generated_payload(item, fallback_topic, fallback_difficulty):
         return {
@@ -28,19 +36,40 @@ def register(app):
             "difficulty": clean_text((item or {}).get("difficulty")) or fallback_difficulty,
         }
 
-    def get_excluded_words_for_user(user_id):
+    def get_excluded_words_for_user(user_id, topic_hint="", recent_limit=100):
         recent_rows = (
             db.session.query(Word.word)
             .join(UserWord, UserWord.word_id == Word.id)
             .filter(UserWord.user_id == user_id)
-            .distinct()
+            .order_by(UserWord.added_date.desc(), UserWord.id.desc())
+            .limit(recent_limit)
             .all()
         )
-        return {
+        excluded_words = {
             clean_text(row[0]).lower()
             for row in recent_rows
             if clean_text(row[0])
         }
+
+        latest_session = (
+            StudySession.query.filter_by(user_id=user_id, custom_prompt=topic_hint or None)
+            .order_by(StudySession.id.desc())
+            .first()
+        )
+        if latest_session is not None:
+            last_session_rows = (
+                db.session.query(Word.word)
+                .join(UserWord, UserWord.word_id == Word.id)
+                .filter(UserWord.user_id == user_id, UserWord.session_id == latest_session.id)
+                .all()
+            )
+            excluded_words.update(
+                clean_text(row[0]).lower()
+                for row in last_session_rows
+                if clean_text(row[0])
+            )
+
+        return excluded_words
 
     @app.route("/generate-words", methods=["POST"])
     @login_required
@@ -76,19 +105,18 @@ def register(app):
             default_study_focus = clean_text(current_user.default_study_focus)
             last_search_topic = clean_text(session.get("last_search_topic"))
             topic_seed = (custom_prompt or default_study_focus or last_search_topic or "").strip()
+            is_default_topic = not bool(topic_seed)
             if topic_seed:
                 effective_prompt = f"{topic_seed} with IELTS-level vocabulary"
             else:
                 effective_prompt = "IELTS standard English vocabulary"
+            soft_message = random.choice(default_topic_messages) if is_default_topic else None
             print("Topic:", effective_prompt)
 
             if save_as_default:
                 current_user.default_study_focus = custom_prompt or None
 
-            if not default_study_focus and last_search_topic and not custom_prompt:
-                flash("Tip: Set a default topic for consistent results.", "info")
-
-            excluded_words = get_excluded_words_for_user(current_user.id)
+            excluded_words = get_excluded_words_for_user(current_user.id, topic_hint=effective_prompt)
             session_words = set()
             final_words = []
             attempts = 0
@@ -97,9 +125,10 @@ def register(app):
             while len(final_words) < word_count and attempts < max_generation_attempts:
                 attempts += 1
                 remaining = word_count - len(final_words)
+                request_count = min(10, remaining * 2)
                 ai_words = generate_vocabulary_words(
                     difficulty=difficulty,
-                    word_count=min(5, remaining),
+                    word_count=request_count,
                     user_custom_prompt=effective_prompt,
                     avoid_words=sorted(excluded_words.union(session_words)),
                 )
@@ -111,11 +140,7 @@ def register(app):
                         fallback_difficulty=difficulty,
                     )
                     normalized_word = normalized_item["word"]
-                    if (
-                        not normalized_word
-                        or normalized_word in excluded_words
-                        or normalized_word in session_words
-                    ):
+                    if not normalized_word or normalized_word in session_words:
                         continue
 
                     final_words.append(normalized_item)
@@ -126,7 +151,29 @@ def register(app):
 
             print("Final words:", len(final_words))
             print("Attempts:", attempts)
+            print("Generated:", len(final_words))
             print("Generated count:", len(final_words))
+
+            if len(final_words) == 0:
+                fallback_words = generate_vocabulary_words(
+                    difficulty=difficulty,
+                    word_count=min(10, word_count),
+                    user_custom_prompt="Generate common useful English vocabulary words",
+                    avoid_words=sorted(excluded_words),
+                )
+                for item in fallback_words:
+                    normalized_item = normalize_generated_payload(
+                        item,
+                        fallback_topic="IELTS standard English vocabulary",
+                        fallback_difficulty=difficulty,
+                    )
+                    normalized_word = normalized_item["word"]
+                    if not normalized_word or normalized_word in session_words:
+                        continue
+                    final_words.append(normalized_item)
+                    session_words.add(normalized_word)
+                    if len(final_words) >= word_count:
+                        break
 
             if len(final_words) == 0:
                 if save_as_default:
@@ -144,15 +191,26 @@ def register(app):
             db.session.add(study_session)
             db.session.flush()
             added_count = 0
-            existing_word_links = {
-                row[0]
-                for row in db.session.query(UserWord.word_id).filter(UserWord.user_id == current_user.id).all()
+            candidate_words = {
+                clean_text(item.get("word")).lower()
+                for item in final_words
+                if clean_text(item.get("word"))
+            }
+            existing_linked_words = {
+                clean_text(row[0]).lower()
+                for row in (
+                    db.session.query(Word.word)
+                    .join(UserWord, UserWord.word_id == Word.id)
+                    .filter(UserWord.user_id == current_user.id, Word.word.in_(candidate_words))
+                    .all()
+                )
+                if clean_text(row[0])
             }
             saved_words = set()
 
             for item in final_words:
                 normalized_word = clean_text(item.get("word")).lower()
-                if not normalized_word or normalized_word in excluded_words or normalized_word in saved_words:
+                if not normalized_word or normalized_word in saved_words:
                     continue
 
                 topic = clean_text(item.get("topic")) or (effective_prompt[:120] if effective_prompt else "General")
@@ -166,7 +224,7 @@ def register(app):
                 if word is None:
                     continue
 
-                if word.id in existing_word_links:
+                if normalized_word in existing_linked_words:
                     continue
 
                 db.session.add(
@@ -178,7 +236,7 @@ def register(app):
                         learned=False,
                     )
                 )
-                existing_word_links.add(word.id)
+                existing_linked_words.add(normalized_word)
                 saved_words.add(normalized_word)
                 added_count += 1
 
@@ -187,15 +245,14 @@ def register(app):
                 if save_as_default:
                     db.session.add(current_user)
                     db.session.commit()
-                if attempts >= max_generation_attempts:
-                    flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
-                else:
-                    flash("Unable to generate words. Try a different or broader topic.", "info")
+                flash(general_exhausted_message, "info")
                 return redirect(url_for("flashcards"))
 
             study_session.word_count = added_count
             db.session.commit()
             invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
+            if soft_message:
+                flash(soft_message, "info")
             if save_as_default:
                 flash("Your default study focus has been updated.", "info")
             if added_count < word_count:
