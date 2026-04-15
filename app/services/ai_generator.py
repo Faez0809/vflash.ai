@@ -1,4 +1,5 @@
 from ai_generator import (
+    generate_word_details,
     generate_quiz_question_support,
     generate_vocabulary_words,
     generate_word_content,
@@ -7,6 +8,7 @@ from ai_generator import (
 )
 
 __all__ = [
+    "generate_word_details",
     "generate_vocabulary_words",
     "generate_word_content",
     "suggest_word_corrections",

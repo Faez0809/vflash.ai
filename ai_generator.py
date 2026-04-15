@@ -893,6 +893,97 @@ def generate_word_content(word):
         return _fallback_word_content(normalized_word)
 
 
+def _request_dictionary_details_from_groq(word):
+    api_key = os.environ.get("GROQ_API_KEY")
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured.")
+
+    prompt = f"""
+You are an English dictionary.
+
+Provide accurate information for the word: '{word}'.
+
+Return JSON ONLY:
+{{
+  "word": "exact word",
+  "part_of_speech": "...",
+  "meaning": "...",
+  "sentence": "...",
+  "synonyms": ["...", "..."],
+  "difficulty": "easy/medium/hard"
+}}
+
+Rules:
+- Word must EXACTLY match input (do not change it)
+- If input is misspelled -> suggest correction separately
+- Meaning must be clear and correct
+- Sentence must use the SAME word (not a different word)
+- No hallucinated or unrelated data
+"""
+
+    response = requests.post(
+        GROQ_API_URL,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "temperature": 0.1,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You return strict dictionary JSON and keep the target word exact.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload["choices"][0]["message"]["content"]
+    return json.loads(_extract_json_text(content))
+
+
+def generate_word_details(word):
+    normalized_word = str(word).strip().lower()
+    if not normalized_word:
+        raise ValueError("word is required")
+
+    content = _request_dictionary_details_from_groq(normalized_word)
+    synonyms = content.get("synonyms")
+    if not isinstance(synonyms, list):
+        synonyms = []
+
+    cleaned_synonyms = []
+    seen = set()
+    for item in synonyms:
+        cleaned = str(item or "").strip().lower()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        cleaned_synonyms.append(cleaned)
+
+    difficulty = str(content.get("difficulty", "")).strip().lower()
+    if difficulty not in {"easy", "medium", "hard"}:
+        difficulty = "medium"
+
+    correction = content.get("correction")
+    correction_text = str(correction or "").strip().lower() or None
+
+    return {
+        "word": str(content.get("word", normalized_word)).strip().lower() or normalized_word,
+        "part_of_speech": str(content.get("part_of_speech", "")).strip() or None,
+        "meaning": str(content.get("meaning", "")).strip(),
+        "sentence": str(content.get("sentence", "")).strip() or None,
+        "synonyms": cleaned_synonyms,
+        "difficulty": difficulty,
+        "correction": correction_text,
+    }
+
+
 def suggest_word_corrections(word, max_suggestions=3):
     normalized_word = str(word).strip().lower()
     if not normalized_word:
