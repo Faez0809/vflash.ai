@@ -8,7 +8,6 @@ from app.models import StudySession, UserWord, Word, db
 from app.services.learning_content import invalidate_word_list_cache, upsert_word_from_payload
 from app.services.ai_generator import generate_vocabulary_words
 from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, validate_vocabulary_query
-from app.services.word_validation import validate_word_payload
 
 
 def register(app):
@@ -86,7 +85,7 @@ def register(app):
             save_as_default = request.form.get("save_as_default") == "on"
             default_study_focus = clean_text(current_user.default_study_focus)
             last_search_topic = clean_text(session.get("last_search_topic"))
-            effective_prompt = custom_prompt or default_study_focus or last_search_topic or ""
+            effective_prompt = (custom_prompt or default_study_focus or last_search_topic or "").strip().lower()
 
             if save_as_default:
                 current_user.default_study_focus = custom_prompt or None
@@ -98,6 +97,7 @@ def register(app):
             session_words = set()
             final_words = []
             used_lower_level_fallback = False
+            used_general_fallback = False
             attempts = 0
             started_at = perf_counter()
 
@@ -145,18 +145,12 @@ def register(app):
                         ):
                             continue
 
-                        validation = validate_word_payload(
-                            normalized_word,
-                            payload=normalized_item,
-                            topic_hint=effective_prompt,
-                        )
-                        if not validation["is_valid"]:
-                            continue
-
                         final_words.append(normalized_item)
                         session_words.add(normalized_word)
                         if difficulty_candidate != difficulty:
                             used_lower_level_fallback = True
+                        if (item or {}).get("generation_source") == "general_fallback":
+                            used_general_fallback = True
 
                         if len(final_words) >= word_count:
                             break
@@ -200,13 +194,6 @@ def register(app):
                 topic = clean_text(item.get("topic")) or (effective_prompt[:120] if effective_prompt else "General")
                 item["topic"] = topic
                 item["difficulty"] = clean_text(item.get("difficulty")) or difficulty
-                validation = validate_word_payload(
-                    normalized_word,
-                    payload=item,
-                    topic_hint=effective_prompt,
-                )
-                if not validation["is_valid"]:
-                    continue
                 word = upsert_word_from_payload(
                     item,
                     fallback_topic=topic or "General",
@@ -247,6 +234,8 @@ def register(app):
             invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
             if save_as_default:
                 flash("Your default study focus has been updated.", "info")
+            if used_general_fallback:
+                flash("Could not generate topic-specific words. Showing general vocabulary instead.", "info")
             if added_count < word_count:
                 flash("Showing best available words for this topic.", "info")
             if used_lower_level_fallback:

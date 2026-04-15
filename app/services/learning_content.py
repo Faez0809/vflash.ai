@@ -464,7 +464,7 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
         topic_hint=clean_text(item.get("topic")) or fallback_topic,
     )
     existing_word = Word.query.filter_by(word=normalized_word).first()
-    if not validation["is_valid"]:
+    if validation["reason"] == "invalid_format":
         if existing_word is not None and mark_word_invalid(existing_word):
             invalidate_word_list_cache()
         return None

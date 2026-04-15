@@ -599,96 +599,82 @@ def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prom
 
     avoid_words = avoid_words or []
     avoid_words_list = ", ".join(avoid_words[:200]) if avoid_words else "None"
-    user_custom_prompt = user_custom_prompt.strip() or "No extra instruction."
-    has_custom_instruction = user_custom_prompt != "No extra instruction."
-    topic_focus_section = (
-        f"Generate vocabulary STRICTLY related to:\n{user_custom_prompt}\n"
-        "DO NOT include generic words, unrelated words, or filler vocabulary.\n"
-        "If the topic is narrow, you may expand only slightly into closely related subtopics while staying clearly relevant."
-        if has_custom_instruction
-        else "Generate useful vocabulary for broad modern communication topics such as education, technology, environment, society, culture, communication, work, business, health, daily life, travel, media, relationships, personal development, psychology, and economy."
-    )
+    normalized_topic = user_custom_prompt.strip().lower()
 
-    prompt = f"""
-You are an English vocabulary expert, IELTS trainer, and language learning coach.
+    if normalized_topic:
+        prompt = f"""
+You are a vocabulary generator for a learning app.
 
-Your task is to generate high-quality English vocabulary words for a learner.
+Task:
+Generate {word_count} English vocabulary words STRICTLY related to the topic: '{normalized_topic}'.
 
-Generate EXACTLY {word_count} unique vocabulary words for a {difficulty} level learner.
+Rules:
+- Only include words that are clearly connected to the topic
+- Include nouns, verbs, adjectives related to the topic
+- Do NOT include unrelated or generic words
+- Do NOT repeat words
+- Output ONLY a clean list of topic-relevant vocabulary
 
-Difficulty Guidelines:
-- Beginner -> Easy but useful words (daily conversation + simple IELTS words)
-- Intermediate -> Common IELTS words and academic vocabulary
-- Advanced -> Strong IELTS, academic, and professional vocabulary
+Examples:
+Topic: cows
+-> cattle, dairy, pasture, livestock, grazing, herd, milking
 
-Very Important Requirements:
-- Words must be useful for IELTS Speaking and Writing.
-- Words must be useful in real-life communication and academic writing.
-- Do NOT generate very common basic words like big, small, happy, sad, good, bad.
-- Do NOT generate very rare, outdated, literary, or overly technical words.
-- Focus on medium to advanced level vocabulary (B1-C1 level).
-- Prefer words commonly used in IELTS essays, speaking, presentations, and formal communication.
-- Avoid slang words.
-- Avoid phrasal verbs.
-- Avoid extremely similar synonyms of the same word.
-- Words should be practical, meaningful, and frequently usable.
-- If the user gives a custom instruction, follow it strictly and do not mix in unrelated topics or categories.
-- Every returned word must be unique within the same response.
-- Every returned word must be a valid modern English word.
-- Return exactly {word_count} items in the JSON array.
+Topic: countries
+-> nation, border, capital, sovereignty, territory, diplomacy
 
-{topic_focus_section}
+Topic: IELTS
+-> vocabulary, fluency, grammar, comprehension, essay, speaking
 
-Each word must include:
-1. word
-2. part_of_speech
-3. english_meaning
-4. bangla_meaning
-5. pronunciation
-6. synonym
-7. example_sentence
-8. memory_trick
-9. topic
+If the topic is broad, generate diverse relevant words.
+If the topic is narrow, still generate the closest meaningful related words.
 
-Output Format:
-Return ONLY valid JSON in the following format:
-
-[
-  {{
-    "word": "Aberration",
-    "part_of_speech": "noun",
-    "english_meaning": "A deviation from what is normal or expected",
-    "bangla_meaning": "ব্যতিক্রম",
-    "pronunciation": "ab-uh-ray-shun",
-    "synonym": "deviation",
-    "example_sentence": "His sudden anger was an aberration from his normal calm behavior.",
-    "memory_trick": "Aberration sounds like abnormal action - something not normal.",
-    "topic": "society"
-  }}
-]
-
-Rules for example_sentence:
-- Sentence must be simple and realistic.
-- Sentence must show real-life usage.
-- Prefer IELTS Speaking or Writing style sentences.
-
-Rules for memory_trick:
-- Use sound similarity, story, or funny association.
-- The trick should help a Bangla speaker remember the word easily.
-
-User Custom Instruction:
-{user_custom_prompt}
-
-Do NOT include ANY of these words:
+Do NOT include any of these words:
 {avoid_words_list}
 
-Important:
-- Do NOT repeat words from the avoid list.
-- Do NOT return any duplicate word inside the same response.
-- Do NOT include any explanation outside JSON.
-- Return only JSON.
-- Ensure all fields are filled for every word.
-- Never ignore the custom instruction when one is provided.
+Return ONLY valid JSON in this format:
+[
+  {{
+    "word": "example",
+    "part_of_speech": "noun",
+    "english_meaning": "short clear meaning",
+    "bangla_meaning": "short Bangla meaning",
+    "pronunciation": "simple pronunciation",
+    "synonym": "related synonym",
+    "example_sentence": "A short sentence using the word.",
+    "memory_trick": "A short memory trick.",
+    "topic": "{normalized_topic}"
+  }}
+]
+"""
+    else:
+        prompt = f"""
+You are a vocabulary generator for a learning app.
+
+Task:
+Generate {word_count} useful general English vocabulary words for a {difficulty} learner.
+
+Rules:
+- Use modern, practical vocabulary
+- Do NOT repeat words
+- Avoid overly rare, outdated, or technical words
+
+Do NOT include any of these words:
+{avoid_words_list}
+
+Return ONLY valid JSON in this format:
+[
+  {{
+    "word": "example",
+    "part_of_speech": "noun",
+    "english_meaning": "short clear meaning",
+    "bangla_meaning": "short Bangla meaning",
+    "pronunciation": "simple pronunciation",
+    "synonym": "related synonym",
+    "example_sentence": "A short sentence using the word.",
+    "memory_trick": "A short memory trick.",
+    "topic": "general"
+  }}
+]
 """
 
     response = requests.post(
@@ -703,7 +689,7 @@ Important:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You generate simple JSON vocabulary flashcards.",
+                    "content": "You generate topic-focused JSON vocabulary flashcards.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -731,19 +717,16 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
         word_count = 5
     word_count = min(word_count, 15)
 
+    topic = str(user_custom_prompt or "").strip().lower()
+    print("Topic:", topic)
+
     avoid_words = {
         str(word).strip().lower()
         for word in (avoid_words or [])
         if str(word).strip()
     }
 
-    try:
-        items = _request_vocabulary_words_from_groq(
-            difficulty,
-            word_count,
-            user_custom_prompt=user_custom_prompt,
-            avoid_words=sorted(avoid_words),
-        )
+    def clean_items(items, fallback_topic, generation_source):
         cleaned_items = []
         seen_words = set(avoid_words)
 
@@ -752,43 +735,70 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
                 continue
 
             word = str(item.get("word", "")).strip().lower()
-            part_of_speech = str(item.get("part_of_speech", "")).strip() or None
-            meaning = str(item.get("english_meaning", item.get("meaning", ""))).strip()
-            sentence = str(item.get("example_sentence", item.get("sentence", ""))).strip()
-            phonetic = str(item.get("pronunciation", item.get("phonetic", ""))).strip() or word
-            synonym = str(item.get("synonym", "")).strip() or FALLBACK_RELATIONS.get(word, {}).get("synonym") or None
-            topic = str(item.get("topic", "")).strip() or None
-
-            if not word or not meaning or not sentence or word in seen_words:
+            if not word or word in seen_words:
                 continue
 
             seen_words.add(word)
             cleaned_items.append(
                 {
                     "word": word,
-                    "part_of_speech": part_of_speech,
-                    "meaning": meaning,
+                    "part_of_speech": str(item.get("part_of_speech", "")).strip() or None,
+                    "meaning": str(item.get("english_meaning", item.get("meaning", ""))).strip() or f"A word related to {fallback_topic or 'general English'}.",
                     "bangla_meaning": str(item.get("bangla_meaning", "")).strip() or None,
-                    "sentence": sentence,
-                    "phonetic": phonetic,
-                    "synonym": synonym,
+                    "sentence": str(item.get("example_sentence", item.get("sentence", ""))).strip() or f"This lesson includes the word {word}.",
+                    "phonetic": str(item.get("pronunciation", item.get("phonetic", ""))).strip() or word,
+                    "synonym": str(item.get("synonym", "")).strip() or FALLBACK_RELATIONS.get(word, {}).get("synonym") or None,
                     "memory_trick": str(item.get("memory_trick", "")).strip() or None,
                     "difficulty": difficulty,
-                    "topic": topic,
+                    "topic": str(item.get("topic", "")).strip() or fallback_topic or "general",
+                    "generation_source": generation_source,
                 }
             )
+        return cleaned_items
 
+    try:
+        items = _request_vocabulary_words_from_groq(
+            difficulty,
+            word_count,
+            user_custom_prompt=topic,
+            avoid_words=sorted(avoid_words),
+        )
+        cleaned_items = clean_items(items, fallback_topic=topic or "general", generation_source="topic")
+        print("AI response:", [item["word"] for item in cleaned_items])
         if cleaned_items:
             return cleaned_items
+
+        if topic:
+            retry_items = _request_vocabulary_words_from_groq(
+                difficulty,
+                word_count,
+                user_custom_prompt=f"Generate general English vocabulary related to '{topic}'",
+                avoid_words=sorted(avoid_words),
+            )
+            cleaned_retry_items = clean_items(
+                retry_items,
+                fallback_topic=topic,
+                generation_source="topic_retry",
+            )
+            print("AI response:", [item["word"] for item in cleaned_retry_items])
+            if cleaned_retry_items:
+                return cleaned_retry_items
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         pass
 
-    return _fallback_vocabulary_words(
+    fallback_items = _fallback_vocabulary_words(
         difficulty,
         word_count,
         avoid_words=avoid_words,
-        user_custom_prompt=user_custom_prompt,
+        user_custom_prompt="",
     )
+    cleaned_fallback_items = clean_items(
+        fallback_items,
+        fallback_topic="general",
+        generation_source="general_fallback",
+    )
+    print("AI response:", [item["word"] for item in cleaned_fallback_items])
+    return cleaned_fallback_items
 
 
 def _request_word_content_from_groq(word):
