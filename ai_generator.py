@@ -893,7 +893,7 @@ def generate_word_content(word):
         return _fallback_word_content(normalized_word)
 
 
-def _request_dictionary_details_from_groq(word):
+def _request_dictionary_details_from_groq(word, retry=False):
     api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
@@ -902,24 +902,35 @@ def _request_dictionary_details_from_groq(word):
     prompt = f"""
 You are an English dictionary.
 
-Provide accurate information for the word: '{word}'.
+Provide COMPLETE and accurate data for the word: '{word}'.
 
-Return JSON ONLY:
+Return ONLY valid JSON:
 {{
-  "word": "exact word",
-  "part_of_speech": "...",
-  "meaning": "...",
-  "sentence": "...",
-  "synonyms": ["...", "..."],
-  "difficulty": "easy/medium/hard"
+"word": "exact word",
+"part_of_speech": "noun/verb/adjective/etc",
+"meaning": "clear definition",
+"sentence": "example sentence using the SAME word",
+"synonyms": ["word1", "word2"],
+"pronunciation": "phonetic spelling",
+"bangla_meaning": "বাংলা অর্থ",
+"difficulty": "easy/medium/hard"
 }}
 
 Rules:
-- Word must EXACTLY match input (do not change it)
-- If input is misspelled -> suggest correction separately
-- Meaning must be clear and correct
-- Sentence must use the SAME word (not a different word)
-- No hallucinated or unrelated data
+- ALL fields are REQUIRED (no empty fields)
+- Sentence MUST contain the word exactly
+- Synonyms must be real words
+- If input is NOT a valid English word -> DO NOT generate fake data
+- Instead return:
+{{
+  "status": "invalid",
+  "suggestions": ["correct1", "correct2"]
+}}
+"""
+    if retry:
+        prompt += """
+
+Provide COMPLETE dictionary data for the word. All fields must be filled.
 """
 
     response = requests.post(
@@ -934,7 +945,7 @@ Rules:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You return strict dictionary JSON and keep the target word exact.",
+                    "content": "You are a professional English dictionary API that returns strict JSON only.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -952,7 +963,47 @@ def generate_word_details(word):
     if not normalized_word:
         raise ValueError("word is required")
 
-    content = _request_dictionary_details_from_groq(normalized_word)
+    return _generate_word_details_attempt(normalized_word, retry=False)
+
+
+def retry_generate_word_details(word):
+    normalized_word = str(word).strip().lower()
+    if not normalized_word:
+        raise ValueError("word is required")
+
+    return _generate_word_details_attempt(normalized_word, retry=True)
+
+
+def _generate_word_details_attempt(normalized_word, retry=False):
+    content = _request_dictionary_details_from_groq(normalized_word, retry=retry)
+    raw_status = str(content.get("status", "")).strip().lower()
+    suggestions = content.get("suggestions")
+    if not isinstance(suggestions, list):
+        suggestions = []
+
+    cleaned_suggestions = []
+    suggestion_seen = set()
+    for item in suggestions:
+        cleaned = str(item or "").strip().lower()
+        if not cleaned or cleaned == normalized_word or cleaned in suggestion_seen or not cleaned.isalpha():
+            continue
+        suggestion_seen.add(cleaned)
+        cleaned_suggestions.append(cleaned)
+
+    if raw_status == "invalid":
+        return {
+            "status": "invalid",
+            "word": normalized_word,
+            "part_of_speech": None,
+            "meaning": "",
+            "sentence": None,
+            "synonyms": [],
+            "pronunciation": None,
+            "bangla_meaning": None,
+            "difficulty": None,
+            "suggestions": cleaned_suggestions,
+        }
+
     synonyms = content.get("synonyms")
     if not isinstance(synonyms, list):
         synonyms = []
@@ -970,17 +1021,17 @@ def generate_word_details(word):
     if difficulty not in {"easy", "medium", "hard"}:
         difficulty = "medium"
 
-    correction = content.get("correction")
-    correction_text = str(correction or "").strip().lower() or None
-
     return {
+        "status": "ok",
         "word": str(content.get("word", normalized_word)).strip().lower() or normalized_word,
         "part_of_speech": str(content.get("part_of_speech", "")).strip() or None,
         "meaning": str(content.get("meaning", "")).strip(),
         "sentence": str(content.get("sentence", "")).strip() or None,
         "synonyms": cleaned_synonyms,
+        "pronunciation": str(content.get("pronunciation", "")).strip() or None,
+        "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or None,
         "difficulty": difficulty,
-        "correction": correction_text,
+        "suggestions": cleaned_suggestions,
     }
 
 
