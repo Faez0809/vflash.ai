@@ -164,16 +164,22 @@ def register(app):
                     if len(final_words) >= word_count:
                         break
 
-            if len(final_words) != word_count:
+            print("Final words:", len(final_words))
+            print("Attempts:", attempts)
+
+            if len(final_words) == 0:
                 if save_as_default:
                     db.session.commit()
-                flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
+                if attempts >= max_generation_attempts:
+                    flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
+                else:
+                    flash("Unable to generate words. Try a different or broader topic.", "info")
                 return redirect(url_for("flashcards"))
 
             study_session = StudySession(
                 user_id=current_user.id,
                 difficulty=difficulty,
-                word_count=word_count,
+                word_count=len(final_words),
                 custom_prompt=effective_prompt or None,
                 created_at=date.today(),
             )
@@ -225,18 +231,24 @@ def register(app):
                 saved_words.add(normalized_word)
                 added_count += 1
 
-            if added_count != word_count:
+            if added_count == 0:
                 db.session.rollback()
                 if save_as_default:
                     db.session.add(current_user)
                     db.session.commit()
-                flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
+                if attempts >= max_generation_attempts:
+                    flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
+                else:
+                    flash("Unable to generate words. Try a different or broader topic.", "info")
                 return redirect(url_for("flashcards"))
 
+            study_session.word_count = added_count
             db.session.commit()
             invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
             if save_as_default:
                 flash("Your default study focus has been updated.", "info")
+            if added_count < word_count:
+                flash("Showing best available words for this topic.", "info")
             if used_lower_level_fallback:
                 flash(
                     f"{pluralize(added_count, 'new word')} generated for your study list. Lower-level words were included to keep the topic set complete.",
