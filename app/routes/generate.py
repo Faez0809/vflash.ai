@@ -12,15 +12,8 @@ from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, valid
 
 def register(app):
     general_exhausted_message = "We could not generate enough new valid words right now. Please try again."
-    max_generation_attempts = 3
+    max_generation_attempts = 6
     generation_timeout_seconds = 5
-    exhausted_topic_message = "You have already explored most meaningful words for this topic."
-
-    def difficulty_fallback_sequence(difficulty):
-        order = ["Beginner", "Intermediate", "Advanced"]
-        index_map = {label: position for position, label in enumerate(order)}
-        start_index = index_map.get(difficulty, 0)
-        return list(reversed(order[: start_index + 1]))
 
     def normalize_generated_payload(item, fallback_topic, fallback_difficulty):
         return {
@@ -85,7 +78,12 @@ def register(app):
             save_as_default = request.form.get("save_as_default") == "on"
             default_study_focus = clean_text(current_user.default_study_focus)
             last_search_topic = clean_text(session.get("last_search_topic"))
-            effective_prompt = (custom_prompt or default_study_focus or last_search_topic or "").strip().lower()
+            topic_seed = (custom_prompt or default_study_focus or last_search_topic or "").strip()
+            if topic_seed:
+                effective_prompt = f"{topic_seed} with IELTS-level vocabulary"
+            else:
+                effective_prompt = "IELTS standard English vocabulary"
+            print("Topic:", effective_prompt)
 
             if save_as_default:
                 current_user.default_study_focus = custom_prompt or None
@@ -96,8 +94,6 @@ def register(app):
             excluded_words = get_excluded_words_for_user(current_user.id)
             session_words = set()
             final_words = []
-            used_lower_level_fallback = False
-            used_general_fallback = False
             attempts = 0
             started_at = perf_counter()
 
@@ -107,67 +103,44 @@ def register(app):
 
                 attempts += 1
                 remaining = word_count - len(final_words)
-                batch_size = min(5, remaining)
-                difficulty_sequence = [difficulty]
+                ai_words = generate_vocabulary_words(
+                    difficulty=difficulty,
+                    word_count=min(5, remaining),
+                    user_custom_prompt=effective_prompt,
+                    avoid_words=sorted(excluded_words.union(session_words)),
+                )
 
-                if attempts >= 3:
-                    difficulty_sequence.extend(
-                        candidate
-                        for candidate in difficulty_fallback_sequence(difficulty)
-                        if candidate != difficulty
-                    )
-
-                for difficulty_candidate in difficulty_sequence:
+                for item in ai_words:
                     if perf_counter() - started_at >= generation_timeout_seconds:
                         break
 
-                    ai_words = generate_vocabulary_words(
-                        difficulty=difficulty_candidate,
-                        word_count=batch_size,
-                        user_custom_prompt=effective_prompt,
-                        avoid_words=sorted(excluded_words.union(session_words)),
+                    normalized_item = normalize_generated_payload(
+                        item,
+                        fallback_topic=effective_prompt,
+                        fallback_difficulty=difficulty,
                     )
+                    normalized_word = normalized_item["word"]
+                    if (
+                        not normalized_word
+                        or normalized_word in excluded_words
+                        or normalized_word in session_words
+                    ):
+                        continue
 
-                    for item in ai_words:
-                        if perf_counter() - started_at >= generation_timeout_seconds:
-                            break
-
-                        normalized_item = normalize_generated_payload(
-                            item,
-                            fallback_topic=effective_prompt or "General",
-                            fallback_difficulty=difficulty_candidate,
-                        )
-                        normalized_word = normalized_item["word"]
-                        if (
-                            not normalized_word
-                            or normalized_word in excluded_words
-                            or normalized_word in session_words
-                        ):
-                            continue
-
-                        final_words.append(normalized_item)
-                        session_words.add(normalized_word)
-                        if difficulty_candidate != difficulty:
-                            used_lower_level_fallback = True
-                        if (item or {}).get("generation_source") == "general_fallback":
-                            used_general_fallback = True
-
-                        if len(final_words) >= word_count:
-                            break
+                    final_words.append(normalized_item)
+                    session_words.add(normalized_word)
 
                     if len(final_words) >= word_count:
                         break
 
             print("Final words:", len(final_words))
             print("Attempts:", attempts)
+            print("Generated count:", len(final_words))
 
             if len(final_words) == 0:
                 if save_as_default:
                     db.session.commit()
-                if attempts >= max_generation_attempts:
-                    flash(exhausted_topic_message if effective_prompt else general_exhausted_message, "info")
-                else:
-                    flash("Unable to generate words. Try a different or broader topic.", "info")
+                flash(general_exhausted_message, "info")
                 return redirect(url_for("flashcards"))
 
             study_session = StudySession(
@@ -234,17 +207,9 @@ def register(app):
             invalidate_word_list_cache()  # Keep global search suggestions fresh after inserts.
             if save_as_default:
                 flash("Your default study focus has been updated.", "info")
-            if used_general_fallback:
-                flash("Could not generate topic-specific words. Showing general vocabulary instead.", "info")
             if added_count < word_count:
                 flash("Showing best available words for this topic.", "info")
-            if used_lower_level_fallback:
-                flash(
-                    f"{pluralize(added_count, 'new word')} generated for your study list. Lower-level words were included to keep the topic set complete.",
-                    "success",
-                )
-            else:
-                flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
+            flash(f"{pluralize(added_count, 'new word')} generated for your study list.", "success")
             return redirect(url_for("flashcards_session", session_id=study_session.id))
         except Exception:
             db.session.rollback()

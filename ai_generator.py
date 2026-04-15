@@ -599,80 +599,38 @@ def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prom
 
     avoid_words = avoid_words or []
     avoid_words_list = ", ".join(avoid_words[:200]) if avoid_words else "None"
-    normalized_topic = user_custom_prompt.strip().lower()
-
-    if normalized_topic:
-        prompt = f"""
+    normalized_topic = user_custom_prompt.strip() or "IELTS standard English vocabulary"
+    prompt = f"""
 You are a vocabulary generator for a learning app.
 
-Task:
-Generate {word_count} English vocabulary words STRICTLY related to the topic: '{normalized_topic}'.
+Generate {word_count} English vocabulary words related to:
+
+{normalized_topic}
 
 Rules:
-- Only include words that are clearly connected to the topic
-- Include nouns, verbs, adjectives related to the topic
-- Do NOT include unrelated or generic words
-- Do NOT repeat words
-- Output ONLY a clean list of topic-relevant vocabulary
-
-Examples:
-Topic: cows
--> cattle, dairy, pasture, livestock, grazing, herd, milking
-
-Topic: countries
--> nation, border, capital, sovereignty, territory, diplomacy
-
-Topic: IELTS
--> vocabulary, fluency, grammar, comprehension, essay, speaking
-
-If the topic is broad, generate diverse relevant words.
-If the topic is narrow, still generate the closest meaningful related words.
+- Must be real English words
+- Must be useful for learning at IELTS level
+- Must include a healthy mix of nouns, verbs, and adjectives when possible
+- No repetition
+- No unrelated words
+- If the topic is narrow, generate the closest related useful words instead of failing
+- Do not use fake or placeholder content
 
 Do NOT include any of these words:
 {avoid_words_list}
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON list:
 [
   {{
-    "word": "example",
-    "part_of_speech": "noun",
-    "english_meaning": "short clear meaning",
-    "bangla_meaning": "short Bangla meaning",
-    "pronunciation": "simple pronunciation",
-    "synonym": "related synonym",
-    "example_sentence": "A short sentence using the word.",
-    "memory_trick": "A short memory trick.",
+    "word": "...",
+    "part_of_speech": "noun/verb/adjective",
+    "meaning": "...",
+    "sentence": "...",
+    "synonym": "...",
+    "pronunciation": "...",
+    "memory_trick": "...",
+    "bangla_meaning": "...",
     "topic": "{normalized_topic}"
-  }}
-]
-"""
-    else:
-        prompt = f"""
-You are a vocabulary generator for a learning app.
-
-Task:
-Generate {word_count} useful general English vocabulary words for a {difficulty} learner.
-
-Rules:
-- Use modern, practical vocabulary
-- Do NOT repeat words
-- Avoid overly rare, outdated, or technical words
-
-Do NOT include any of these words:
-{avoid_words_list}
-
-Return ONLY valid JSON in this format:
-[
-  {{
-    "word": "example",
-    "part_of_speech": "noun",
-    "english_meaning": "short clear meaning",
-    "bangla_meaning": "short Bangla meaning",
-    "pronunciation": "simple pronunciation",
-    "synonym": "related synonym",
-    "example_sentence": "A short sentence using the word.",
-    "memory_trick": "A short memory trick.",
-    "topic": "general"
   }}
 ]
 """
@@ -739,14 +697,16 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
                 continue
 
             seen_words.add(word)
+            meaning = str(item.get("english_meaning", item.get("meaning", ""))).strip()
+            sentence = str(item.get("example_sentence", item.get("sentence", ""))).strip()
             cleaned_items.append(
                 {
                     "word": word,
                     "part_of_speech": str(item.get("part_of_speech", "")).strip() or None,
-                    "meaning": str(item.get("english_meaning", item.get("meaning", ""))).strip() or f"A word related to {fallback_topic or 'general English'}.",
+                    "meaning": meaning or None,
                     "bangla_meaning": str(item.get("bangla_meaning", "")).strip() or None,
-                    "sentence": str(item.get("example_sentence", item.get("sentence", ""))).strip() or f"This lesson includes the word {word}.",
-                    "phonetic": str(item.get("pronunciation", item.get("phonetic", ""))).strip() or word,
+                    "sentence": sentence or None,
+                    "phonetic": str(item.get("pronunciation", item.get("phonetic", ""))).strip() or None,
                     "synonym": str(item.get("synonym", "")).strip() or FALLBACK_RELATIONS.get(word, {}).get("synonym") or None,
                     "memory_trick": str(item.get("memory_trick", "")).strip() or None,
                     "difficulty": difficulty,
@@ -767,22 +727,6 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
         print("AI response:", [item["word"] for item in cleaned_items])
         if cleaned_items:
             return cleaned_items
-
-        if topic:
-            retry_items = _request_vocabulary_words_from_groq(
-                difficulty,
-                word_count,
-                user_custom_prompt=f"Generate general English vocabulary related to '{topic}'",
-                avoid_words=sorted(avoid_words),
-            )
-            cleaned_retry_items = clean_items(
-                retry_items,
-                fallback_topic=topic,
-                generation_source="topic_retry",
-            )
-            print("AI response:", [item["word"] for item in cleaned_retry_items])
-            if cleaned_retry_items:
-                return cleaned_retry_items
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
         pass
 
