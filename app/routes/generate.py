@@ -1,5 +1,4 @@
 from datetime import date
-from time import perf_counter
 
 from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, login_required
@@ -13,7 +12,6 @@ from app.services.stats import VOCAB_QUERY_MESSAGE, clean_text, pluralize, valid
 def register(app):
     general_exhausted_message = "We could not generate enough new valid words right now. Please try again."
     max_generation_attempts = 6
-    generation_timeout_seconds = 5
 
     def normalize_generated_payload(item, fallback_topic, fallback_difficulty):
         return {
@@ -35,8 +33,7 @@ def register(app):
             db.session.query(Word.word)
             .join(UserWord, UserWord.word_id == Word.id)
             .filter(UserWord.user_id == user_id)
-            .order_by(UserWord.added_date.desc(), UserWord.id.desc())
-            .limit(100)
+            .distinct()
             .all()
         )
         return {
@@ -95,12 +92,9 @@ def register(app):
             session_words = set()
             final_words = []
             attempts = 0
-            started_at = perf_counter()
+            print("Requested:", word_count)
 
             while len(final_words) < word_count and attempts < max_generation_attempts:
-                if perf_counter() - started_at >= generation_timeout_seconds:
-                    break
-
                 attempts += 1
                 remaining = word_count - len(final_words)
                 ai_words = generate_vocabulary_words(
@@ -111,9 +105,6 @@ def register(app):
                 )
 
                 for item in ai_words:
-                    if perf_counter() - started_at >= generation_timeout_seconds:
-                        break
-
                     normalized_item = normalize_generated_payload(
                         item,
                         fallback_topic=effective_prompt,

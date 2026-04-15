@@ -615,6 +615,8 @@ Rules:
 - No unrelated words
 - If the topic is narrow, generate the closest related useful words instead of failing
 - Do not use fake or placeholder content
+- Pronunciation must reflect real English pronunciation using simple syllables and English letters only, with no IPA
+- Each word must include a synonym or an antonym, with at least one of them present
 
 Do NOT include any of these words:
 {avoid_words_list}
@@ -627,6 +629,7 @@ Return ONLY valid JSON list:
     "meaning": "...",
     "sentence": "...",
     "synonym": "...",
+    "antonym": "...",
     "pronunciation": "...",
     "memory_trick": "...",
     "bangla_meaning": "...",
@@ -688,6 +691,46 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
         cleaned_items = []
         seen_words = set(avoid_words)
 
+        def fallback_memory_trick(meaning):
+            cleaned_meaning = str(meaning or "").strip()
+            if not cleaned_meaning:
+                return None
+            return f"Associate this word with: {cleaned_meaning}"
+
+        def normalize_pronunciation(value, word):
+            cleaned = str(value or "").strip().lower()
+            cleaned = re.sub(r"[\/\[\]\(\)ˈˌː.]", "", cleaned)
+            cleaned = re.sub(r"[^a-z\s\-]", "", cleaned)
+            cleaned = re.sub(r"\s+", "-", cleaned).strip("-")
+            cleaned = re.sub(r"-{2,}", "-", cleaned)
+            if len(cleaned) > 3 and "-" in cleaned:
+                return cleaned
+
+            base = re.sub(r"[^a-z]", "", str(word or "").strip().lower())
+            if len(base) <= 3:
+                return base or None
+
+            vowels = "aeiouy"
+            syllables = []
+            current = ""
+            for index, char in enumerate(base):
+                current += char
+                next_char = base[index + 1] if index + 1 < len(base) else ""
+                prev_char = base[index - 1] if index > 0 else ""
+                if char in vowels:
+                    should_split = (
+                        not next_char
+                        or next_char not in vowels
+                        and any(letter in vowels for letter in base[index + 1 :])
+                        and prev_char != next_char
+                    )
+                    if should_split:
+                        syllables.append(current)
+                        current = ""
+            if current:
+                syllables.append(current)
+            return "-".join(part for part in syllables if part) or None
+
         for item in items:
             if not isinstance(item, dict):
                 continue
@@ -699,6 +742,14 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
             seen_words.add(word)
             meaning = str(item.get("english_meaning", item.get("meaning", ""))).strip()
             sentence = str(item.get("example_sentence", item.get("sentence", ""))).strip()
+            relation = (
+                str(item.get("synonym", "")).strip()
+                or str(item.get("antonym", "")).strip()
+                or FALLBACK_RELATIONS.get(word, {}).get("synonym")
+                or FALLBACK_RELATIONS.get(word, {}).get("antonym")
+                or None
+            )
+            memory_trick = str(item.get("memory_trick", "")).strip() or fallback_memory_trick(meaning)
             cleaned_items.append(
                 {
                     "word": word,
@@ -706,9 +757,9 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
                     "meaning": meaning or None,
                     "bangla_meaning": str(item.get("bangla_meaning", "")).strip() or None,
                     "sentence": sentence or None,
-                    "phonetic": str(item.get("pronunciation", item.get("phonetic", ""))).strip() or None,
-                    "synonym": str(item.get("synonym", "")).strip() or FALLBACK_RELATIONS.get(word, {}).get("synonym") or None,
-                    "memory_trick": str(item.get("memory_trick", "")).strip() or None,
+                    "phonetic": normalize_pronunciation(item.get("pronunciation", item.get("phonetic", "")), word),
+                    "synonym": relation,
+                    "memory_trick": memory_trick or None,
                     "difficulty": difficulty,
                     "topic": str(item.get("topic", "")).strip() or fallback_topic or "general",
                     "generation_source": generation_source,
