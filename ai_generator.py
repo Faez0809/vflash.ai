@@ -900,7 +900,7 @@ def _request_dictionary_details_from_groq(word, retry=False):
         raise RuntimeError("GROQ_API_KEY is not configured.")
 
     prompt = f"""
-You are an English dictionary.
+You are a professional English dictionary API.
 
 Provide COMPLETE and accurate data for the word: '{word}'.
 
@@ -911,15 +911,21 @@ Return ONLY valid JSON:
 "meaning": "clear definition",
 "sentence": "example sentence using the SAME word",
 "synonyms": ["word1", "word2"],
-"pronunciation": "phonetic spelling",
+"pronunciation": "simple readable phonetic spelling",
 "bangla_meaning": "বাংলা অর্থ",
+"memory_trick": "Short and intuitive way to remember the word",
 "difficulty": "easy/medium/hard"
 }}
 
 Rules:
-- ALL fields are REQUIRED (no empty fields)
+- ALL fields are REQUIRED and must be non-empty
 - Sentence MUST contain the word exactly
 - Synonyms must be real words
+- Pronunciation must be phonetically accurate, use simple English letters only, and be broken into hyphen-separated syllables
+- Do NOT use IPA symbols like / /, [ ], or stress marks such as ˈ
+- Pronunciation must reflect real spoken English, not a spelling-based guess
+- The pronunciation should be easy for non-native speakers to read
+- memory_trick must relate to the meaning, be simple, and stay one sentence only
 - If input is NOT a valid English word -> DO NOT generate fake data
 - Instead return:
 {{
@@ -930,7 +936,7 @@ Rules:
     if retry:
         prompt += """
 
-Provide COMPLETE dictionary data for the word. All fields must be filled.
+Provide COMPLETE dictionary data for the word. All fields must be filled. Keep pronunciation readable and accurate.
 """
 
     response = requests.post(
@@ -1030,6 +1036,7 @@ def _generate_word_details_attempt(normalized_word, retry=False):
         "synonyms": cleaned_synonyms,
         "pronunciation": str(content.get("pronunciation", "")).strip() or None,
         "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or None,
+        "memory_trick": str(content.get("memory_trick", "")).strip() or None,
         "difficulty": difficulty,
         "suggestions": cleaned_suggestions,
     }

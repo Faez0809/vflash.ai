@@ -135,6 +135,11 @@ def run_migrations():
     ensure_index("ix_user_word_user_rev3", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev3 ON user_word (user_id, rev3)")
 
 
+def cleanup_invalid_words():
+    db.session.execute(text("DELETE FROM word WHERE is_valid = FALSE OR length(word) <= 2"))
+    db.session.commit()
+
+
 def create_app():
     app = Flask(
         __name__,
@@ -281,5 +286,6 @@ def create_app():
             db.create_all()
         if auto_bootstrap_db:
             run_migrations()
+            cleanup_invalid_words()
 
     return app

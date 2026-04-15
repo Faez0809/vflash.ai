@@ -296,6 +296,11 @@ def _normalize_dictionary_details(query, result):
         suggestion_seen.add(cleaned)
         cleaned_suggestions.append(cleaned)
 
+    pronunciation = _normalize_readable_pronunciation(payload.get("pronunciation") or payload.get("phonetic"), returned_word)
+    memory_trick = clean_text(payload.get("memory_trick"))
+    if len(memory_trick) <= 5:
+        memory_trick = _fallback_memory_trick(clean_text(payload.get("meaning")))
+
     return {
         "status": status,
         "word": returned_word,
@@ -304,13 +309,62 @@ def _normalize_dictionary_details(query, result):
         "sentence": clean_text(payload.get("sentence")) or None,
         "synonyms": cleaned_synonyms,
         "synonym": cleaned_synonyms[0] if cleaned_synonyms else None,
-        "phonetic": clean_text(payload.get("pronunciation") or payload.get("phonetic")) or None,
+        "phonetic": pronunciation,
         "bangla_meaning": clean_text(payload.get("bangla_meaning")) or None,
+        "memory_trick": memory_trick or None,
         "difficulty": difficulty,
         "suggestions": cleaned_suggestions,
         "topic": "general",
         "lookup_pending": False,
     }
+
+
+def _fallback_memory_trick(meaning):
+    cleaned_meaning = clean_text(meaning)
+    if not cleaned_meaning:
+        return None
+    return f"Associate this word with: {cleaned_meaning}"
+
+
+def _normalize_readable_pronunciation(value, word):
+    cleaned = clean_text(value).lower()
+    cleaned = re.sub(r"[\/\[\]\(\)ˈˌː.]", "", cleaned)
+    cleaned = re.sub(r"[^a-z\s\-]", "", cleaned)
+    cleaned = re.sub(r"\s+", "-", cleaned).strip("-")
+    cleaned = re.sub(r"-{2,}", "-", cleaned)
+    if len(cleaned) > 3 and "-" in cleaned:
+        return cleaned
+    return _approximate_readable_pronunciation(word)
+
+
+def _approximate_readable_pronunciation(word):
+    cleaned_word = re.sub(r"[^a-z]", "", clean_text(word).lower())
+    if len(cleaned_word) <= 3:
+        return cleaned_word or None
+
+    vowels = "aeiouy"
+    syllables = []
+    current = ""
+    for index, char in enumerate(cleaned_word):
+        current += char
+        next_char = cleaned_word[index + 1] if index + 1 < len(cleaned_word) else ""
+        prev_char = cleaned_word[index - 1] if index > 0 else ""
+        if char in vowels:
+            should_split = (
+                not next_char
+                or next_char not in vowels
+                and any(letter in vowels for letter in cleaned_word[index + 1 :])
+                and prev_char != next_char
+            )
+            if should_split:
+                syllables.append(current)
+                current = ""
+    if current:
+        syllables.append(current)
+
+    if not syllables:
+        syllables = [cleaned_word]
+    return "-".join(part for part in syllables if part)
 
 
 def _sentence_uses_word(sentence, word):
@@ -337,9 +391,14 @@ def _is_verified_dictionary_result(query, result):
         return False
     if not result.get("synonyms"):
         return False
-    if not clean_text(result.get("phonetic")):
+    pronunciation = clean_text(result.get("phonetic"))
+    if len(pronunciation) <= 3:
+        return False
+    if re.search(r"[\/\[\]\(\)ˈˌː]", pronunciation):
         return False
     if not clean_text(result.get("bangla_meaning")):
+        return False
+    if len(clean_text(result.get("memory_trick"))) <= 5:
         return False
     if not _sentence_uses_word(result.get("sentence"), normalized_query):
         return False
@@ -369,6 +428,7 @@ def _save_verified_dictionary_result(result):
     word.synonym = clean_text(joined_synonyms) or _clean_relation_candidate(result.get("synonym"), normalized_word, allow_phrase=True) or None
     word.phonetic = clean_text(result.get("phonetic")) or None
     word.bangla_meaning = clean_text(result.get("bangla_meaning")) or None
+    word.memory_trick = clean_text(result.get("memory_trick")) or None
     word.topic = "general"
     word.difficulty = clean_text(result.get("difficulty")).lower() or "medium"
     word.is_valid = True
@@ -450,16 +510,39 @@ def resolve_vocabulary_lookup(raw_word, preferred_part_of_speech=None, correctio
 
     word = Word.query.filter_by(word=normalized_word, is_valid=True).first()
     if word is not None:
-        enrich_word_collection([word], allow_ai=False)
-        return {
-            "searched_word": normalized_word,
-            "resolved_word": normalized_word,
-            "word": word,
-            "status": "exact",
-            "autocorrected_from": None,
-            "suggestions": [],
-            "related_words": find_related_word_forms(normalized_word, preferred_part_of_speech=preferred_part_of_speech),
-        }
+        existing_result = _normalize_dictionary_details(
+            normalized_word,
+            {
+                "status": "ok",
+                "word": getattr(word, "word", normalized_word),
+                "part_of_speech": getattr(word, "part_of_speech", None),
+                "meaning": getattr(word, "meaning", ""),
+                "sentence": getattr(word, "sentence", None),
+                "synonyms": [item.strip() for item in clean_text(getattr(word, "synonym", "")).split(",") if item.strip()],
+                "pronunciation": getattr(word, "phonetic", None),
+                "bangla_meaning": getattr(word, "bangla_meaning", None),
+                "memory_trick": getattr(word, "memory_trick", None),
+                "difficulty": getattr(word, "difficulty", None),
+            },
+        )
+        if _is_verified_dictionary_result(normalized_word, existing_result):
+            enrich_word_collection([word], allow_ai=False)
+            return {
+                "searched_word": normalized_word,
+                "resolved_word": normalized_word,
+                "word": word,
+                "status": "exact",
+                "autocorrected_from": None,
+                "suggestions": [],
+                "related_words": find_related_word_forms(normalized_word, preferred_part_of_speech=preferred_part_of_speech),
+            }
+
+        word.is_valid = False
+        db.session.commit()
+        invalidate_word_list_cache()
+
+    if word is not None:
+        word = None
 
     try:
         result = _request_dictionary_result(normalized_word, retry=False)
