@@ -31,6 +31,7 @@ function bootstrapPage({ initialLoad = false } = {}) {
     initFeedbackAssistant();
     initVocabularyInputs();
     initSearchSuggestions();
+    prefetchVisibleNavigationLinks();
 }
 
 window.addEventListener("pageshow", () => {
@@ -81,19 +82,11 @@ function updateBodyFromShell(shell) {
 }
 
 function startPageSkeleton() {
-    const shell = getCurrentShell();
-    if (!shell) {
-        return;
-    }
-
-    document.body.classList.add("is-app-navigating");
-    shell.classList.add("is-shell-pending");
+    return;
 }
 
 function stopPageSkeleton() {
-    const shell = getCurrentShell();
-    document.body.classList.remove("is-app-navigating");
-    shell?.classList.remove("is-shell-pending");
+    return;
 }
 
 function handleNavigationError() {
@@ -358,6 +351,22 @@ function prefetchUrl(url) {
     appShellState.pendingPrefetches.set(cacheKey, prefetchTask);
 }
 
+function prefetchVisibleNavigationLinks() {
+    document.querySelectorAll("a[href]").forEach((link) => {
+        if (!shouldPrefetchLink(link)) {
+            return;
+        }
+
+        const href = link.getAttribute("href") || "";
+        const resolvedUrl = normalizeAppUrl(href);
+        if (resolvedUrl.pathname === window.location.pathname && resolvedUrl.search === window.location.search) {
+            return;
+        }
+
+        prefetchUrl(link.href);
+    });
+}
+
 function initInstantNavigation() {
     if (window.__instantNavigationBound) {
         return;
@@ -397,6 +406,14 @@ function initInstantNavigation() {
             force: true,
         });
     });
+
+    if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(() => {
+            prefetchVisibleNavigationLinks();
+        }, { timeout: 1200 });
+    } else {
+        window.setTimeout(prefetchVisibleNavigationLinks, 350);
+    }
 }
 
 function ensureFlashStack() {
@@ -573,7 +590,6 @@ async function submitAsyncPageForm(form, formData, messages) {
     }
 
     showLoadingOverlay(messages);
-    startPageSkeleton();
 
     const response = await fetch(action, {
         method,
