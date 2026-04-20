@@ -13,7 +13,19 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preload" href="{{ url_for('static', filename='app.js') }}" as="script">
 </head>
-<body class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page{% elif request.endpoint == 'dashboard' %}dashboard-page{% elif request.endpoint == 'search_word' %}search-page tw-dark-page{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}tw-dark-page{% endif %}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
+{% set body_class = '' %}
+{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}
+    {% set body_class = 'auth-page' %}
+{% elif request.endpoint == 'dashboard' %}
+    {% set body_class = 'dashboard-page' %}
+{% elif request.endpoint == 'search_word' %}
+    {% set body_class = 'search-page tw-dark-page' %}
+{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}
+    {% set body_class = 'tw-dark-page' %}
+{% endif %}
+<body class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
+    <!--app-shell-start-->
+    <div data-app-shell data-body-class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
     {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual', 'search_word'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
@@ -156,6 +168,8 @@
             <p class="loading-overlay-copy">Please stay here while we prepare your content.</p>
         </div>
     </div>
+    </div>
+    <!--app-shell-end-->
 
 
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>

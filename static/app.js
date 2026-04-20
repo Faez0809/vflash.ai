@@ -1,7 +1,19 @@
+const appShellState = {
+    cache: new Map(),
+    pendingPrefetches: new Map(),
+    navigationToken: 0,
+    cacheTtlMs: 30000,
+};
+
 document.addEventListener("DOMContentLoaded", () => {
+    initInstantNavigation();
+    bootstrapPage({ initialLoad: true });
+});
+
+function bootstrapPage({ initialLoad = false } = {}) {
     const shouldAutofocus = document.body.classList.contains("auth-page");
     const firstInput = shouldAutofocus ? document.querySelector("input, textarea, select") : null;
-    if (firstInput) {
+    if (initialLoad && firstInput) {
         firstInput.focus();
     }
 
@@ -19,11 +31,373 @@ document.addEventListener("DOMContentLoaded", () => {
     initFeedbackAssistant();
     initVocabularyInputs();
     initSearchSuggestions();
-});
+}
 
 window.addEventListener("pageshow", () => {
     hideLoadingOverlay();
+    stopPageSkeleton();
 });
+
+function getCurrentShell() {
+    return document.querySelector("[data-app-shell]");
+}
+
+function normalizeAppUrl(input) {
+    return new URL(input, window.location.href);
+}
+
+function isSameAppUrl(url) {
+    return url.origin === window.location.origin;
+}
+
+function getCacheKey(url, method = "GET") {
+    return `${method.toUpperCase()}:${url.pathname}${url.search}`;
+}
+
+function pruneShellCache() {
+    const now = Date.now();
+    appShellState.cache.forEach((entry, key) => {
+        if ((now - entry.cachedAt) > appShellState.cacheTtlMs) {
+            appShellState.cache.delete(key);
+        }
+    });
+}
+
+function updateBodyFromShell(shell) {
+    if (!shell) {
+        return;
+    }
+
+    document.body.className = shell.dataset.bodyClass || "";
+
+    delete document.body.dataset.usageEndpoint;
+    delete document.body.dataset.quizWarmupEndpoint;
+
+    ["usageEndpoint", "quizWarmupEndpoint"].forEach((name) => {
+        if (shell.dataset[name]) {
+            document.body.dataset[name] = shell.dataset[name];
+        }
+    });
+}
+
+function startPageSkeleton() {
+    const shell = getCurrentShell();
+    if (!shell) {
+        return;
+    }
+
+    document.body.classList.add("is-app-navigating");
+    shell.classList.add("is-shell-pending");
+}
+
+function stopPageSkeleton() {
+    const shell = getCurrentShell();
+    document.body.classList.remove("is-app-navigating");
+    shell?.classList.remove("is-shell-pending");
+}
+
+function handleNavigationError() {
+    stopPageSkeleton();
+    hideLoadingOverlay();
+    showAjaxMessage("We couldn't load that page instantly, so we kept the current view.", "error");
+}
+
+function parseHtmlPayload(html, fallbackUrl) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const shell = doc.querySelector("[data-app-shell]");
+    if (!shell) {
+        return null;
+    }
+
+    return {
+        ok: true,
+        path: fallbackUrl.pathname + fallbackUrl.search,
+        title: doc.title || document.title,
+        shell: shell.outerHTML,
+    };
+}
+
+async function readFragmentPayload(response, requestUrl) {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+        return response.json();
+    }
+
+    const html = await response.text();
+    const parsed = parseHtmlPayload(html, normalizeAppUrl(response.url || requestUrl.toString()));
+    if (!parsed) {
+        throw new Error("Missing app shell");
+    }
+    return parsed;
+}
+
+async function fetchShellPayload(url, { method = "GET", body = null, force = false } = {}) {
+    const resolvedUrl = normalizeAppUrl(url);
+    const normalizedMethod = method.toUpperCase();
+
+    pruneShellCache();
+
+    if (normalizedMethod === "GET" && !force) {
+        const cached = appShellState.cache.get(getCacheKey(resolvedUrl, normalizedMethod));
+        if (cached && (Date.now() - cached.cachedAt) <= appShellState.cacheTtlMs) {
+            return cached.payload;
+        }
+    }
+
+    const response = await fetch(resolvedUrl.toString(), {
+        method: normalizedMethod,
+        body,
+        credentials: "same-origin",
+        headers: {
+            "X-App-Fragment": "1",
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    const payload = await readFragmentPayload(response, resolvedUrl);
+    if (normalizedMethod === "GET") {
+        appShellState.cache.set(getCacheKey(resolvedUrl, normalizedMethod), {
+            cachedAt: Date.now(),
+            payload,
+        });
+    }
+
+    return payload;
+}
+
+function runInjectedScripts(root) {
+    root.querySelectorAll("script").forEach((oldScript) => {
+        const newScript = document.createElement("script");
+        newScript.async = false;
+        Array.from(oldScript.attributes).forEach((attribute) => {
+            newScript.setAttribute(attribute.name, attribute.value);
+        });
+        if (oldScript.textContent) {
+            newScript.textContent = oldScript.textContent;
+        }
+        oldScript.replaceWith(newScript);
+    });
+}
+
+function syncHeadAssets(nextDocument) {
+    const currentHead = document.head;
+
+    nextDocument.querySelectorAll('link[rel="stylesheet"], style[data-app-inline-style]').forEach((node) => {
+        const signature = node.outerHTML;
+        const exists = Array.from(currentHead.querySelectorAll('link[rel="stylesheet"], style[data-app-inline-style]'))
+            .some((existing) => existing.outerHTML === signature);
+
+        if (!exists) {
+            currentHead.appendChild(node.cloneNode(true));
+        }
+    });
+}
+
+function applyPayloadToPage(payload, { url, historyMode = "push", preserveScroll = false } = {}) {
+    const parser = new DOMParser();
+    const fragmentDoc = parser.parseFromString(payload.shell, "text/html");
+    const nextShell = fragmentDoc.querySelector("[data-app-shell]");
+    const currentShell = getCurrentShell();
+
+    if (!nextShell || !currentShell) {
+        throw new Error("Shell swap failed");
+    }
+
+    syncHeadAssets(fragmentDoc);
+    currentShell.replaceWith(nextShell);
+    updateBodyFromShell(nextShell);
+    document.title = payload.title || document.title;
+    runInjectedScripts(nextShell);
+
+    const targetUrl = normalizeAppUrl(url || payload.path || window.location.href);
+    const historyState = { path: targetUrl.pathname + targetUrl.search };
+    if (historyMode === "replace") {
+        window.history.replaceState(historyState, "", targetUrl.toString());
+    } else if (historyMode === "push") {
+        window.history.pushState(historyState, "", targetUrl.toString());
+    }
+
+    bootstrapPage();
+    stopPageSkeleton();
+    hideLoadingOverlay();
+
+    if (!preserveScroll) {
+        if (targetUrl.hash) {
+            const target = document.querySelector(targetUrl.hash);
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+}
+
+async function navigateToAppUrl(url, options = {}) {
+    const resolvedUrl = normalizeAppUrl(url);
+    const nextToken = ++appShellState.navigationToken;
+
+    if (!isSameAppUrl(resolvedUrl)) {
+        window.location.assign(resolvedUrl.toString());
+        return;
+    }
+
+    if ((resolvedUrl.pathname + resolvedUrl.search) === (window.location.pathname + window.location.search) && !options.force) {
+        if (resolvedUrl.hash) {
+            const target = document.querySelector(resolvedUrl.hash);
+            target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        return;
+    }
+
+    startPageSkeleton();
+
+    try {
+        const payload = await fetchShellPayload(resolvedUrl, {
+            method: options.method || "GET",
+            body: options.body || null,
+            force: Boolean(options.force),
+        });
+
+        if (nextToken !== appShellState.navigationToken) {
+            return;
+        }
+
+        applyPayloadToPage(payload, {
+            url: resolvedUrl,
+            historyMode: options.historyMode || "push",
+            preserveScroll: Boolean(options.preserveScroll),
+        });
+    } catch (error) {
+        if (options.fallbackToHardNavigation !== false) {
+            window.location.assign(resolvedUrl.toString());
+            return;
+        }
+        handleNavigationError();
+    }
+}
+
+function shouldInterceptLink(link, event) {
+    if (!link || event.defaultPrevented) {
+        return false;
+    }
+
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return false;
+    }
+
+    if (link.target && link.target !== "_self") {
+        return false;
+    }
+
+    if (link.hasAttribute("download") || link.dataset.noSpa === "true") {
+        return false;
+    }
+
+    const href = link.getAttribute("href") || "";
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) {
+        return false;
+    }
+
+    const resolvedUrl = normalizeAppUrl(href);
+    if (!isSameAppUrl(resolvedUrl)) {
+        return false;
+    }
+
+    if (resolvedUrl.pathname.includes("/logout")) {
+        return false;
+    }
+
+    return true;
+}
+
+function shouldPrefetchLink(link) {
+    if (!link || link.dataset.noSpa === "true") {
+        return false;
+    }
+
+    const href = link.getAttribute("href") || "";
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) {
+        return false;
+    }
+
+    const resolvedUrl = normalizeAppUrl(href);
+    if (!isSameAppUrl(resolvedUrl) || resolvedUrl.pathname.includes("/logout")) {
+        return false;
+    }
+
+    return true;
+}
+
+function prefetchUrl(url) {
+    const resolvedUrl = normalizeAppUrl(url);
+    if (!isSameAppUrl(resolvedUrl)) {
+        return;
+    }
+
+    const cacheKey = getCacheKey(resolvedUrl);
+    const cached = appShellState.cache.get(cacheKey);
+    if (cached && (Date.now() - cached.cachedAt) <= appShellState.cacheTtlMs) {
+        return;
+    }
+
+    if (appShellState.pendingPrefetches.has(cacheKey)) {
+        return;
+    }
+
+    const prefetchTask = fetchShellPayload(resolvedUrl).catch(() => null).finally(() => {
+        appShellState.pendingPrefetches.delete(cacheKey);
+    });
+
+    appShellState.pendingPrefetches.set(cacheKey, prefetchTask);
+}
+
+function initInstantNavigation() {
+    if (window.__instantNavigationBound) {
+        return;
+    }
+
+    window.__instantNavigationBound = true;
+    window.navigateToAppUrl = navigateToAppUrl;
+
+    document.addEventListener("click", (event) => {
+        const link = event.target.closest("a[href]");
+        if (!shouldInterceptLink(link, event)) {
+            return;
+        }
+
+        event.preventDefault();
+        navigateToAppUrl(link.href);
+    });
+
+    document.addEventListener("pointerenter", (event) => {
+        const link = event.target.closest("a[href]");
+        if (shouldPrefetchLink(link)) {
+            prefetchUrl(link.href);
+        }
+    }, true);
+
+    document.addEventListener("focusin", (event) => {
+        const link = event.target.closest("a[href]");
+        if (shouldPrefetchLink(link)) {
+            prefetchUrl(link.href);
+        }
+    });
+
+    window.addEventListener("popstate", () => {
+        navigateToAppUrl(window.location.href, {
+            historyMode: "replace",
+            preserveScroll: true,
+            force: true,
+        });
+    });
+}
 
 function ensureFlashStack() {
     let flashStack = document.querySelector(".flash-stack");
@@ -183,6 +557,52 @@ function setFormPending(form, pending) {
     });
 }
 
+async function submitAsyncPageForm(form, formData, messages) {
+    const method = String(form.getAttribute("method") || "GET").toUpperCase();
+    const action = form.getAttribute("action") || window.location.href;
+
+    if (method === "GET") {
+        const requestUrl = new URL(action, window.location.href);
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            params.append(key, value);
+        }
+        requestUrl.search = params.toString();
+        await navigateToAppUrl(requestUrl.toString());
+        return;
+    }
+
+    showLoadingOverlay(messages);
+    startPageSkeleton();
+
+    const response = await fetch(action, {
+        method,
+        body: formData,
+        credentials: "same-origin",
+        headers: {
+            "X-App-Fragment": "1",
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Request failed");
+    }
+
+    const payload = await readFragmentPayload(response, normalizeAppUrl(response.url || action));
+    const targetUrl = normalizeAppUrl(response.url || action);
+
+    appShellState.cache.set(getCacheKey(targetUrl), {
+        cachedAt: Date.now(),
+        payload,
+    });
+
+    applyPayloadToPage(payload, {
+        url: targetUrl,
+        historyMode: "push",
+    });
+}
+
 function initAsyncPageForms() {
     const forms = document.querySelectorAll("form[data-async-page='true']");
     if (!forms.length) {
@@ -207,27 +627,25 @@ function initAsyncPageForms() {
             }
 
             const method = String(form.getAttribute("method") || "GET").toUpperCase();
-            const action = form.getAttribute("action") || window.location.href;
             const formData = new FormData(form);
             const messages = parseLoadingMessages(form.dataset.loadingMessages);
 
-            showLoadingOverlay(messages);
             setFormPending(form, true);
+            submitAsyncPageForm(form, formData, messages)
+                .catch(() => {
+                    const action = form.getAttribute("action") || window.location.href;
+                    if (method === "GET") {
+                        const fallbackUrl = new URL(action, window.location.href);
+                        fallbackUrl.search = new URLSearchParams(formData).toString();
+                        window.location.assign(fallbackUrl.toString());
+                        return;
+                    }
 
-            if (method === "GET") {
-                const requestUrl = new URL(action, window.location.href);
-                const params = new URLSearchParams();
-                for (const [key, value] of formData.entries()) {
-                    params.append(key, value);
-                }
-                requestUrl.search = params.toString();
-                window.location.assign(requestUrl.toString());
-                return;
-            }
-
-            window.setTimeout(() => {
-                HTMLFormElement.prototype.submit.call(form);
-            }, 10);
+                    HTMLFormElement.prototype.submit.call(form);
+                })
+                .finally(() => {
+                    setFormPending(form, false);
+                });
         });
     });
 }
@@ -553,8 +971,17 @@ function initNavMenu() {
 function initFlashcards() {
     const flashcardApp = document.querySelector("#flashcard-app");
     if (!flashcardApp) {
+        if (window.__flashcardKeyboardHandler) {
+            document.removeEventListener("keydown", window.__flashcardKeyboardHandler);
+            window.__flashcardKeyboardHandler = null;
+        }
         return;
     }
+
+    if (flashcardApp.dataset.flashcardBound === "true") {
+        return;
+    }
+    flashcardApp.dataset.flashcardBound = "true";
 
     const flashcardMode = flashcardApp.dataset.mode || "study";
     const cards = JSON.parse(flashcardApp.dataset.cards || "[]");
@@ -980,7 +1407,11 @@ function initFlashcards() {
         }
     });
 
-    document.addEventListener("keydown", (event) => {
+    if (window.__flashcardKeyboardHandler) {
+        document.removeEventListener("keydown", window.__flashcardKeyboardHandler);
+    }
+
+    window.__flashcardKeyboardHandler = (event) => {
         const tagName = document.activeElement?.tagName;
         if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) {
             return;
@@ -1009,7 +1440,9 @@ function initFlashcards() {
             event.preventDefault();
             markCurrentCardAlreadyKnown();
         }
-    });
+    };
+
+    document.addEventListener("keydown", window.__flashcardKeyboardHandler);
 
     if (markDifficultBtn) {
         markDifficultBtn.addEventListener("click", (event) => {
@@ -1047,10 +1480,16 @@ function initFlashcards() {
 }
 
 function initUsageTracking() {
+    if (window.__usageTrackingInitialized) {
+        return;
+    }
+
     const usageEndpoint = document.body.dataset.usageEndpoint;
     if (!usageEndpoint) {
         return;
     }
+
+    window.__usageTrackingInitialized = true;
 
     const sessionStorageKey = "vflash.ai_usage_session";
     const sessionTimeoutMs = 30 * 60 * 1000;
@@ -1201,6 +1640,12 @@ function initDashboardWarmups() {
     if (!warmupUrl || !document.body.classList.contains("dashboard-page")) {
         return;
     }
+
+    const warmupKey = `${window.location.pathname}${window.location.search}`;
+    if (window.__lastDashboardWarmupKey === warmupKey) {
+        return;
+    }
+    window.__lastDashboardWarmupKey = warmupKey;
 
     const triggerWarmup = async () => {
         try {

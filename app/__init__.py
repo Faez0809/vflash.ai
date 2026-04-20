@@ -1,6 +1,8 @@
 from datetime import timedelta
 from pathlib import Path
+import json
 import os
+import re
 import secrets
 
 import runtime_compat
@@ -55,6 +57,8 @@ login_manager.login_message_category = "info"
 migrate = Migrate()
 cache = Cache()
 SEARCH_CACHE_TTL_SECONDS = 60  # Dynamic/global cache stays short-lived.
+APP_SHELL_START = "<!--app-shell-start-->"
+APP_SHELL_END = "<!--app-shell-end-->"
 
 
 def _bounded_int(env_name, default, minimum, maximum):
@@ -247,6 +251,30 @@ def create_app():
             response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
         if request.endpoint and request.endpoint.startswith("admin"):
             response.headers["Cache-Control"] = "no-store"
+        if (
+            request.headers.get("X-App-Fragment") == "1"
+            and response.mimetype == "text/html"
+            and response.status_code == 200
+        ):
+            html = response.get_data(as_text=True)
+            shell = ""
+            if APP_SHELL_START in html and APP_SHELL_END in html:
+                shell = html.split(APP_SHELL_START, 1)[1].split(APP_SHELL_END, 1)[0].strip()
+
+            title_match = re.search(r"<title>(.*?)</title>", html, flags=re.IGNORECASE | re.DOTALL)
+            title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else ""
+            payload = {
+                "ok": True,
+                "title": title,
+                "path": request.full_path if request.query_string else request.path,
+                "shell": shell,
+            }
+            response = app.response_class(
+                response=json.dumps(payload),
+                status=response.status_code,
+                mimetype="application/json",
+            )
+            response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
         return response
 
     @app.get("/health")
