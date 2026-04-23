@@ -234,7 +234,7 @@ def create_app():
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://embed.tawk.to https://*.tawk.to; "
+            "script-src 'self' 'unsafe-inline' https://embed.tawk.to https://*.tawk.to; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.tawk.to https://*.tawk.to; "
             "font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to data:; "
             "img-src 'self' data: https://embed.tawk.to https://*.tawk.to; "

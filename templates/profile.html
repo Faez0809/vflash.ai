@@ -3,7 +3,6 @@
 {% block title %}Profile | vflash.ai{% endblock %}
 
 {% block content %}
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
     body.tw-dark-page {
@@ -22,38 +21,6 @@
         display: none;
     }
 </style>
-<script id="tailwind-config">
-    tailwind.config = {
-      corePlugins: { preflight: false },
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "surface-container-lowest": "#0d0f0f",
-            "surface-container-low": "#1a1c1c",
-            "surface-container": "#1e2020",
-            "surface-container-high": "#282a2a",
-            "surface-container-highest": "#333535",
-            "outline": "#8a9291",
-            "outline-variant": "#404848",
-            "on-surface": "#e2e2e2",
-            "on-surface-variant": "#c0c8c7",
-            "primary": "#9dd0cd",
-            "on-primary": "#003735",
-            "primary-container": "#2d5f5d",
-            "secondary": "#dec38f",
-            "error": "#ffb4ab",
-            "error-container": "#93000a"
-          },
-          fontFamily: {
-            "headline": ["Manrope"],
-            "body": ["Inter"]
-          }
-        }
-      }
-    }
-</script>
-
 <div class="tw-scope font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2]">
     <header class="bg-[#121414]/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/[0.05] shadow-lg">
         <div class="app-topbar-row flex justify-between items-center h-16 px-4 sm:px-6 max-w-screen-2xl mx-auto font-headline tracking-tight gap-3 sm:gap-6">

@@ -3,12 +3,11 @@
 {% block title %}Admin Login | vflash.ai{% endblock %}
 
 {% block content %}
-<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
     .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
 </style>
-<div class="min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter'] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+<div class="tw-scope admin-login-shell min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter'] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
     <div class="auth-mobile-bar absolute top-4 left-4 right-4">
         <a class="nav-profile-link" href="{{ url_for('admin_login') }}" aria-label="Admin Account">
             <span class="nav-profile-name">Admin</span>

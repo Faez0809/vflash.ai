@@ -3,7 +3,6 @@
 {% block title %}Quiz Mode | vflash.ai{% endblock %}
 
 {% block content %}
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
     body.tw-dark-page {
@@ -70,71 +69,6 @@
         display: none;
     }
 </style>
-<script id="tailwind-config">
-tailwind.config = {
-    corePlugins: { preflight: false },
-    darkMode: "class",
-    theme: {
-        extend: {
-            "colors": {
-                "surface-bright": "#383939",
-                "on-secondary-fixed-variant": "#57441b",
-                "on-tertiary-fixed-variant": "#673c29",
-                "on-primary-fixed-variant": "#1a4e4c",
-                "surface-container-highest": "#333535",
-                "surface-dim": "#121414",
-                "on-tertiary": "#4c2615",
-                "surface": "#121414",
-                "on-error": "#690005",
-                "inverse-surface": "#e2e2e2",
-                "on-secondary": "#3e2e07",
-                "on-tertiary-container": "#fec0a6",
-                "on-surface": "#e2e2e2",
-                "surface-variant": "#333535",
-                "surface-container-lowest": "#0d0f0f",
-                "secondary-fixed": "#fcdfa9",
-                "on-background": "#e2e2e2",
-                "error": "#ffb4ab",
-                "on-tertiary-fixed": "#321204",
-                "on-primary-container": "#a4d7d4",
-                "primary-fixed-dim": "#9dd0cd",
-                "surface-container-high": "#282a2a",
-                "inverse-primary": "#356664",
-                "error-container": "#93000a",
-                "primary": "#9dd0cd",
-                "surface-container": "#1e2020",
-                "secondary-container": "#57441b",
-                "on-primary-fixed": "#00201f",
-                "on-secondary-container": "#ccb27f",
-                "on-error-container": "#ffdad6",
-                "tertiary-fixed": "#ffdbcd",
-                "surface-container-low": "#1a1c1c",
-                "primary-fixed": "#b9ece9",
-                "on-secondary-fixed": "#261a00",
-                "tertiary-fixed-dim": "#f6b99f",
-                "secondary": "#dec38f",
-                "outline-variant": "#404848",
-                "secondary-fixed-dim": "#dec38f",
-                "primary-container": "#2d5f5d",
-                "tertiary": "#f6b99f",
-                "tertiary-container": "#7a4c38",
-                "outline": "#8a9291",
-                "surface-tint": "#9dd0cd",
-                "inverse-on-surface": "#2f3131",
-                "on-surface-variant": "#c0c8c7",
-                "on-primary": "#003735",
-                "background": "#121414"
-            },
-            "fontFamily": {
-                "headline": ["Manrope", "sans-serif"],
-                "body": ["Inter", "sans-serif"],
-                "label": ["Inter", "sans-serif"]
-            }
-        }
-    }
-}
-</script>
-
 <div class="tw-scope font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2] flex flex-col items-center">
 
     <!-- Top Navigation Anchor (Shared) -->

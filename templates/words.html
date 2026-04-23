@@ -3,7 +3,6 @@
 {% block title %}My Words | vflash.ai{% endblock %}
 
 {% block content %}
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700&family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
     body.tw-dark-page {
@@ -188,37 +187,6 @@
     /* Hide base main shell padding */
     .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
 </style>
-<script id="tailwind-config">
-    tailwind.config = {
-      corePlugins: {
-        preflight: false,
-      },
-      darkMode: "class",
-      theme: {
-        extend: {
-          "colors": {
-            "surface-container-lowest": "#0d0f0f",
-            "surface-container-low": "#1a1c1c",
-            "outline": "#8a9291",
-            "outline-variant": "#404848",
-            "on-surface": "#e2e2e2",
-            "on-surface-variant": "#c0c8c7",
-            "primary": "#9dd0cd",
-            "on-primary": "#003735",
-            "primary-container": "#2d5f5d",
-            "secondary": "#dec38f",
-            "error": "#ffb4ab",
-            "error-container": "#93000a",
-          },
-          "fontFamily": {
-            "headline": ["Manrope"],
-            "body": ["Inter"]
-          }
-        }
-      }
-    }
-</script>
-
 <div class="tw-scope font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2]">
 
     <!-- TopNavBar Exactly as tailored for Tailwind -->

@@ -7512,3 +7512,1292 @@ body.dashboard-page .small-stat-card {
         line-height: 1.35;
     }
 }
+
+/* Local flashcard/review shell. Keep this page independent from runtime CSS CDNs. */
+.tw-dark-page .dashboard-page-shell {
+    background: #121414;
+}
+
+.tw-scope.flashcards-local-shell {
+    --tw-page-bg: #121414;
+    --tw-surface-lowest: #0d0f0f;
+    --tw-surface-low: #1a1c1c;
+    --tw-surface: #1e2020;
+    --tw-surface-high: #282a2a;
+    --tw-surface-highest: #333535;
+    --tw-outline: #8a9291;
+    --tw-outline-variant: #404848;
+    --tw-text: #e2e2e2;
+    --tw-text-muted: #c0c8c7;
+    --tw-primary: #9dd0cd;
+    --tw-primary-strong: #2d5f5d;
+    --tw-secondary: #dec38f;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    padding: 5rem 0 7rem;
+    overflow-x: hidden;
+    background: #121414;
+    color: var(--tw-text);
+    font-family: "Inter", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.tw-scope *,
+.tw-scope *::before,
+.tw-scope *::after {
+    box-sizing: border-box;
+}
+
+.tw-scope header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    width: 100%;
+    min-height: 4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(18, 20, 20, 0.78);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(18px);
+}
+
+.tw-scope .app-topbar-row {
+    width: min(100% - 2rem, 1536px);
+    min-height: 4rem;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    font-family: "Manrope", "Inter", sans-serif;
+}
+
+.tw-scope .app-topbar-brand-group,
+.tw-scope .app-topbar-actions,
+.tw-scope .app-topbar-brand-group nav,
+.tw-scope .app-topbar-actions a {
+    display: flex;
+    align-items: center;
+}
+
+.tw-scope .app-topbar-brand-group {
+    gap: 2rem;
+}
+
+.tw-scope .app-topbar-brand-group > a:first-child {
+    color: var(--tw-primary);
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    text-decoration: none;
+}
+
+.tw-scope .app-topbar-brand-group nav {
+    gap: 1.5rem;
+    padding-top: 0.1rem;
+}
+
+.tw-scope .app-topbar-brand-group nav a {
+    color: rgba(157, 208, 205, 0.62);
+    border-bottom: 2px solid transparent;
+    padding-bottom: 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.tw-scope .app-topbar-brand-group nav a:hover,
+.tw-scope .app-topbar-brand-group nav a[class*="border-primary"] {
+    color: var(--tw-primary);
+    border-bottom-color: var(--tw-primary);
+}
+
+.tw-scope .app-topbar-actions {
+    gap: 1rem;
+}
+
+.tw-scope .app-topbar-actions > a {
+    color: var(--tw-primary);
+    gap: 0.75rem;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.tw-scope .app-topbar-actions > a[href*="admin"] {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid rgba(157, 208, 205, 0.2);
+    border-radius: 999px;
+    background: rgba(157, 208, 205, 0.1);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.tw-scope .app-topbar-actions div.rounded-full,
+.tw-scope .app-topbar-actions [title="Profile"] {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(157, 208, 205, 0.3);
+    border-radius: 999px;
+    background: var(--tw-surface-low);
+    color: var(--tw-primary);
+}
+
+.tw-scope #flashcard-app {
+    position: relative;
+    width: min(100% - 2rem, 1536px);
+    min-height: calc(100vh - 12rem);
+    margin: auto auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.tw-scope #flashcard-app > .absolute.left-12 {
+    position: absolute;
+    left: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.tw-scope #flashcard-app > .absolute.left-12 > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgba(45, 212, 191, 0.65);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.tw-scope #flashcard-app > .absolute.left-12 span:first-child {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(45, 212, 191, 0.18);
+    border-radius: 5px;
+    background: rgba(45, 212, 191, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.62rem;
+}
+
+.tw-scope #flashcard-app > .w-full.max-w-\[600px\].flex {
+    width: min(100%, 600px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tw-scope #flashcard-app > .w-full.max-w-\[600px\].flex > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(45, 212, 191, 0.78);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.tw-scope #flashcard-app > .w-full.max-w-\[600px\].flex > div:nth-child(2) {
+    height: 0.25rem;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--tw-surface-highest);
+}
+
+.tw-scope #flashcard-progress {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--tw-primary), var(--tw-primary-strong));
+    box-shadow: 0 0 8px rgba(157, 208, 205, 0.4);
+    transition: width 0.3s ease;
+}
+
+.tw-scope #flashcard-app > .relative.w-full.max-w-\[600px\] {
+    position: relative;
+    width: min(100%, 600px);
+}
+
+.tw-scope #flashcard-app > .relative.w-full.max-w-\[600px\] > .flex.justify-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0 0.5rem;
+}
+
+.tw-scope .stitch-label,
+.tw-scope #flashcard-app > .relative.w-full.max-w-\[600px\] > .flex.justify-between > span {
+    color: rgba(45, 212, 191, 0.7);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.tw-scope #flashcard-app button {
+    border: 0;
+    background-image: none;
+    box-shadow: none;
+    font: inherit;
+}
+
+.tw-scope button[onclick*="reload"] {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--tw-surface-highest);
+    color: var(--tw-primary);
+    cursor: pointer;
+}
+
+.tw-scope #flashcard-flip {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    perspective: 1000px;
+    cursor: pointer;
+    outline: 0;
+    transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.tw-scope #flashcard-flip.is-desktop-clickable:hover {
+    transform: scale(1.01);
+    filter: brightness(1.02);
+}
+
+.tw-scope #flashcard-flip.is-desktop-clickable.is-pressing {
+    transform: scale(0.95);
+}
+
+.tw-scope #flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease;
+}
+
+.tw-scope #flashcard-flip.is-flipped #flip-inner {
+    transform: rotateY(180deg);
+}
+
+.tw-scope .flashcard-front,
+.tw-scope .flashcard-back {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 0.75rem;
+    background: var(--tw-surface-low);
+    box-shadow: 0 48px 48px -12px rgba(157, 208, 205, 0.04);
+    backface-visibility: hidden;
+}
+
+.tw-scope .flashcard-front {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.tw-scope .flashcard-back {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    text-align: center;
+    transform: rotateY(180deg);
+}
+
+.tw-scope #flashcard-flip:not(.is-flipped) .flashcard-back,
+.tw-scope #flashcard-flip.is-flipped .flashcard-front {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tw-scope #flashcard-flip:not(.is-flipped) .flashcard-front,
+.tw-scope #flashcard-flip.is-flipped .flashcard-back {
+    opacity: 1;
+}
+
+.tw-scope .flashcard-front > div:first-child {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 3rem;
+    text-align: center;
+}
+
+.tw-scope #flashcard-word,
+.tw-scope #flashcard-word-back {
+    margin: 0;
+    padding-bottom: 0.5rem;
+    max-width: 100%;
+    color: #b9f5ef;
+    background: linear-gradient(135deg, #a7f3d0, #99f6e4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    font-family: "Manrope", "Inter", sans-serif;
+    font-size: 3.7rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+    -webkit-text-fill-color: transparent;
+}
+
+.tw-scope #flashcard-word-back {
+    font-size: 3rem;
+}
+
+.tw-scope #flashcard-part-of-speech {
+    min-height: 1.45rem;
+    margin: 0.5rem 0 2rem;
+    padding: 0.15rem 0.75rem;
+    border: 1px solid rgba(222, 195, 143, 0.2);
+    border-radius: 999px;
+    background: rgba(222, 195, 143, 0.1);
+    color: var(--tw-secondary);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.tw-scope #flashcard-part-of-speech.is-hidden {
+    display: none;
+}
+
+.tw-scope .flashcard-front p {
+    margin: 0;
+    color: var(--tw-outline);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.tw-scope .flashcard-front > div:nth-child(2) {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.tw-scope .flashcard-front > div:nth-child(2) button {
+    padding: 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(52, 211, 153, 0.82);
+    cursor: pointer;
+}
+
+.tw-scope #flashcard-front-phonetic {
+    color: rgba(110, 231, 183, 0.82);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.tw-scope .flashcard-back > div:first-child {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.tw-scope .flashcard-back .space-y-3 {
+    width: min(100%, 28rem);
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    gap: 1rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.tw-scope .flashcard-back .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.tw-scope .flashcard-back .space-y-3 > div:not(.grid),
+.tw-scope .flashcard-back .grid > div {
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 0.65rem;
+    background: rgba(13, 15, 15, 0.42);
+}
+
+.tw-scope .flashcard-back p {
+    margin: 0;
+    color: #dbe7e6;
+    font-family: "Inter", sans-serif;
+    line-height: 1.55;
+}
+
+.tw-scope #flashcard-bangla-meaning {
+    color: #f59e0b;
+    font-size: 1.06rem;
+    font-weight: 700;
+}
+
+.tw-scope #flashcard-synonym {
+    color: #6ee7b7;
+}
+
+.tw-scope #flashcard-antonym {
+    color: #fed7aa;
+}
+
+.tw-scope #flashcard-sentence {
+    color: #bae6fd;
+    font-style: italic;
+}
+
+.tw-scope #flashcard-memory-trick {
+    color: #f0dfba;
+    font-size: 0.82rem;
+}
+
+.tw-scope .grid.grid-cols-3 {
+    width: min(100%, 600px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 1rem auto 0;
+}
+
+.tw-scope .grid.grid-cols-3 button {
+    min-height: 4.1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: var(--tw-surface);
+    color: var(--tw-primary);
+    cursor: pointer;
+}
+
+.tw-scope .grid.grid-cols-3 button:hover:not(:disabled) {
+    background: rgba(157, 208, 205, 0.1);
+}
+
+.tw-scope .grid.grid-cols-3 button:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.tw-scope .grid.grid-cols-3 .material-symbols-outlined {
+    font-size: 1.55rem;
+}
+
+.tw-scope .grid.grid-cols-3 .font-label {
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.tw-scope #flashcard-status {
+    min-height: 1.5rem;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tw-secondary);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.tw-scope > nav {
+    display: none;
+}
+
+.tw-scope > .flex.flex-col.items-center.justify-center {
+    min-height: calc(100vh - 10rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.tw-scope > .flex.flex-col.items-center.justify-center > div {
+    position: relative;
+    max-width: 24rem;
+    padding: 3rem 2rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    background: var(--tw-surface-lowest);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    text-align: center;
+}
+
+.tw-scope > .flex.flex-col.items-center.justify-center h2 {
+    color: var(--tw-text);
+    font-family: "Manrope", "Inter", sans-serif;
+}
+
+.tw-scope > .flex.flex-col.items-center.justify-center a {
+    display: inline-flex;
+    min-height: 2.4rem;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 0 1.5rem;
+    border-radius: 999px;
+    background: var(--tw-primary);
+    color: #003735;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+@media (max-width: 1279px) {
+    .tw-scope #flashcard-app > .absolute.left-12 {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .tw-scope.flashcards-local-shell {
+        padding-top: 5rem;
+        padding-bottom: 6.5rem;
+    }
+
+    .tw-scope .app-topbar-row {
+        width: min(100% - 1.5rem, 1536px);
+        gap: 0.75rem;
+    }
+
+    .tw-scope .app-topbar-brand-group {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 1rem;
+    }
+
+    .tw-scope .app-topbar-brand-group nav,
+    .tw-scope .app-topbar-actions > a[href*="profile"],
+    .tw-scope .app-topbar-actions > a[href*="admin"] {
+        display: none;
+    }
+
+    .tw-scope #flashcard-app {
+        width: min(100% - 1.5rem, 600px);
+        min-height: calc(100vh - 13rem);
+    }
+
+    .tw-scope #flashcard-flip {
+        aspect-ratio: 4 / 5;
+    }
+
+    .tw-scope .flashcard-front > div:first-child {
+        padding: 1.5rem;
+    }
+
+    .tw-scope .flashcard-back {
+        padding: 1.25rem;
+    }
+
+    .tw-scope #flashcard-word {
+        font-size: 2.55rem;
+    }
+
+    .tw-scope #flashcard-word-back {
+        font-size: 2.15rem;
+    }
+
+    .tw-scope .flashcard-back .grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .tw-scope .flashcard-back .space-y-3 {
+        gap: 0.75rem;
+    }
+
+    .tw-scope .flashcard-back .space-y-3 > div:not(.grid),
+    .tw-scope .flashcard-back .grid > div {
+        padding: 0.78rem;
+    }
+
+    .tw-scope .grid.grid-cols-3 {
+        gap: 0.55rem;
+    }
+
+    .tw-scope .grid.grid-cols-3 button {
+        min-height: 3.7rem;
+        padding: 0.65rem 0.35rem;
+    }
+
+    .tw-scope .grid.grid-cols-3 .font-label {
+        font-size: 0.56rem;
+    }
+
+    .tw-scope > nav {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 50;
+        min-height: 5rem;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.3rem;
+        padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1rem 1rem 0 0;
+        background: rgba(18, 20, 20, 0.92);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(18px);
+    }
+
+    .tw-scope > nav a {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+        padding: 0.4rem 0.25rem;
+        border-radius: 0.75rem;
+        color: var(--tw-outline);
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .tw-scope > nav a[class*="bg-"] {
+        border: 1px solid rgba(157, 208, 205, 0.2);
+        background: var(--tw-primary-strong);
+        color: var(--tw-primary);
+    }
+
+    .tw-scope > nav .material-symbols-outlined {
+        font-size: 1.45rem;
+    }
+
+    .tw-scope > nav span:last-child {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        font-size: 0.58rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+}
+
+/* Minimal local Tailwind-compatible utility layer for legacy tw-scope templates. */
+.tw-scope {
+    --color-primary: #9dd0cd;
+    --color-primary-container: #2d5f5d;
+    --color-secondary: #dec38f;
+    --color-error: #ffb4ab;
+    --color-error-container: #93000a;
+    --color-surface-lowest: #0d0f0f;
+    --color-surface-low: #1a1c1c;
+    --color-surface: #1e2020;
+    --color-surface-high: #282a2a;
+    --color-surface-highest: #333535;
+    --color-outline: #8a9291;
+    --color-outline-variant: #404848;
+    --color-on-surface: #e2e2e2;
+    --color-on-surface-variant: #c0c8c7;
+}
+
+.tw-scope[class~="flex"] { display: flex; }
+.tw-scope[class~="grid"] { display: grid; }
+.tw-scope[class~="flex-col"] { flex-direction: column; }
+.tw-scope[class~="items-center"] { align-items: center; }
+.tw-scope[class~="justify-center"] { justify-content: center; }
+.tw-scope[class~="min-h-screen"] { min-height: 100vh; }
+.tw-scope[class~="text-center"] { text-align: center; }
+.tw-scope[class~="overflow-x-hidden"] { overflow-x: hidden; }
+.tw-scope[class~="bg-[#121414]"] { background: #121414; }
+.tw-scope[class~="text-[#e2e2e2]"] { color: #e2e2e2; }
+.tw-scope[class~="font-body"],
+.tw-scope[class*="font-['Inter']"] { font-family: "Inter", "Segoe UI", sans-serif; }
+.tw-scope[class~="antialiased"] {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.tw-scope[class~="px-4"] { padding-left: 1rem; padding-right: 1rem; }
+.tw-scope[class~="py-8"] { padding-top: 2rem; padding-bottom: 2rem; }
+
+.tw-scope [class~="font-headline"],
+.tw-scope [class*="font-['Manrope']"] {
+    font-family: "Manrope", "Inter", sans-serif;
+}
+
+.tw-scope [class~="font-body"],
+.tw-scope [class*="font-['Inter']"] {
+    font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.tw-scope [class~="antialiased"] {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.tw-scope [class~="hidden"] { display: none; }
+.tw-scope [class~="block"] { display: block; }
+.tw-scope [class~="inline-block"] { display: inline-block; }
+.tw-scope [class~="inline-flex"] { display: inline-flex; }
+.tw-scope [class~="flex"] { display: flex; }
+.tw-scope [class~="inline-grid"] { display: inline-grid; }
+.tw-scope [class~="grid"] { display: grid; }
+.tw-scope [class~="table"] { display: table; }
+
+.tw-scope [class~="flex-col"] { flex-direction: column; }
+.tw-scope [class~="flex-row"] { flex-direction: row; }
+.tw-scope [class~="flex-wrap"] { flex-wrap: wrap; }
+.tw-scope [class~="items-start"] { align-items: flex-start; }
+.tw-scope [class~="items-end"] { align-items: flex-end; }
+.tw-scope [class~="items-center"] { align-items: center; }
+.tw-scope [class~="items-stretch"] { align-items: stretch; }
+.tw-scope [class~="justify-start"] { justify-content: flex-start; }
+.tw-scope [class~="justify-end"] { justify-content: flex-end; }
+.tw-scope [class~="justify-center"] { justify-content: center; }
+.tw-scope [class~="justify-between"] { justify-content: space-between; }
+.tw-scope [class~="place-items-center"] { place-items: center; }
+.tw-scope [class~="self-end"] { align-self: flex-end; }
+.tw-scope [class~="shrink-0"] { flex-shrink: 0; }
+.tw-scope [class~="flex-1"] { flex: 1 1 0%; }
+.tw-scope [class~="flex-none"] { flex: none; }
+
+.tw-scope [class~="relative"] { position: relative; }
+.tw-scope [class~="absolute"] { position: absolute; }
+.tw-scope [class~="fixed"] { position: fixed; }
+.tw-scope [class~="sticky"] { position: sticky; }
+.tw-scope [class~="inset-0"] { inset: 0; }
+.tw-scope [class~="top-0"] { top: 0; }
+.tw-scope [class~="left-0"] { left: 0; }
+.tw-scope [class~="right-0"] { right: 0; }
+.tw-scope [class~="bottom-0"] { bottom: 0; }
+.tw-scope [class~="top-4"] { top: 1rem; }
+.tw-scope [class~="left-4"] { left: 1rem; }
+.tw-scope [class~="right-4"] { right: 1rem; }
+.tw-scope [class*="-top-12"] { top: -3rem; }
+.tw-scope [class*="-right-12"] { right: -3rem; }
+.tw-scope [class*="-bottom-12"] { bottom: -3rem; }
+.tw-scope [class*="-left-12"] { left: -3rem; }
+.tw-scope [class~="z-10"] { z-index: 10; }
+.tw-scope [class~="z-40"] { z-index: 40; }
+.tw-scope [class~="z-50"] { z-index: 50; }
+.tw-scope [class*="z-[100]"] { z-index: 100; }
+
+.tw-scope [class~="w-full"] { width: 100%; }
+.tw-scope [class~="h-full"] { height: 100%; }
+.tw-scope [class~="min-h-screen"] { min-height: 100vh; }
+.tw-scope [class~="max-w-md"] { max-width: 28rem; }
+.tw-scope [class~="max-w-sm"] { max-width: 24rem; }
+.tw-scope [class~="max-w-lg"] { max-width: 32rem; }
+.tw-scope [class~="max-w-2xl"] { max-width: 42rem; }
+.tw-scope [class~="max-w-screen-2xl"] { max-width: 1536px; }
+.tw-scope [class*="max-w-[600px]"] { max-width: 600px; }
+.tw-scope [class*="max-w-[280px]"] { max-width: 280px; }
+.tw-scope [class*="min-w-[280px]"] { min-width: 280px; }
+.tw-scope [class*="min-w-[1100px]"] { min-width: 1100px; }
+.tw-scope [class*="min-h-[3.5rem]"] { min-height: 3.5rem; }
+.tw-scope [class*="min-h-[9rem]"] { min-height: 9rem; }
+.tw-scope [class*="min-h-[2.5rem]"] { min-height: 2.5rem; }
+.tw-scope [class~="h-1"] { height: 0.25rem; }
+.tw-scope [class~="h-11"] { height: 2.75rem; }
+.tw-scope [class~="h-16"] { height: 4rem; }
+.tw-scope [class~="w-3.5"] { width: 0.875rem; }
+.tw-scope [class~="h-3.5"] { height: 0.875rem; }
+.tw-scope [class~="w-4"] { width: 1rem; }
+.tw-scope [class~="h-4"] { height: 1rem; }
+.tw-scope [class~="w-8"] { width: 2rem; }
+.tw-scope [class~="h-8"] { height: 2rem; }
+.tw-scope [class~="w-40"] { width: 10rem; }
+.tw-scope [class~="h-40"] { height: 10rem; }
+.tw-scope [class~="w-48"] { width: 12rem; }
+.tw-scope [class~="h-48"] { height: 12rem; }
+.tw-scope [class~="w-6"] { width: 1.5rem; }
+.tw-scope [class*="h-[1px]"] { height: 1px; }
+.tw-scope [class*="h-[calc(100vh-4rem)]"] { height: calc(100vh - 4rem); }
+.tw-scope [class*="min-h-[calc(100vh-4rem)]"] { min-height: calc(100vh - 4rem); }
+.tw-scope [class*="max-h-[85vh]"] { max-height: 85vh; }
+.tw-scope [class*="max-h-[calc(100vh-6rem)]"] { max-height: calc(100vh - 6rem); }
+.tw-scope [class*="max-h-[min(78vh,720px)]"] { max-height: min(78vh, 720px); }
+
+.tw-scope [class~="m-0"] { margin: 0; }
+.tw-scope [class~="mx-auto"] { margin-left: auto; margin-right: auto; }
+.tw-scope [class~="my-auto"] { margin-top: auto; margin-bottom: auto; }
+.tw-scope [class~="mt-auto"] { margin-top: auto; }
+.tw-scope [class~="mb-0"] { margin-bottom: 0; }
+.tw-scope [class~="mb-1"] { margin-bottom: 0.25rem; }
+.tw-scope [class~="mb-2"] { margin-bottom: 0.5rem; }
+.tw-scope [class~="mb-3"] { margin-bottom: 0.75rem; }
+.tw-scope [class~="mb-4"] { margin-bottom: 1rem; }
+.tw-scope [class~="mb-5"] { margin-bottom: 1.25rem; }
+.tw-scope [class~="mb-6"] { margin-bottom: 1.5rem; }
+.tw-scope [class~="mb-8"] { margin-bottom: 2rem; }
+.tw-scope [class~="mb-10"] { margin-bottom: 2.5rem; }
+.tw-scope [class~="mt-1"] { margin-top: 0.25rem; }
+.tw-scope [class~="mt-2"] { margin-top: 0.5rem; }
+.tw-scope [class~="mt-4"] { margin-top: 1rem; }
+.tw-scope [class~="mt-6"] { margin-top: 1.5rem; }
+.tw-scope [class~="mt-8"] { margin-top: 2rem; }
+.tw-scope [class~="ml-1"] { margin-left: 0.25rem; }
+.tw-scope [class~="mr-3"] { margin-right: 0.75rem; }
+.tw-scope [class~="pt-1"] { padding-top: 0.25rem; }
+.tw-scope [class~="pt-2"] { padding-top: 0.5rem; }
+.tw-scope [class~="pt-4"] { padding-top: 1rem; }
+.tw-scope [class~="pt-6"] { padding-top: 1.5rem; }
+.tw-scope [class~="pt-20"] { padding-top: 5rem; }
+.tw-scope [class~="pt-24"] { padding-top: 6rem; }
+.tw-scope [class~="pb-6"] { padding-bottom: 1.5rem; }
+.tw-scope [class~="pb-8"] { padding-bottom: 2rem; }
+.tw-scope [class~="pb-12"] { padding-bottom: 3rem; }
+.tw-scope [class~="px-1"] { padding-left: 0.25rem; padding-right: 0.25rem; }
+.tw-scope [class~="px-2"] { padding-left: 0.5rem; padding-right: 0.5rem; }
+.tw-scope [class~="px-3"] { padding-left: 0.75rem; padding-right: 0.75rem; }
+.tw-scope [class~="px-4"] { padding-left: 1rem; padding-right: 1rem; }
+.tw-scope [class~="px-5"] { padding-left: 1.25rem; padding-right: 1.25rem; }
+.tw-scope [class~="px-6"] { padding-left: 1.5rem; padding-right: 1.5rem; }
+.tw-scope [class~="px-8"] { padding-left: 2rem; padding-right: 2rem; }
+.tw-scope [class~="py-1"] { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.tw-scope [class~="py-1.5"] { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+.tw-scope [class~="py-2"] { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.tw-scope [class~="py-3"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.tw-scope [class~="py-3.5"] { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+.tw-scope [class~="py-4"] { padding-top: 1rem; padding-bottom: 1rem; }
+.tw-scope [class~="py-5"] { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.tw-scope [class~="py-6"] { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.tw-scope [class~="py-8"] { padding-top: 2rem; padding-bottom: 2rem; }
+.tw-scope [class~="py-12"] { padding-top: 3rem; padding-bottom: 3rem; }
+.tw-scope [class~="py-16"] { padding-top: 4rem; padding-bottom: 4rem; }
+.tw-scope [class~="p-0"] { padding: 0; }
+.tw-scope [class~="p-2"] { padding: 0.5rem; }
+.tw-scope [class~="p-2.5"] { padding: 0.625rem; }
+.tw-scope [class~="p-3"] { padding: 0.75rem; }
+.tw-scope [class~="p-4"] { padding: 1rem; }
+.tw-scope [class~="p-5"] { padding: 1.25rem; }
+.tw-scope [class~="p-6"] { padding: 1.5rem; }
+.tw-scope [class~="p-8"] { padding: 2rem; }
+.tw-scope [class~="p-10"] { padding: 2.5rem; }
+.tw-scope [class~="p-12"] { padding: 3rem; }
+
+.tw-scope [class~="gap-1"] { gap: 0.25rem; }
+.tw-scope [class~="gap-1.5"] { gap: 0.375rem; }
+.tw-scope [class~="gap-2"] { gap: 0.5rem; }
+.tw-scope [class~="gap-3"] { gap: 0.75rem; }
+.tw-scope [class~="gap-4"] { gap: 1rem; }
+.tw-scope [class~="gap-6"] { gap: 1.5rem; }
+.tw-scope [class~="gap-8"] { gap: 2rem; }
+.tw-scope [class~="space-y-1.5"] > * + * { margin-top: 0.375rem; }
+.tw-scope [class~="space-y-2"] > * + * { margin-top: 0.5rem; }
+.tw-scope [class~="space-y-4"] > * + * { margin-top: 1rem; }
+.tw-scope [class~="space-y-5"] > * + * { margin-top: 1.25rem; }
+.tw-scope [class~="space-y-6"] > * + * { margin-top: 1.5rem; }
+.tw-scope [class~="space-y-8"] > * + * { margin-top: 2rem; }
+
+.tw-scope [class~="grid-cols-1"] { grid-template-columns: minmax(0, 1fr); }
+.tw-scope [class~="grid-cols-2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tw-scope [class~="grid-cols-3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tw-scope [class~="grid-cols-4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tw-scope [class*="grid-cols-[1fr_80px_90px]"] { grid-template-columns: minmax(0, 1fr) 80px 90px; }
+
+.tw-scope [class~="overflow-hidden"] { overflow: hidden; }
+.tw-scope [class~="overflow-x-auto"] { overflow-x: auto; }
+.tw-scope [class~="overflow-x-hidden"] { overflow-x: hidden; }
+.tw-scope [class~="overflow-y-auto"] { overflow-y: auto; }
+.tw-scope [class~="no-scrollbar"] { scrollbar-width: none; }
+.tw-scope [class~="no-scrollbar"]::-webkit-scrollbar { display: none; }
+
+.tw-scope [class~="rounded"] { border-radius: 0.25rem; }
+.tw-scope [class~="rounded-lg"] { border-radius: 0.5rem; }
+.tw-scope [class~="rounded-xl"] { border-radius: 0.75rem; }
+.tw-scope [class~="rounded-2xl"] { border-radius: 1rem; }
+.tw-scope [class~="rounded-3xl"] { border-radius: 1.5rem; }
+.tw-scope [class~="rounded-full"] { border-radius: 999px; }
+.tw-scope [class~="rounded-t-2xl"] { border-radius: 1rem 1rem 0 0; }
+
+.tw-scope [class~="border"] { border-width: 1px; border-style: solid; }
+.tw-scope [class~="border-none"] { border: 0; }
+.tw-scope [class~="border-t"] { border-top-width: 1px; border-top-style: solid; }
+.tw-scope [class~="border-b"] { border-bottom-width: 1px; border-bottom-style: solid; }
+.tw-scope [class~="border-l-2"] { border-left-width: 2px; border-left-style: solid; }
+.tw-scope [class~="border-transparent"] { border-color: transparent; }
+.tw-scope [class~="border-white/5"] { border-color: rgba(255, 255, 255, 0.05); }
+.tw-scope [class~="border-white/10"] { border-color: rgba(255, 255, 255, 0.1); }
+.tw-scope [class~="border-primary/20"] { border-color: rgba(157, 208, 205, 0.2); }
+.tw-scope [class~="border-primary/30"] { border-color: rgba(157, 208, 205, 0.3); }
+.tw-scope [class~="border-outline-variant"] { border-color: var(--color-outline-variant); }
+.tw-scope [class*="border-white/[0.03]"] { border-color: rgba(255, 255, 255, 0.03); }
+.tw-scope [class*="border-white/[0.05]"] { border-color: rgba(255, 255, 255, 0.05); }
+.tw-scope [class*="border-white/[0.06]"] { border-color: rgba(255, 255, 255, 0.06); }
+.tw-scope [class*="border-[#9dd0cd]"] { border-color: rgba(157, 208, 205, 0.35); }
+.tw-scope [class*="border-[#ffb4ab]"] { border-color: rgba(255, 180, 171, 0.35); }
+
+.tw-scope [class~="bg-primary"] { background: var(--color-primary); }
+.tw-scope [class~="bg-primary/10"] { background: rgba(157, 208, 205, 0.1); }
+.tw-scope [class~="bg-primary/20"] { background: rgba(157, 208, 205, 0.2); }
+.tw-scope [class~="bg-primary-container"] { background: var(--color-primary-container); }
+.tw-scope [class~="bg-surface-container-low"] { background: var(--color-surface-low); }
+.tw-scope [class~="bg-surface-container"] { background: var(--color-surface); }
+.tw-scope [class~="bg-surface-container-highest"] { background: var(--color-surface-highest); }
+.tw-scope [class~="bg-surface-bright"] { background: #383939; }
+.tw-scope [class~="bg-black/20"] { background: rgba(0, 0, 0, 0.2); }
+.tw-scope [class~="bg-black/60"] { background: rgba(0, 0, 0, 0.6); }
+.tw-scope [class~="bg-white/5"] { background: rgba(255, 255, 255, 0.05); }
+.tw-scope [class~="bg-transparent"] { background: transparent; }
+.tw-scope [class*="bg-[#121414]"] { background: #121414; }
+.tw-scope [class*="bg-[#0d0f0f]"] { background: #0d0f0f; }
+.tw-scope [class*="bg-[#1a1c1c]"] { background: #1a1c1c; }
+.tw-scope [class*="bg-[#2d5f5d]"] { background: #2d5f5d; }
+.tw-scope [class*="bg-[#93000a]"] { background: #93000a; }
+.tw-scope [class*="bg-surface-container-low"] { background: var(--color-surface-low); }
+.tw-scope [class*="bg-surface-container-highest"] { background: var(--color-surface-highest); }
+.tw-scope [class*="bg-primary/"] { background: rgba(157, 208, 205, 0.1); }
+.tw-scope [class*="bg-white/[0.01]"] { background: rgba(255, 255, 255, 0.01); }
+.tw-scope [class*="bg-white/[0.02]"] { background: rgba(255, 255, 255, 0.02); }
+.tw-scope [class*="bg-[#0d0f0f]/40"] { background: rgba(13, 15, 15, 0.4); }
+.tw-scope [class*="bg-[#2d5f5d]/20"] { background: rgba(45, 95, 93, 0.2); }
+.tw-scope [class*="bg-[#2d5f5d]/30"] { background: rgba(45, 95, 93, 0.3); }
+.tw-scope [class*="bg-[#93000a]/20"] { background: rgba(147, 0, 10, 0.2); }
+.tw-scope [class*="bg-[#93000a]/30"] { background: rgba(147, 0, 10, 0.3); }
+.tw-scope [class*="bg-[linear-gradient"] {
+    background: linear-gradient(180deg, rgba(30, 32, 32, 0.98), rgba(18, 20, 20, 0.98));
+}
+.tw-scope [class*="bg-[radial-gradient"] {
+    background:
+        radial-gradient(circle at top, rgba(157, 208, 205, 0.12), transparent 40%),
+        linear-gradient(180deg, rgba(30, 32, 32, 0.98), rgba(18, 20, 20, 0.98));
+}
+.tw-scope [class~="bg-gradient-to-r"] {
+    background-image: linear-gradient(90deg, var(--color-primary), var(--color-primary-container));
+}
+
+.tw-scope [class~="text-primary"] { color: var(--color-primary); }
+.tw-scope [class~="text-primary/60"] { color: rgba(157, 208, 205, 0.6); }
+.tw-scope [class~="text-primary/80"] { color: rgba(157, 208, 205, 0.8); }
+.tw-scope [class~="text-on-surface"] { color: var(--color-on-surface); }
+.tw-scope [class~="text-on-surface-variant"] { color: var(--color-on-surface-variant); }
+.tw-scope [class~="text-outline"] { color: var(--color-outline); }
+.tw-scope [class~="text-secondary"] { color: var(--color-secondary); }
+.tw-scope [class~="text-error/80"] { color: rgba(255, 180, 171, 0.8); }
+.tw-scope [class*="text-[#e2e2e2]"] { color: #e2e2e2; }
+.tw-scope [class*="text-[#c0c8c7]"] { color: #c0c8c7; }
+.tw-scope [class*="text-[#8a9291]"] { color: #8a9291; }
+.tw-scope [class*="text-[#9dd0cd]"] { color: #9dd0cd; }
+.tw-scope [class*="text-[#003735]"] { color: #003735; }
+.tw-scope [class*="text-[#00201f]"] { color: #00201f; }
+.tw-scope [class*="text-[#ffb4ab]"] { color: #ffb4ab; }
+.tw-scope [class*="text-[#ffdad6]"] { color: #ffdad6; }
+.tw-scope [class*="text-[#dec38f]"] { color: #dec38f; }
+.tw-scope [class*="text-[#404848]"] { color: #404848; }
+.tw-scope [class*="text-white"] { color: #fff; }
+.tw-scope [class*="text-slate-200"] { color: #e2e8f0; }
+.tw-scope [class*="text-amber-400"] { color: #f59e0b; }
+.tw-scope [class*="text-emerald-"] { color: #6ee7b7; }
+.tw-scope [class*="text-orange-"] { color: #fed7aa; }
+.tw-scope [class*="text-sky-"] { color: #bae6fd; }
+
+.tw-scope [class~="text-left"] { text-align: left; }
+.tw-scope [class~="text-center"] { text-align: center; }
+.tw-scope [class~="text-right"] { text-align: right; }
+.tw-scope [class~="uppercase"] { text-transform: uppercase; }
+.tw-scope [class~="italic"] { font-style: italic; }
+.tw-scope [class~="font-light"] { font-weight: 300; }
+.tw-scope [class~="font-medium"] { font-weight: 500; }
+.tw-scope [class~="font-semibold"] { font-weight: 600; }
+.tw-scope [class~="font-bold"] { font-weight: 700; }
+.tw-scope [class~="font-extrabold"] { font-weight: 800; }
+.tw-scope [class~="tracking-tight"] { letter-spacing: -0.025em; }
+.tw-scope [class~="tracking-tighter"] { letter-spacing: -0.05em; }
+.tw-scope [class~="tracking-wide"] { letter-spacing: 0.025em; }
+.tw-scope [class~="tracking-wider"] { letter-spacing: 0.05em; }
+.tw-scope [class~="tracking-widest"] { letter-spacing: 0.1em; }
+.tw-scope [class*="tracking-[0.1em]"] { letter-spacing: 0.1em; }
+.tw-scope [class*="tracking-[0.15em]"] { letter-spacing: 0.15em; }
+.tw-scope [class*="tracking-[0.18em]"] { letter-spacing: 0.18em; }
+.tw-scope [class*="tracking-[0.2em]"] { letter-spacing: 0.2em; }
+.tw-scope [class*="tracking-[0.22em]"] { letter-spacing: 0.22em; }
+.tw-scope [class~="leading-normal"] { line-height: 1.5; }
+.tw-scope [class~="leading-relaxed"] { line-height: 1.625; }
+.tw-scope [class~="leading-snug"] { line-height: 1.375; }
+.tw-scope [class~="leading-tight"] { line-height: 1.25; }
+
+.tw-scope [class~="text-xs"] { font-size: 0.75rem; }
+.tw-scope [class~="text-sm"] { font-size: 0.875rem; }
+.tw-scope [class~="text-base"] { font-size: 1rem; }
+.tw-scope [class~="text-lg"] { font-size: 1.125rem; }
+.tw-scope [class~="text-xl"] { font-size: 1.25rem; }
+.tw-scope [class~="text-2xl"] { font-size: 1.5rem; }
+.tw-scope [class~="text-3xl"] { font-size: 1.875rem; }
+.tw-scope [class~="text-4xl"] { font-size: 2.25rem; }
+.tw-scope [class~="text-5xl"] { font-size: 3rem; }
+.tw-scope [class~="text-6xl"] { font-size: 3.75rem; }
+.tw-scope [class*="text-[8px]"] { font-size: 8px; }
+.tw-scope [class*="text-[9px]"] { font-size: 9px; }
+.tw-scope [class*="text-[10px]"] { font-size: 10px; }
+.tw-scope [class*="text-[11px]"] { font-size: 11px; }
+.tw-scope [class*="text-[13px]"] { font-size: 13px; }
+.tw-scope [class*="text-[14px]"] { font-size: 14px; }
+.tw-scope [class*="text-[16px]"] { font-size: 16px; }
+.tw-scope [class*="text-[0.55rem]"] { font-size: 0.55rem; }
+.tw-scope [class*="text-[0.6rem]"] { font-size: 0.6rem; }
+.tw-scope [class*="text-[0.65rem]"] { font-size: 0.65rem; }
+.tw-scope [class*="text-[0.72rem]"] { font-size: 0.72rem; }
+.tw-scope [class*="text-[0.85rem]"] { font-size: 0.85rem; }
+.tw-scope [class*="text-[0.9rem]"] { font-size: 0.9rem; }
+.tw-scope [class*="text-[0.95rem]"] { font-size: 0.95rem; }
+
+.tw-scope [class~="no-underline"] { text-decoration: none; }
+.tw-scope [class~="line-through"] { text-decoration: line-through; }
+.tw-scope [class~="truncate"] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tw-scope [class~="break-all"] { word-break: break-all; }
+.tw-scope [class~="break-words"] { overflow-wrap: break-word; }
+
+.tw-scope [class~="shadow-sm"] { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+.tw-scope [class~="shadow-lg"] { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22); }
+.tw-scope [class~="shadow-2xl"] { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28); }
+.tw-scope [class~="shadow-inner"] { box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.22); }
+.tw-scope [class*="shadow-["] { box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2); }
+
+.tw-scope [class~="outline-none"] { outline: none; }
+.tw-scope [class~="cursor-pointer"] { cursor: pointer; }
+.tw-scope [class~="cursor-not-allowed"] { cursor: not-allowed; }
+.tw-scope [class~="pointer-events-none"] { pointer-events: none; }
+.tw-scope [class~="appearance-none"] { appearance: none; -webkit-appearance: none; }
+.tw-scope [class~="resize-y"] { resize: vertical; }
+.tw-scope [class~="backdrop-blur-xl"],
+.tw-scope [class~="backdrop-blur-lg"],
+.tw-scope [class~="backdrop-blur-sm"] { backdrop-filter: blur(16px); }
+.tw-scope [class~="opacity-40"] { opacity: 0.4; }
+.tw-scope [class~="opacity-50"] { opacity: 0.5; }
+.tw-scope [class~="opacity-70"] { opacity: 0.7; }
+.tw-scope [class~="opacity-80"] { opacity: 0.8; }
+.tw-scope [class*="opacity-[0.03]"] { opacity: 0.03; }
+.tw-scope [class*="opacity-[0.15]"] { opacity: 0.15; }
+.tw-scope [class~="transition-all"],
+.tw-scope [class~="transition-colors"],
+.tw-scope [class~="transition-opacity"],
+.tw-scope [class~="transition-transform"] {
+    transition-duration: 0.2s;
+    transition-property: color, background-color, border-color, opacity, transform, box-shadow, filter;
+}
+
+.tw-scope input,
+.tw-scope select,
+.tw-scope textarea {
+    max-width: 100%;
+}
+
+.tw-scope [class*="focus:border-primary"]:focus,
+.tw-scope [class*="focus:border-[#9dd0cd]"]:focus {
+    border-color: rgba(157, 208, 205, 0.5);
+}
+
+.tw-scope [class*="hover:text-primary"]:hover { color: var(--color-primary); }
+.tw-scope [class*="hover:bg-primary"]:hover { background: rgba(157, 208, 205, 0.14); }
+.tw-scope [class*="hover:bg-white"]:hover { background: rgba(255, 255, 255, 0.05); }
+.tw-scope [class*="hover:brightness"]:hover { filter: brightness(1.12); }
+
+.tw-scope .word-row {
+    align-items: center;
+}
+
+.tw-scope .profile-weekly-activity-mobile {
+    display: none;
+}
+
+.tw-scope .dashboard-stitch-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    min-height: 5rem;
+}
+
+.tw-scope .dashboard-stitch-bar-track {
+    width: 20px;
+    height: 55px;
+    display: flex;
+    align-items: flex-end;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.tw-scope .dashboard-stitch-bar {
+    width: 100%;
+    min-height: 4px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, var(--color-primary), var(--color-primary-container));
+}
+
+.tw-scope .dashboard-stitch-bar-col {
+    display: grid;
+    gap: 0.35rem;
+    justify-items: center;
+}
+
+.tw-scope .dashboard-chart-label {
+    color: var(--color-outline);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.tw-scope .quiz-shell-focus label:has(input:checked) {
+    border-color: rgba(157, 208, 205, 0.35);
+    background: rgba(157, 208, 205, 0.08);
+}
+
+.tw-scope .quiz-shell-focus label:has(input:checked) .rounded-full {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+}
+
+.tw-scope .admin-shell {
+    padding: 0;
+}
+
+.tw-scope.admin-shell,
+.tw-scope.admin-login-shell {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.tw-scope.admin-shell header {
+    position: sticky;
+}
+
+.tw-scope.admin-shell table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tw-scope.admin-shell th {
+    text-align: left;
+}
+
+.tw-scope.admin-login-shell .auth-mobile-bar {
+    display: flex;
+}
+
+@media (min-width: 640px) {
+    .tw-scope [class~="sm:px-6"] { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .tw-scope [class~="sm:py-4"] { padding-top: 1rem; padding-bottom: 1rem; }
+    .tw-scope [class~="sm:py-8"] { padding-top: 2rem; padding-bottom: 2rem; }
+    .tw-scope [class~="sm:py-12"] { padding-top: 3rem; padding-bottom: 3rem; }
+    .tw-scope [class~="sm:p-3"] { padding: 0.75rem; }
+    .tw-scope [class~="sm:p-4"] { padding: 1rem; }
+    .tw-scope [class~="sm:p-6"] { padding: 1.5rem; }
+    .tw-scope [class~="sm:p-8"] { padding: 2rem; }
+    .tw-scope [class~="sm:p-10"] { padding: 2.5rem; }
+    .tw-scope [class~="sm:pt-8"] { padding-top: 2rem; }
+    .tw-scope [class~="sm:mb-3"] { margin-bottom: 0.75rem; }
+    .tw-scope [class~="sm:mb-4"] { margin-bottom: 1rem; }
+    .tw-scope [class~="sm:mb-5"] { margin-bottom: 1.25rem; }
+    .tw-scope [class~="sm:flex-row"] { flex-direction: row; }
+    .tw-scope [class~="sm:items-center"] { align-items: center; }
+    .tw-scope [class~="sm:w-auto"] { width: auto; }
+    .tw-scope [class~="sm:flex-none"] { flex: none; }
+    .tw-scope [class~="sm:text-sm"] { font-size: 0.875rem; }
+    .tw-scope [class~="sm:text-base"] { font-size: 1rem; }
+    .tw-scope [class~="sm:text-lg"] { font-size: 1.125rem; }
+    .tw-scope [class~="sm:text-xl"] { font-size: 1.25rem; }
+    .tw-scope [class~="sm:text-2xl"] { font-size: 1.5rem; }
+    .tw-scope [class~="sm:text-5xl"] { font-size: 3rem; }
+    .tw-scope [class~="sm:text-6xl"] { font-size: 3.75rem; }
+    .tw-scope [class*="sm:text-[10px]"] { font-size: 10px; }
+    .tw-scope [class*="sm:text-[11px]"] { font-size: 11px; }
+    .tw-scope [class*="sm:text-[16px]"] { font-size: 16px; }
+}
+
+@media (min-width: 768px) {
+    .tw-scope [class~="md:block"] { display: block; }
+    .tw-scope [class~="md:flex"] { display: flex; }
+    .tw-scope [class~="md:grid"] { display: grid; }
+    .tw-scope [class~="md:hidden"] { display: none; }
+    .tw-scope [class~="md:inline-flex"] { display: inline-flex; }
+    .tw-scope [class~="md:flex-row"] { flex-direction: row; }
+    .tw-scope [class~="md:items-end"] { align-items: flex-end; }
+    .tw-scope [class~="md:items-center"] { align-items: center; }
+    .tw-scope [class~="md:gap-6"] { gap: 1.5rem; }
+    .tw-scope [class~="md:grid-cols-2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tw-scope [class~="md:grid-cols-3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .tw-scope [class~="md:grid-cols-4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .tw-scope [class*="md:grid-cols-[1fr_200px_200px_200px]"] {
+        grid-template-columns: minmax(0, 1fr) 200px 200px 200px;
+    }
+    .tw-scope [class*="md:grid-cols-[160px_100px_160px_1fr_100px_90px]"] {
+        grid-template-columns: 160px 100px 160px minmax(0, 1fr) 100px 90px;
+    }
+    .tw-scope [class~="md:p-8"] { padding: 2rem; }
+    .tw-scope [class~="md:p-12"] { padding: 3rem; }
+    .tw-scope [class~="md:pb-12"] { padding-bottom: 3rem; }
+    .tw-scope [class~="md:text-base"] { font-size: 1rem; }
+    .tw-scope [class~="md:text-lg"] { font-size: 1.125rem; }
+    .tw-scope [class~="md:text-2xl"] { font-size: 1.5rem; }
+    .tw-scope [class~="md:text-4xl"] { font-size: 2.25rem; }
+    .tw-scope [class~="md:text-5xl"] { font-size: 3rem; }
+}
+
+@media (min-width: 1024px) {
+    .tw-scope [class~="lg:flex-row"] { flex-direction: row; }
+    .tw-scope [class~="lg:items-end"] { align-items: flex-end; }
+    .tw-scope [class~="lg:justify-between"] { justify-content: space-between; }
+}
+
+@media (min-width: 1280px) {
+    .tw-scope [class~="xl:grid-cols-7"] { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .tw-scope [class*="xl:grid-cols-[1.1fr_1.4fr]"] { grid-template-columns: 1.1fr 1.4fr; }
+}
+
+@media (max-width: 767px) {
+    .tw-scope .profile-weekly-activity-mobile {
+        display: block;
+    }
+}
+
+.tw-scope > nav {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .tw-scope > nav {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 50;
+        min-height: 5rem;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
