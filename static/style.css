@@ -67,6 +67,29 @@ a {
     transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+button,
+a[href],
+input[type="button"],
+input[type="submit"],
+summary,
+label {
+    touch-action: manipulation;
+}
+
+.is-immediate-active {
+    transform: translateY(1px) scale(0.985) !important;
+    filter: brightness(1.08);
+    transition-duration: 0.04s !important;
+}
+
+button.is-submitting-immediate,
+input[type="submit"].is-submitting-immediate,
+form.is-submitting-immediate button[type="submit"],
+form.is-submitting-immediate input[type="submit"] {
+    filter: brightness(1.06);
+    opacity: 0.82;
+}
+
 .ai-input-enhanced-shell {
     --ai-input-surface: rgba(13, 15, 15, 0.92);
     --ai-input-border-soft: rgba(255, 255, 255, 0.08);
@@ -6699,7 +6722,7 @@ body.dashboard-page .dashboard-topbar .nav-menu {
         display: inline-flex;
     }
 
-    .tw-scope header .nav-menu-panel {
+    .tw-scope > header .nav-menu-panel {
         right: 0;
         left: auto;
         min-width: min(320px, calc(100vw - 1.5rem));
@@ -6711,7 +6734,7 @@ body.dashboard-page .dashboard-topbar .nav-menu {
         min-width: min(320px, calc(100vw - 1.5rem));
     }
 
-    .tw-scope header .nav-menu-trigger {
+    .tw-scope > header .nav-menu-trigger {
         width: 40px;
         height: 40px;
         border-radius: 12px;
@@ -7551,7 +7574,7 @@ body.dashboard-page .small-stat-card {
     box-sizing: border-box;
 }
 
-.tw-scope header {
+.tw-scope > header {
     position: fixed;
     inset: 0 0 auto;
     z-index: 50;
@@ -8682,6 +8705,88 @@ body.dashboard-page .small-stat-card {
 .tw-scope .quiz-shell-focus label:has(input:checked) .rounded-full {
     border-color: var(--color-primary);
     background: var(--color-primary);
+}
+
+.tw-scope.quiz-local-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #121414;
+    color: #e2e2e2;
+    font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.tw-scope.quiz-local-shell > header {
+    position: fixed;
+    inset: 0 0 auto;
+}
+
+.tw-scope.quiz-local-shell main {
+    width: 100%;
+}
+
+.tw-scope.quiz-local-shell main > .relative.w-full.max-w-2xl,
+.tw-scope.quiz-local-shell main > .w-full.max-w-2xl {
+    width: min(100% - 2rem, 42rem);
+}
+
+.tw-scope.quiz-local-shell main > .relative.w-full.max-w-2xl.bg-surface-container-low,
+.tw-scope.quiz-local-shell main > .w-full.max-w-2xl.bg-surface-container-low {
+    background:
+        radial-gradient(circle at top, rgba(157, 208, 205, 0.08), transparent 36%),
+        #1a1c1c;
+}
+
+.tw-scope.quiz-local-shell main header {
+    position: static;
+    inset: auto;
+    min-height: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.tw-scope.quiz-local-shell form .grid.grid-cols-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.tw-scope.quiz-local-shell select,
+.tw-scope.quiz-local-shell textarea,
+.tw-scope.quiz-local-shell input[type="text"] {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #0d0f0f !important;
+    color: #e2e2e2 !important;
+    box-shadow: none;
+}
+
+.tw-scope.quiz-local-shell select {
+    min-height: 3rem;
+}
+
+.tw-scope.quiz-local-shell .quiz-shell-focus {
+    background: #1a1c1c;
+}
+
+.tw-scope.quiz-local-shell .quiz-shell-focus label {
+    min-height: 3.5rem;
+}
+
+.tw-scope.quiz-local-shell .quiz-shell-focus input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .tw-scope.quiz-local-shell form .grid.grid-cols-1.md\:grid-cols-2,
+    .tw-scope.quiz-local-shell form .grid.grid-cols-1 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .tw-scope .admin-shell {

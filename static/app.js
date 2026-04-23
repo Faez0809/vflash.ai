@@ -6,6 +6,7 @@ const appShellState = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    initImmediateControlFeedback();
     initInstantNavigation();
     bootstrapPage({ initialLoad: true });
 });
@@ -32,6 +33,53 @@ function bootstrapPage({ initialLoad = false } = {}) {
     initVocabularyInputs();
     initSearchSuggestions();
     prefetchVisibleNavigationLinks();
+}
+
+function initImmediateControlFeedback() {
+    if (window.__immediateControlFeedbackBound) {
+        return;
+    }
+
+    window.__immediateControlFeedbackBound = true;
+    const interactiveSelector = "button, a[href], input[type='button'], input[type='submit'], summary, label";
+
+    function clearActive(el) {
+        if (!el) {
+            return;
+        }
+        window.setTimeout(() => {
+            el.classList.remove("is-immediate-active");
+        }, 130);
+    }
+
+    document.addEventListener("pointerdown", (event) => {
+        const control = event.target.closest(interactiveSelector);
+        if (!control || control.matches("[disabled], [aria-disabled='true']")) {
+            return;
+        }
+
+        control.classList.add("is-immediate-active");
+    }, true);
+
+    ["pointerup", "pointercancel", "pointerleave", "click"].forEach((eventName) => {
+        document.addEventListener(eventName, (event) => {
+            clearActive(event.target.closest(interactiveSelector));
+        }, true);
+    });
+
+    document.addEventListener("submit", (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        form.classList.add("is-submitting-immediate");
+        form.setAttribute("aria-busy", "true");
+        const submitter = event.submitter || form.querySelector("button[type='submit'], input[type='submit']");
+        if (submitter) {
+            submitter.classList.add("is-submitting-immediate");
+        }
+    }, true);
 }
 
 window.addEventListener("pageshow", () => {
@@ -560,10 +608,17 @@ function setFormPending(form, pending) {
     }
 
     form.classList.toggle("is-pending", pending);
+    form.classList.toggle("is-submitting-immediate", pending);
+    if (pending) {
+        form.setAttribute("aria-busy", "true");
+    } else {
+        form.removeAttribute("aria-busy");
+    }
     form.querySelectorAll("button[type='submit'], input[type='submit']").forEach((button) => {
         if (pending) {
             button.dataset.wasDisabled = button.disabled ? "true" : "false";
             button.disabled = true;
+            button.classList.add("is-submitting-immediate");
             return;
         }
 
@@ -571,6 +626,7 @@ function setFormPending(form, pending) {
             button.disabled = false;
         }
         delete button.dataset.wasDisabled;
+        button.classList.remove("is-submitting-immediate");
     });
 }
 
