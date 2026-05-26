@@ -5,10 +5,10 @@ import os
 import random
 import re
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 
-from app.models import UserWord, Word
+from app.models import UserWord, UserWordProgress, Word
 from app.services.ai_generator import generate_quiz_question_support
 
 
@@ -176,7 +176,11 @@ def suggest_vocabulary_correction(value, candidates, cutoff=0.82):
 def get_study_streak(user_id):
     """Count consecutive days with study activity ending today."""
     activity_rows = (
-        UserWord.query.with_entities(UserWord.added_date, UserWord.last_reviewed, UserWord.learned_at)
+        UserWordProgress.query.with_entities(
+            func.date(UserWordProgress.created_at),
+            func.date(UserWordProgress.last_reviewed_at),
+            func.date(UserWordProgress.updated_at),
+        )
         .filter_by(user_id=user_id)
         .all()
     )
@@ -196,7 +200,11 @@ def get_weekly_activity(user_id):
     """Return lightweight activity counts for the last 7 days."""
     counts = Counter()
     activity_rows = (
-        UserWord.query.with_entities(UserWord.added_date, UserWord.last_reviewed, UserWord.learned_at)
+        UserWordProgress.query.with_entities(
+            func.date(UserWordProgress.created_at),
+            func.date(UserWordProgress.last_reviewed_at),
+            func.date(UserWordProgress.updated_at),
+        )
         .filter_by(user_id=user_id)
         .all()
     )

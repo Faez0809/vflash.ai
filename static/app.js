@@ -1057,9 +1057,11 @@ function initFlashcards() {
 
     const flashcardMode = flashcardApp.dataset.mode || "study";
     const cards = JSON.parse(flashcardApp.dataset.cards || "[]");
+    const originalCards = cards.map((card) => ({ ...card }));
     const countEl = document.querySelector("#flashcard-count");
     const wordEl = document.querySelector("#flashcard-word");
     const partOfSpeechEl = document.querySelector("#flashcard-part-of-speech");
+    const partOfSpeechBackEl = document.querySelector("#flashcard-part-of-speech-back");
     const flipCardEl = document.querySelector("#flashcard-flip");
     const meaningEl = document.querySelector("#flashcard-meaning");
     const banglaMeaningEl = document.querySelector("#flashcard-bangla-meaning");
@@ -1070,11 +1072,12 @@ function initFlashcards() {
     const antonymEl = document.querySelector("#flashcard-antonym");
     const antonymCardEl = document.querySelector("#flashcard-antonym-card");
     const sentenceEl = document.querySelector("#flashcard-sentence");
-    const memoryTrickEl = document.querySelector("#flashcard-memory-trick");
     const statusEl = document.querySelector("#flashcard-status");
     const markLearnedBtn = document.querySelector("#mark-learned-btn");
     const markDifficultBtn = document.querySelector("#mark-difficult-btn");
     const alreadyKnownBtn = document.querySelector("#already-known-btn");
+    const restartBtn = document.querySelector("#flashcard-restart-btn");
+    const speakBtn = document.querySelector("#flashcard-speak-btn");
 
     let currentIndex = 0;
     let touchStartX = 0;
@@ -1091,6 +1094,18 @@ function initFlashcards() {
     const initialTotalCards = cards.length;
     let numCompletedThisSession = 0;
     const progressEl = document.querySelector("#flashcard-progress");
+    const hiddenValuePatterns = [
+        "a curated vocabulary item",
+        "a simple meaning for",
+        "definition is being prepared",
+        "definition pending review",
+        "no bangla translation",
+        "no example",
+        "no synonym",
+        "no antonym",
+        "not added yet",
+        "n/a"
+    ];
     
     const storageKey = `vflash.ai_last_card_id_${flashcardMode}`;
     const savedCardId = localStorage.getItem(storageKey);
@@ -1137,6 +1152,26 @@ function initFlashcards() {
 
     function hasActiveCard() {
         return cards.length && currentIndex < cards.length;
+    }
+
+    function cleanDisplayValue(value) {
+        const cleaned = String(value || "").trim();
+        const lower = cleaned.toLowerCase();
+        if (!cleaned || hiddenValuePatterns.some((pattern) => lower.includes(pattern))) {
+            return "";
+        }
+        return cleaned;
+    }
+
+    function setField(fieldName, element, value) {
+        const cleaned = cleanDisplayValue(value);
+        if (element) {
+            element.textContent = cleaned;
+        }
+        const wrapper = document.querySelector(`[data-flashcard-field="${fieldName}"]`);
+        if (wrapper) {
+            wrapper.hidden = !cleaned;
+        }
     }
 
     function isDesktopFlashcardInteraction() {
@@ -1201,6 +1236,18 @@ function initFlashcards() {
             return;
         }
         flipCardEl.classList.toggle("is-flipped");
+    }
+
+    function speakCurrentCard() {
+        const card = cards[currentIndex];
+        if (!card || !("speechSynthesis" in window)) {
+            return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(card.word);
+        utterance.lang = "en-US";
+        utterance.rate = 0.86;
+        window.speechSynthesis.speak(utterance);
     }
 
     function showNextCard() {
@@ -1308,6 +1355,10 @@ function initFlashcards() {
                 partOfSpeechEl.textContent = "";
                 partOfSpeechEl.classList.add("is-hidden");
             }
+            if (partOfSpeechBackEl) {
+                partOfSpeechBackEl.textContent = "";
+                partOfSpeechBackEl.hidden = true;
+            }
             if (meaningEl) meaningEl.textContent = "";
             if (banglaMeaningEl) banglaMeaningEl.textContent = "";
             if (phoneticEl) phoneticEl.textContent = "";
@@ -1316,7 +1367,9 @@ function initFlashcards() {
             if (antonymEl) antonymEl.textContent = "";
             if (antonymCardEl) antonymCardEl.style.display = "";
             if (sentenceEl) sentenceEl.textContent = "";
-            if (memoryTrickEl) memoryTrickEl.textContent = "";
+            document.querySelectorAll("[data-flashcard-field]").forEach((field) => {
+                field.hidden = true;
+            });
             flipCardEl.classList.remove("is-flipped");
             if (statusEl) statusEl.textContent = queuedStatusMessage;
             setButtonsDisabled(true);
@@ -1340,18 +1393,22 @@ function initFlashcards() {
         if (wordEl) wordEl.textContent = card.word;
         if (wordBackEl) wordBackEl.textContent = card.word;
         if (partOfSpeechEl) {
-            partOfSpeechEl.textContent = card.part_of_speech || "";
-            partOfSpeechEl.classList.toggle("is-hidden", !card.part_of_speech);
+            const partOfSpeech = cleanDisplayValue(card.part_of_speech);
+            partOfSpeechEl.textContent = partOfSpeech;
+            partOfSpeechEl.classList.toggle("is-hidden", !partOfSpeech);
         }
-        if (meaningEl) meaningEl.textContent = card.meaning;
-        if (banglaMeaningEl) banglaMeaningEl.textContent = card.bangla_meaning;
-        if (phoneticEl) phoneticEl.textContent = card.phonetic;
-        if (frontPhoneticEl) frontPhoneticEl.textContent = card.phonetic;
-        if (synonymEl) synonymEl.textContent = card.synonym;
-        if (antonymEl) antonymEl.textContent = card.antonym;
-        if (antonymCardEl) antonymCardEl.style.display = card.antonym ? "" : "none";
-        if (sentenceEl) sentenceEl.textContent = card.sentence;
-        if (memoryTrickEl) memoryTrickEl.textContent = card.memory_trick;
+        if (partOfSpeechBackEl) {
+            const partOfSpeech = cleanDisplayValue(card.part_of_speech);
+            partOfSpeechBackEl.textContent = partOfSpeech;
+            partOfSpeechBackEl.hidden = !partOfSpeech;
+        }
+        if (meaningEl) meaningEl.textContent = cleanDisplayValue(card.meaning);
+        setField("bangla", banglaMeaningEl, card.bangla_meaning);
+        setField("phonetic", phoneticEl, card.phonetic);
+        if (frontPhoneticEl) frontPhoneticEl.textContent = cleanDisplayValue(card.phonetic);
+        setField("synonym", synonymEl, card.synonym);
+        setField("antonym", antonymEl, card.antonym);
+        setField("sentence", sentenceEl, card.sentence);
         
         flipCardEl.style.opacity = 0;
         requestAnimationFrame(() => {
@@ -1537,6 +1594,26 @@ function initFlashcards() {
             event.preventDefault();
             event.stopPropagation();
             completeCurrentCard();
+        });
+    }
+
+    if (restartBtn) {
+        restartBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            currentIndex = 0;
+            numCompletedThisSession = 0;
+            cards.splice(0, cards.length, ...originalCards.map((card) => ({ ...card })));
+            localStorage.removeItem(storageKey);
+            queuedStatusMessage = "Session restarted.";
+            renderCard();
+        });
+    }
+    if (speakBtn) {
+        speakBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            speakCurrentCard();
         });
     }
 

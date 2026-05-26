@@ -1,5 +1,5 @@
-from datetime import timedelta
-from pathlib import Path
+from datetime import datetime, timedelta
+import csv
 import json
 import os
 import re
@@ -39,16 +39,16 @@ except ImportError:  # pragma: no cover - fallback keeps app bootable before dep
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, logout_user
 from flask_migrate import Migrate
-from sqlalchemy import inspect, text
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
+from config import BASE_DIR, Config, DatabaseConfig, DEFAULT_SQLITE_URI
+from app.db_health import get_database_health, print_database_health
 from app.models import User, db
 
 
 load_dotenv()
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 INSTANCE_DIR = BASE_DIR / "instance"
-LOCAL_DB_PATH = os.environ.get("SQLITE_DB_PATH", str(INSTANCE_DIR / "vocabai.db"))
 INSTANCE_DIR.mkdir(exist_ok=True)
 
 login_manager = LoginManager()
@@ -67,6 +67,233 @@ def _bounded_int(env_name, default, minimum, maximum):
     except (TypeError, ValueError):
         value = default
     return max(minimum, min(value, maximum))
+
+
+def _db_label(db_config):
+    if db_config.db_type == "postgresql":
+        provider = f" ({db_config.provider})" if db_config.provider else ""
+        return f"PostgreSQL{provider}"
+    return "SQLite"
+
+
+def _print_db_diagnostics(db_config, connection_status=None):
+    if db_config.db_type == "postgresql":
+        print(f"[DB] Using {_db_label(db_config)}")
+        print(f"[DB] Host: {db_config.hostname or 'unknown'}")
+    else:
+        print("[DB] Using SQLite")
+        print("[DB] Host: local file")
+
+    for warning in db_config.warnings:
+        print(f"[DB] Warning: {warning}")
+
+    if db_config.fallback_used:
+        print("[DB] Falling back to SQLite")
+
+    if connection_status:
+        print(f"[DB] {connection_status}")
+
+
+def _database_engine_options(database_uri):
+    options = {
+        "pool_pre_ping": True,
+        "pool_recycle": _bounded_int("SQLALCHEMY_POOL_RECYCLE", 1800, 300, 3600),
+    }
+    if database_uri.startswith("postgresql"):
+        options.update(
+            {
+                "pool_timeout": _bounded_int("SQLALCHEMY_POOL_TIMEOUT", 30, 5, 30),
+                "pool_size": _bounded_int("SQLALCHEMY_POOL_SIZE", 3, 1, 5),
+                "max_overflow": _bounded_int("SQLALCHEMY_MAX_OVERFLOW", 2, 0, 5),
+                "connect_args": {
+                    "connect_timeout": _bounded_int("SQLALCHEMY_CONNECT_TIMEOUT", 10, 3, 30),
+                },
+            }
+        )
+    return options
+
+
+def _verify_startup_connection(database_uri, engine_options, attempts=2):
+    last_error = None
+    for _ in range(max(1, attempts)):
+        engine = create_engine(database_uri, **engine_options)
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            return True, None
+        except SQLAlchemyError as exc:
+            last_error = exc
+        finally:
+            engine.dispose()
+    return False, last_error
+
+
+def _prepare_database_config(app):
+    db_config = app.config["DB_CONFIG"]
+    engine_options = _database_engine_options(db_config.uri)
+
+    if db_config.db_type == "postgresql":
+        ok, error = _verify_startup_connection(db_config.uri, engine_options)
+        if ok:
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+            _print_db_diagnostics(db_config, "Connection successful")
+            return
+
+        fallback_config = DatabaseConfig(
+            uri=DEFAULT_SQLITE_URI,
+            db_type="sqlite",
+            fallback_used=True,
+            warnings=(f"PostgreSQL unavailable ({error}); falling back to SQLite.",),
+        )
+        app.config["DB_CONFIG"] = fallback_config
+        app.config["SQLALCHEMY_DATABASE_URI"] = fallback_config.uri
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = _database_engine_options(fallback_config.uri)
+        print("[DB] PostgreSQL unavailable")
+        _print_db_diagnostics(fallback_config)
+        return
+
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+    ok, error = _verify_startup_connection(db_config.uri, engine_options, attempts=1)
+    if ok:
+        _print_db_diagnostics(db_config, "Connection successful")
+    else:
+        _print_db_diagnostics(db_config, f"Connection failed: {error}")
+
+
+def _auto_import_vocabulary_if_empty():
+    from app.models import VocabularyMaster
+    from app.services.vocabulary_platform import is_phrase, normalize_level, normalize_vocab_text
+
+    if VocabularyMaster.query.count() > 0:
+        return
+
+    vocab_dir = BASE_DIR / "VWords"
+    if not vocab_dir.exists():
+        print("[DB] vocabulary_master is empty. Recovery: add CSV files to VWords and run scripts/import_vocabularies.py.")
+        return
+
+    imported = 0
+    seen = set()
+    for path in sorted(vocab_dir.glob("*.csv")):
+        with path.open(newline="", encoding="utf-8-sig") as handle:
+            for row in csv.DictReader(handle):
+                word = normalize_vocab_text(row.get("word"))
+                if not word or word in seen:
+                    continue
+                seen.add(word)
+                filename = path.stem.lower()
+                level = normalize_level(row.get("level") or ("advanced" if "advanced" in filename else "upper_intermediate" if "upper" in filename else "intermediate"))
+                try:
+                    page_no = int(str(row.get("page_no") or "").strip())
+                except ValueError:
+                    page_no = None
+                db.session.add(
+                    VocabularyMaster(
+                        word=word,
+                        normalized_word=word,
+                        level=level,
+                        page_no=page_no,
+                        source_book=path.name,
+                        is_phrase=is_phrase(word),
+                    )
+                )
+                imported += 1
+    db.session.commit()
+    print(f"[DB] vocabulary_master was empty; imported {imported} rows from VWords CSV files.")
+
+
+def _backfill_legacy_learning_progress():
+    from app.models import (
+        FlashcardSession,
+        FlashcardSessionWord,
+        StudySession,
+        UserWord,
+        UserWordProgress,
+        VocabularyMaster,
+        Word,
+    )
+    from app.services.vocabulary_platform import normalize_level, normalize_vocab_text, is_phrase
+
+    inspector = inspect(db.engine)
+    tables = set(inspector.get_table_names())
+    if not {"word", "user_word", "study_session", "vocabulary_master", "user_word_progress"}.issubset(tables):
+        return
+
+    created_progress = 0
+    for legacy_progress in UserWord.query.all():
+        legacy_word = db.session.get(Word, legacy_progress.word_id)
+        if legacy_word is None:
+            continue
+        normalized = normalize_vocab_text(legacy_word.word)
+        if not normalized:
+            continue
+        vocabulary = VocabularyMaster.query.filter_by(normalized_word=normalized).first()
+        if vocabulary is None:
+            vocabulary = VocabularyMaster(
+                word=normalized,
+                normalized_word=normalized,
+                level=normalize_level(legacy_word.difficulty or "intermediate"),
+                source_book="legacy_word_table",
+                is_phrase=is_phrase(normalized),
+            )
+            db.session.add(vocabulary)
+            db.session.flush()
+        progress = UserWordProgress.query.filter_by(
+            user_id=legacy_progress.user_id,
+            vocabulary_id=vocabulary.id,
+        ).first()
+        if progress is None:
+            progress = UserWordProgress(
+                user_id=legacy_progress.user_id,
+                vocabulary_id=vocabulary.id,
+                is_generated=True,
+                is_learned=bool(legacy_progress.learned or legacy_progress.already_known),
+                is_difficult=bool(legacy_progress.is_difficult),
+                is_favorite=bool(legacy_progress.is_favorite),
+                times_seen=1,
+                times_reviewed=1 if legacy_progress.last_reviewed else 0,
+                last_seen_at=datetime.combine(legacy_progress.added_date, datetime.min.time()) if legacy_progress.added_date else None,
+                last_reviewed_at=datetime.combine(legacy_progress.last_reviewed, datetime.min.time()) if legacy_progress.last_reviewed else None,
+            )
+            db.session.add(progress)
+            created_progress += 1
+
+    existing_legacy_session_ids = {
+        int(item.order_mode.replace("legacy:", ""))
+        for item in FlashcardSession.query.filter(FlashcardSession.order_mode.like("legacy:%")).all()
+        if item.order_mode and item.order_mode.replace("legacy:", "").isdigit()
+    }
+    created_sessions = 0
+    for legacy_session in StudySession.query.all():
+        if legacy_session.id in existing_legacy_session_ids:
+            continue
+        legacy_words = UserWord.query.filter_by(session_id=legacy_session.id).all()
+        if not legacy_words:
+            continue
+        session = FlashcardSession(
+            user_id=legacy_session.user_id,
+            level=normalize_level(legacy_session.difficulty),
+            requested_count=legacy_session.word_count or len(legacy_words),
+            generated_count=len(legacy_words),
+            order_mode=f"legacy:{legacy_session.id}",
+            created_at=datetime.combine(legacy_session.created_at, datetime.min.time()) if legacy_session.created_at else datetime.utcnow(),
+        )
+        db.session.add(session)
+        db.session.flush()
+        created_sessions += 1
+        seen_session_vocab_ids = set()
+        for position, legacy_progress in enumerate(legacy_words, start=1):
+            legacy_word = db.session.get(Word, legacy_progress.word_id)
+            if legacy_word is None:
+                continue
+            vocabulary = VocabularyMaster.query.filter_by(normalized_word=normalize_vocab_text(legacy_word.word)).first()
+            if vocabulary is not None and vocabulary.id not in seen_session_vocab_ids:
+                seen_session_vocab_ids.add(vocabulary.id)
+                db.session.add(FlashcardSessionWord(session_id=session.id, vocabulary_id=vocabulary.id, position=position))
+
+    if created_progress or created_sessions:
+        db.session.commit()
+        print(f"[DB] Restored {created_progress} legacy progress rows and {created_sessions} legacy sessions.")
 
 
 @login_manager.user_loader
@@ -116,9 +343,21 @@ def run_migrations():
     ensure_column("user", "last_login_at", "ALTER TABLE user ADD COLUMN last_login_at DATETIME")
     ensure_column("user", "is_restricted", "ALTER TABLE user ADD COLUMN is_restricted BOOLEAN DEFAULT FALSE")
     ensure_column("user", "restricted_reason", "ALTER TABLE user ADD COLUMN restricted_reason TEXT")
+    ensure_column("vocabulary_master", "needs_admin_review", "ALTER TABLE vocabulary_master ADD COLUMN needs_admin_review BOOLEAN DEFAULT FALSE")
+    ensure_column("vocabulary_master", "review_reason", "ALTER TABLE vocabulary_master ADD COLUMN review_reason TEXT")
+    ensure_column("vocabulary_master", "original_word", "ALTER TABLE vocabulary_master ADD COLUMN original_word VARCHAR(180)")
+    ensure_column("vocabulary_master", "corrected_at", "ALTER TABLE vocabulary_master ADD COLUMN corrected_at DATETIME")
+    ensure_column("vocabulary_master", "corrected_by_admin", "ALTER TABLE vocabulary_master ADD COLUMN corrected_by_admin BOOLEAN DEFAULT FALSE")
+    ensure_column("vocabulary_master", "last_audited_at", "ALTER TABLE vocabulary_master ADD COLUMN last_audited_at DATETIME")
+    ensure_column("vocabulary_enrichment", "last_audited_at", "ALTER TABLE vocabulary_enrichment ADD COLUMN last_audited_at DATETIME")
+    ensure_column("vocabulary_enrichment", "last_regenerated_at", "ALTER TABLE vocabulary_enrichment ADD COLUMN last_regenerated_at DATETIME")
     ensure_column("quiz_history", "answered_questions", "ALTER TABLE quiz_history ADD COLUMN answered_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "configured_total_questions", "ALTER TABLE quiz_history ADD COLUMN configured_total_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "was_quit", "ALTER TABLE quiz_history ADD COLUMN was_quit BOOLEAN DEFAULT FALSE")
+    ensure_column("quiz_history", "mistakes_json", "ALTER TABLE quiz_history ADD COLUMN mistakes_json TEXT")
+    ensure_column("quiz_history", "weak_vocabulary_ids", "ALTER TABLE quiz_history ADD COLUMN weak_vocabulary_ids TEXT")
+    ensure_column("quiz_history", "completion_seconds", "ALTER TABLE quiz_history ADD COLUMN completion_seconds INTEGER DEFAULT 0")
+    ensure_column("quiz_history", "retry_of_quiz_id", "ALTER TABLE quiz_history ADD COLUMN retry_of_quiz_id INTEGER")
     ensure_index("ix_word_difficulty", "CREATE INDEX IF NOT EXISTS ix_word_difficulty ON word (difficulty)")
     ensure_index("ix_word_is_valid", "CREATE INDEX IF NOT EXISTS ix_word_is_valid ON word (is_valid)")
     ensure_index("ix_word_topic", "CREATE INDEX IF NOT EXISTS ix_word_topic ON word (topic)")
@@ -137,6 +376,8 @@ def run_migrations():
     ensure_index("ix_user_word_user_rev1", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev1 ON user_word (user_id, rev1)")
     ensure_index("ix_user_word_user_rev2", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev2 ON user_word (user_id, rev2)")
     ensure_index("ix_user_word_user_rev3", "CREATE INDEX IF NOT EXISTS ix_user_word_user_rev3 ON user_word (user_id, rev3)")
+    ensure_index("ix_vocabulary_master_needs_admin_review", "CREATE INDEX IF NOT EXISTS ix_vocabulary_master_needs_admin_review ON vocabulary_master (needs_admin_review)")
+    ensure_index("ix_vocabulary_master_last_audited", "CREATE INDEX IF NOT EXISTS ix_vocabulary_master_last_audited ON vocabulary_master (last_audited_at)")
 
 
 def cleanup_invalid_words():
@@ -149,31 +390,25 @@ def create_app():
         __name__,
         template_folder=str(BASE_DIR / "templates"),
         static_folder=str(BASE_DIR / "static"),
+        instance_path=str(BASE_DIR),
     )
+    app.config.from_object(Config)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
-    database_url = os.environ.get("DATABASE_URL", "").strip()
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-    if database_url.startswith("postgresql://"):
-        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url or f"sqlite:///{LOCAL_DB_PATH}"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True,
-        "pool_recycle": _bounded_int("SQLALCHEMY_POOL_RECYCLE", 1800, 300, 3600),
-        "pool_timeout": _bounded_int("SQLALCHEMY_POOL_TIMEOUT", 30, 5, 30),
-    }
-    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql"):
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"].update(
-            {
-                "pool_size": _bounded_int("SQLALCHEMY_POOL_SIZE", 3, 1, 5),
-                "max_overflow": _bounded_int("SQLALCHEMY_MAX_OVERFLOW", 2, 0, 5),
-            }
-        )
+    _prepare_database_config(app)
     app.config["CACHE_TYPE"] = os.environ.get("CACHE_TYPE", "SimpleCache")
     app.config["CACHE_DEFAULT_TIMEOUT"] = _bounded_int("CACHE_DEFAULT_TIMEOUT", SEARCH_CACHE_TTL_SECONDS, 30, 120)
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = int(os.environ.get("SEND_FILE_MAX_AGE_DEFAULT", "3600"))
+    if os.environ.get("TEMPLATES_AUTO_RELOAD", "").lower() in {"1", "true", "yes"}:
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+    local_dev = os.environ.get("VFLASH_LOCAL_DEV", "").lower() in {"1", "true", "yes"}
+    if local_dev:
+        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.config["DB_FALLBACK_ACTIVE"] = bool(app.config["DB_CONFIG"].fallback_used)
+    app.config["DB_PRODUCTION_FALLBACK_BLOCKED"] = bool(
+        app.config["DB_FALLBACK_ACTIVE"]
+        and (os.environ.get("RENDER") or os.environ.get("FLASK_ENV", "").strip().lower() == "production")
+    )
     app.config["ADMIN_EMAIL"] = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD") or ""
     app.config["ADMIN_PASSWORD_HASH"] = os.environ.get("ADMIN_PASSWORD_HASH") or ""
@@ -196,6 +431,27 @@ def create_app():
     for module in (auth, dashboard, flashcards, generate, review, quiz, words, admin):
         module.register(app)
 
+    @app.context_processor
+    def inject_static_asset_helper():
+        def static_asset(filename):
+            values = {}
+            if local_dev or app.debug:
+                static_path = BASE_DIR / "static" / filename
+                try:
+                    values["v"] = int(static_path.stat().st_mtime)
+                except OSError:
+                    values["v"] = "dev"
+            return url_for("static", filename=filename, **values)
+
+        return {"static_asset": static_asset}
+
+    @app.context_processor
+    def inject_database_state():
+        return {
+            "db_fallback_active": app.config.get("DB_FALLBACK_ACTIVE", False),
+            "db_production_fallback_blocked": app.config.get("DB_PRODUCTION_FALLBACK_BLOCKED", False),
+            "active_db_type": app.config["DB_CONFIG"].db_type,
+        }
 
     @app.before_request
     def maintenance_mode():
@@ -209,6 +465,22 @@ def create_app():
                 error_code=503,
                 error_title="🚧 Under Maintenance",
                 error_message="We are improving the system. Please come back later.",
+            ),
+            503,
+        )
+
+    @app.before_request
+    def block_production_fallback_database():
+        if not app.config.get("DB_PRODUCTION_FALLBACK_BLOCKED"):
+            return None
+        if request.endpoint in {"health", "static"} or (request.endpoint or "").startswith("admin"):
+            return None
+        return (
+            render_template(
+                "error.html",
+                error_code=503,
+                error_title="Database connection unavailable",
+                error_message="The production database could not be reached, so the app is refusing to use an empty fallback database.",
             ),
             503,
         )
@@ -246,7 +518,12 @@ def create_app():
             "form-action 'self'"
         )
         if request.endpoint == "static" and response.status_code == 200:
-            response.headers["Cache-Control"] = f"public, max-age={app.get_send_file_max_age(None) or 3600}"
+            if local_dev or app.debug:
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            else:
+                response.headers["Cache-Control"] = f"public, max-age={app.get_send_file_max_age(None) or 3600}"
         elif response.mimetype == "text/html" and response.status_code == 200:
             response.headers["Cache-Control"] = "private, no-cache, must-revalidate"
         if request.endpoint and request.endpoint.startswith("admin"):
@@ -279,8 +556,9 @@ def create_app():
 
     @app.get("/health")
     def health():
-        db.session.execute(text("SELECT 1"))
-        return {"status": "ok"}, 200
+        health_info = get_database_health(app)
+        status_code = 200 if health_info["status"] == "ok" else 503
+        return {"status": health_info["status"], "database": health_info}, status_code
 
     @app.errorhandler(404)
     def handle_not_found(error):
@@ -312,8 +590,12 @@ def create_app():
     with app.app_context():
         if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
             db.create_all()
-        if auto_bootstrap_db:
+        if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
             run_migrations()
             cleanup_invalid_words()
+            _auto_import_vocabulary_if_empty()
+        if auto_bootstrap_db:
+            _backfill_legacy_learning_progress()
+        app.config["DB_HEALTH"] = print_database_health(app)
 
     return app

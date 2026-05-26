@@ -56,36 +56,42 @@
                     </section>
                 {% else %}
                     <div class="flashcard-back-grid search-flashcard-grid search-direct-grid">
+                        {% if word.bangla_meaning %}
                         <div class="flashcard-detail">
                             <p class="stitch-label">Bangla meaning</p>
-                            <p>{{ word.bangla_meaning or 'No Bangla meaning yet.' }}</p>
+                            <p>{{ word.bangla_meaning }}</p>
                         </div>
+                        {% endif %}
+                        {% if word.phonetic %}
                         <div class="flashcard-detail">
                             <p class="stitch-label">Pronunciation</p>
-                            <p>{{ word.phonetic or 'Not added yet.' }}</p>
+                            <p>{{ word.phonetic }}</p>
                         </div>
+                        {% endif %}
+                        {% if word.synonym_hint or word.synonym %}
                         <div class="flashcard-detail">
                             <p class="stitch-label">Synonym</p>
-                            <p>{{ word.synonym_hint or word.synonym or 'Not added yet.' }}</p>
+                            <p>{{ word.synonym_hint or word.synonym }}</p>
                         </div>
+                        {% endif %}
                         {% if word.antonym_hint %}
                             <div class="flashcard-detail">
                                 <p class="stitch-label">Antonym</p>
                                 <p>{{ word.antonym_hint }}</p>
                             </div>
                         {% endif %}
+                        {% if word.topic %}
                         <div class="flashcard-detail">
                             <p class="stitch-label">Topic</p>
-                            <p>{{ word.topic or 'General' }}</p>
+                            <p>{{ word.topic }}</p>
                         </div>
+                        {% endif %}
+                        {% if word.sentence %}
                         <div class="flashcard-detail search-flashcard-detail-wide">
                             <p class="stitch-label">Sentence</p>
-                            <p>{{ word.sentence or 'No example sentence yet.' }}</p>
+                            <p>{{ word.sentence }}</p>
                         </div>
-                        <div class="flashcard-detail search-flashcard-detail-wide">
-                            <p class="stitch-label">Memory trick</p>
-                            <p>{{ word.memory_trick or 'No memory trick yet.' }}</p>
-                        </div>
+                        {% endif %}
                         {% if related_words %}
                             <div class="flashcard-detail search-flashcard-detail-wide">
                                 <p class="stitch-label">Related forms</p>

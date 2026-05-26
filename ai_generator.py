@@ -528,16 +528,29 @@ def _extract_json_text(content):
 def _fallback_word_content(word):
     relations = FALLBACK_RELATIONS.get(word, {})
     curated = CURATED_WORD_CONTENT.get(word, {})
+    if not curated:
+        return {
+            "word": word,
+            "part_of_speech": None,
+            "meaning": "",
+            "bangla_meaning": None,
+            "sentence": None,
+            "phonetic": None,
+            "synonym": relations.get("synonym"),
+            "antonym": relations.get("antonym"),
+            "memory_trick": None,
+            "topic": "general",
+        }
     return {
         "word": word,
         "part_of_speech": curated.get("part_of_speech"),
-        "meaning": curated.get("meaning") or f"A simple meaning for {word}.",
-        "bangla_meaning": curated.get("bangla_meaning") or f"{word} এর সহজ বাংলা অর্থ",
-        "sentence": curated.get("sentence") or f"I used the word {word} in a simple sentence.",
-        "phonetic": curated.get("phonetic") or word,
+        "meaning": curated.get("meaning") or "",
+        "bangla_meaning": curated.get("bangla_meaning") or None,
+        "sentence": curated.get("sentence") or None,
+        "phonetic": curated.get("phonetic") or None,
         "synonym": curated.get("synonym") or relations.get("synonym"),
         "antonym": curated.get("antonym") or relations.get("antonym"),
-        "memory_trick": curated.get("memory_trick") or f"Think of the sound of {word} and connect it with a daily example.",
+        "memory_trick": None,
         "topic": curated.get("topic") or "general",
     }
 
@@ -631,7 +644,6 @@ Return ONLY valid JSON list:
     "synonym": "...",
     "antonym": "...",
     "pronunciation": "...",
-    "memory_trick": "...",
     "bangla_meaning": "...",
     "topic": "{normalized_topic}"
   }}
@@ -691,12 +703,6 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
         cleaned_items = []
         seen_words = set(avoid_words)
 
-        def fallback_memory_trick(meaning):
-            cleaned_meaning = str(meaning or "").strip()
-            if not cleaned_meaning:
-                return None
-            return f"Associate this word with: {cleaned_meaning}"
-
         def normalize_pronunciation(value, word):
             cleaned = str(value or "").strip().lower()
             cleaned = re.sub(r"[\/\[\]\(\)ˈˌː.]", "", cleaned)
@@ -749,7 +755,6 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
                 or FALLBACK_RELATIONS.get(word, {}).get("antonym")
                 or None
             )
-            memory_trick = str(item.get("memory_trick", "")).strip() or fallback_memory_trick(meaning)
             cleaned_items.append(
                 {
                     "word": word,
@@ -759,7 +764,7 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
                     "sentence": sentence or None,
                     "phonetic": normalize_pronunciation(item.get("pronunciation", item.get("phonetic", "")), word),
                     "synonym": relation,
-                    "memory_trick": memory_trick or None,
+                    "memory_trick": None,
                     "difficulty": difficulty,
                     "topic": str(item.get("topic", "")).strip() or fallback_topic or "general",
                     "generation_source": generation_source,
@@ -803,19 +808,19 @@ def _request_word_content_from_groq(word):
         raise RuntimeError("GROQ_API_KEY is not configured.")
 
     prompt = f"""
-You are helping Bangla speaking students learn English vocabulary.
+You are a professional bilingual English-Bangla dictionary editor for intermediate and advanced learners.
 
 Word: {word}
 
 Provide:
 - The most common modern part of speech for this word
-- Simple English meaning (very easy)
-- Bangla meaning (simple Bangla)
-- One simple English sentence (daily life example)
-- Phonetic pronunciation in English letters (like: e-BAN-don)
-- One simple synonym
-- One simple antonym when possible
-- A memory trick to remember the word easily
+- A natural, concise, dictionary-quality English definition appropriate for intermediate/advanced learners
+- A natural native Bangla meaning with educational quality; avoid literal or awkward translation
+- One natural real-world English example sentence that uses the word in context
+- Clean readable pronunciation in English letters only, hyphenated by syllable when useful
+- One or more relevant synonyms as a comma-separated string
+- One relevant antonym when a true antonym exists; otherwise use an empty string
+- Do not generate a memory trick or mnemonic
 
 Return ONLY JSON:
 {{
@@ -826,16 +831,19 @@ Return ONLY JSON:
   \"sentence\": \"...\",
   \"phonetic\": \"...\",
   \"synonym\": \"...\",
-  \"antonym\": \"...\",
-  \"memory_trick\": \"...\"
+  \"antonym\": \"...\"
 }}
 
 Rules:
 - Give the most common modern dictionary meaning.
 - Keep the part of speech consistent with the meaning.
-- Never use placeholder text like "a simple meaning for {word}".
+- Never use robotic or placeholder text like "a curated vocabulary item" or "a simple meaning for {word}".
 - Never repeat the word itself as the definition.
-- Keep the content accurate, concise, and natural.
+- English definitions must be natural, concise, polished, and not childish.
+- Bangla must sound native and useful for a Bangla-speaking student.
+- Pronunciation must not contain IPA, slashes, brackets, stress marks, symbols, or malformed phonetic garbage.
+- Example sentence must be readable, contextual, and level appropriate.
+- If a true synonym or antonym does not exist, return an empty string for that field.
 """
 
     response = requests.post(
@@ -850,7 +858,7 @@ Rules:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You generate simple JSON vocabulary explanations.",
+                    "content": "You generate strict JSON dictionary entries with polished English-Bangla vocabulary content.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -875,13 +883,13 @@ def generate_word_content(word):
         return {
             "word": str(content.get("word", normalized_word)).strip().lower() or normalized_word,
             "part_of_speech": str(content.get("part_of_speech", "")).strip() or curated.get("part_of_speech") or None,
-            "meaning": str(content.get("meaning", "")).strip() or curated.get("meaning") or f"A simple meaning for {normalized_word}.",
+            "meaning": str(content.get("meaning", "")).strip() or curated.get("meaning") or "",
             "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or curated.get("bangla_meaning") or None,
-            "sentence": str(content.get("sentence", "")).strip() or curated.get("sentence") or f"I used the word {normalized_word} in a simple sentence.",
-            "phonetic": str(content.get("phonetic", "")).strip() or curated.get("phonetic") or normalized_word,
+            "sentence": str(content.get("sentence", "")).strip() or curated.get("sentence") or None,
+            "phonetic": str(content.get("phonetic", "")).strip() or curated.get("phonetic") or None,
             "synonym": str(content.get("synonym", "")).strip() or curated.get("synonym") or FALLBACK_RELATIONS.get(normalized_word, {}).get("synonym") or None,
             "antonym": str(content.get("antonym", "")).strip() or curated.get("antonym") or FALLBACK_RELATIONS.get(normalized_word, {}).get("antonym") or None,
-            "memory_trick": str(content.get("memory_trick", "")).strip() or curated.get("memory_trick") or None,
+            "memory_trick": None,
             "topic": str(content.get("topic", "")).strip() or curated.get("topic") or "general",
         }
     except (requests.RequestException, ValueError, KeyError, RuntimeError):
@@ -908,7 +916,6 @@ Return ONLY valid JSON:
 "synonyms": ["word1", "word2"],
 "pronunciation": "simple readable phonetic spelling",
 "bangla_meaning": "বাংলা অর্থ",
-"memory_trick": "Short and intuitive way to remember the word",
 "difficulty": "easy/medium/hard"
 }}
 
@@ -920,7 +927,6 @@ Rules:
 - Do NOT use IPA symbols like / /, [ ], or stress marks such as ˈ
 - Pronunciation must reflect real spoken English, not a spelling-based guess
 - The pronunciation should be easy for non-native speakers to read
-- memory_trick must relate to the meaning, be simple, and stay one sentence only
 - If input is NOT a valid English word -> DO NOT generate fake data
 - Instead return:
 {{
@@ -1031,7 +1037,7 @@ def _generate_word_details_attempt(normalized_word, retry=False):
         "synonyms": cleaned_synonyms,
         "pronunciation": str(content.get("pronunciation", "")).strip() or None,
         "bangla_meaning": str(content.get("bangla_meaning", "")).strip() or None,
-        "memory_trick": str(content.get("memory_trick", "")).strip() or None,
+        "memory_trick": None,
         "difficulty": difficulty,
         "suggestions": cleaned_suggestions,
     }

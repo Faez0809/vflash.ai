@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="icon" href="data:,">
-    <link rel="preload" href="{{ url_for('static', filename='style.css') }}" as="style">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preload" href="{{ url_for('static', filename='app.js') }}" as="script">
+    <link rel="preload" href="{{ static_asset('style.css') }}" as="style">
+    <link rel="stylesheet" href="{{ static_asset('style.css') }}">
+    <link rel="preload" href="{{ static_asset('app.js') }}" as="script">
 </head>
 {% set body_class = '' %}
 {% if request.endpoint in ['login', 'signup', 'forgot_password'] %}
@@ -49,7 +49,6 @@
                     <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
                     <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
                     <a class="{{ 'is-active' if request.endpoint in ['quiz', 'quiz_start'] else '' }}" href="{{ url_for('quiz') }}">Quiz</a>
-                    <a class="{{ 'is-active' if request.endpoint == 'user_manual' else '' }}" href="{{ url_for('user_manual') }}">Manual</a>
                     {% if current_user.is_admin %}
                         <a class="{{ 'is-active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
                     {% endif %}
@@ -71,7 +70,6 @@
                             <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                             <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
                             <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
-                            <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
                             <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
                         </div>
                     </div>
@@ -116,49 +114,6 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% if show_onboarding_nudge %}
-        <details class="onboarding-float">
-            <summary class="onboarding-fab">
-                <span class="onboarding-fab-icon"><span class="material-symbols-outlined">tips_and_updates</span></span>
-                <span>Tips for this page</span>
-            </summary>
-            <div class="onboarding-panel">
-                <div class="onboarding-panel-header">
-                    <div class="onboarding-panel-intro">
-                        <div class="onboarding-panel-badge-wrap">
-                            <p class="onboarding-panel-label">Guided start</p>
-                            <span class="onboarding-panel-badge">{{ onboarding_minutes_left }} min left</span>
-                        </div>
-                        <h2>Quick tips for this page</h2>
-                        <p>Simple actions to help you know what to do next.</p>
-                    </div>
-                    <div class="onboarding-panel-side">
-                        <p class="onboarding-panel-meta">Available during your first 20 active minutes</p>
-                        <a class="onboarding-panel-manual" href="{{ url_for('user_manual') }}">
-                            <span class="onboarding-inline-icon"><span class="material-symbols-outlined">menu_book</span></span>
-                            <span>Open full manual</span>
-                        </a>
-                    </div>
-                </div>
-                <div class="onboarding-panel-grid">
-                    {% for tip in onboarding_tips %}
-                        <a class="onboarding-panel-card" href="{{ tip.href }}">
-                            <span class="onboarding-panel-card-icon"><span class="material-symbols-outlined">{{ tip.icon }}</span></span>
-                            <div class="onboarding-panel-card-copy">
-                                <strong>{{ tip.title }}</strong>
-                                <p>{{ tip.body }}</p>
-                                <span class="onboarding-panel-card-cta">
-                                    <small>{{ tip.label }}</small>
-                                    <span class="onboarding-inline-icon onboarding-inline-icon-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
-                                </span>
-                            </div>
-                        </a>
-                    {% endfor %}
-                </div>
-            </div>
-        </details>
-    {% endif %}
-
     <div class="loading-overlay" data-loading-overlay aria-hidden="true">
         <div class="loading-overlay-backdrop"></div>
         <div class="loading-overlay-card" role="status" aria-live="polite" aria-atomic="true">
@@ -172,7 +127,7 @@
     <!--app-shell-end-->
 
 
-    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+    <script src="{{ static_asset('app.js') }}" defer></script>
     <style>
         body {
             padding-bottom: max(0px, env(safe-area-inset-bottom));

@@ -7,7 +7,15 @@ from sqlalchemy.orm import selectinload
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import SEARCH_CACHE_TTL_SECONDS, cache
-from app.models import QuizHistory, StudySession, UserAppSession, UserWord, Word, db
+from app.models import (
+    FlashcardSession,
+    QuizHistory,
+    SearchHistory,
+    UserAppSession,
+    UserWordProgress,
+    VocabularyMaster,
+    db,
+)
 from app.services.learning_content import (
     ensure_starter_pack_for_user,
     get_reference_vocabulary_candidates,
@@ -24,25 +32,18 @@ from app.services.stats import (
     pluralize,
     validate_vocabulary_query,
 )
+from app.services.vocabulary_platform import (
+    cache_search_vocabulary,
+    calculate_level_progress,
+    normalize_vocab_text,
+)
 
 
 def register(app):
     search_cache_key = "search:candidate_words:v1"
 
     def available_topic_suggestions(user_id, limit=6):
-        return [
-            row[0]
-            for row in (
-                db.session.query(Word.topic)
-                .join(UserWord, UserWord.word_id == Word.id)
-                .filter(UserWord.user_id == user_id, Word.is_valid.is_(True), Word.topic.isnot(None))
-                .distinct()
-                .order_by(Word.topic.asc())
-                .limit(limit)
-                .all()
-            )
-            if row[0]
-        ]
+        return ["alphabetical", "mixed"][:limit]
 
     def get_total_active_seconds(user_id):
         return int(
@@ -218,26 +219,11 @@ def register(app):
 
     @app.context_processor
     def inject_onboarding_context():
-        excluded_endpoints = {
-            "admin_dashboard",
-            "admin_logout",
-            "admin_update_user_restriction",
-            "user_manual",
-        }
-        if not current_user.is_authenticated or request.endpoint in excluded_endpoints:
-            return {
-                "show_onboarding_nudge": False,
-                "onboarding_tips": [],
-                "onboarding_seconds_left": 0,
-            }
-
-        active_seconds = get_total_active_seconds(current_user.id)
-        show_tips = active_seconds < 1200
         return {
-            "show_onboarding_nudge": show_tips,
-            "onboarding_tips": get_onboarding_tips(request.endpoint or ""),
-            "onboarding_seconds_left": max(0, 1200 - active_seconds),
-            "onboarding_minutes_left": max(1, (max(0, 1200 - active_seconds) + 59) // 60),
+            "show_onboarding_nudge": False,
+            "onboarding_tips": [],
+            "onboarding_seconds_left": 0,
+            "onboarding_minutes_left": 0,
         }
 
     def build_quiz_profile_metrics(quiz_history):
@@ -326,35 +312,30 @@ def register(app):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        starter_pack = ensure_starter_pack_for_user(
-            current_user.id,
-            current_user.default_study_focus or "",
-        )
-        if starter_pack["created"]:
-            flash("Starter vocabulary has been added so you can begin right away.", "info")
-
         today = date.today()
         stats_row = (
             db.session.query(
-                func.count(UserWord.id),
+                func.count(UserWordProgress.id),
                 func.coalesce(
-                    func.sum(case((and_(UserWord.learned.is_(True), UserWord.already_known.is_(False)), 1), else_=0)),
+                    func.sum(case((UserWordProgress.is_learned.is_(True), 1), else_=0)),
                     0,
                 ),
-                func.coalesce(func.sum(case((UserWord.already_known.is_(True), 1), else_=0)), 0),
-                func.coalesce(func.sum(case((UserWord.is_difficult.is_(True), 1), else_=0)), 0),
+                0,
+                func.coalesce(func.sum(case((UserWordProgress.is_difficult.is_(True), 1), else_=0)), 0),
                 func.coalesce(
-                    func.sum(case((and_(UserWord.learned.is_(False), UserWord.already_known.is_(False)), 1), else_=0)),
+                    func.sum(case((UserWordProgress.is_learned.is_(False), 1), else_=0)),
                     0,
                 ),
-                func.coalesce(func.sum(case((UserWord.added_date == today, 1), else_=0)), 0),
                 func.coalesce(
-                    func.sum(case((and_(UserWord.learned_at == today, UserWord.already_known.is_(False)), 1), else_=0)),
+                    func.sum(case((func.date(UserWordProgress.created_at) == today, 1), else_=0)),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(case((and_(UserWordProgress.is_learned.is_(True), func.date(UserWordProgress.updated_at) == today), 1), else_=0)),
                     0,
                 ),
             )
-            .join(Word, UserWord.word_id == Word.id)
-            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
+            .filter(UserWordProgress.user_id == current_user.id)
             .one()
         )
         (
@@ -366,71 +347,34 @@ def register(app):
             words_added_today,
             learned_today,
         ) = [int(value or 0) for value in stats_row]
-        words_to_review_today = get_due_review_word_count(current_user.id)
+        level_progress = calculate_level_progress(current_user.id)
+        words_to_review_today = sum(item["review_queue"] for item in level_progress.values())
         study_streak = get_study_streak(current_user.id)
         progress_percentage = round(((learned_words + already_known_words) / total_words) * 100) if total_words else 0
         daily_goal = current_user.daily_goal or 10
         daily_goal_percentage = min(100, round((learned_today / daily_goal) * 100)) if daily_goal else 0
         display_name = current_user.display_name
         last_session = (
-            StudySession.query.filter_by(user_id=current_user.id)
-            .order_by(StudySession.created_at.desc(), StudySession.id.desc())
+            FlashcardSession.query.filter_by(user_id=current_user.id)
+            .order_by(FlashcardSession.created_at.desc(), FlashcardSession.id.desc())
             .first()
         )
         last_session_remaining = 0
         if last_session:
             last_session_remaining = (
-                db.session.query(func.count(UserWord.id))
-                .filter_by(
-                    user_id=current_user.id,
-                    session_id=last_session.id,
-                    learned=False,
-                )
-                .join(Word, UserWord.word_id == Word.id)
-                .filter(Word.is_valid.is_(True))
+                db.session.query(func.count(UserWordProgress.id))
+                .filter(UserWordProgress.user_id == current_user.id, UserWordProgress.is_learned.is_(False))
                 .scalar()
                 or 0
             )
 
-        difficulty_counts = {
-            "Beginner": 0,
-            "Intermediate": 0,
-            "Advanced": 0,
-        }
-        learned_difficulty_counts = {
-            "Beginner": 0,
-            "Intermediate": 0,
-            "Advanced": 0,
-        }
-        # PostgreSQL requires the GROUP BY expression to match the non-aggregated
-        # SELECT expression exactly. SQLite is more permissive here, which is why
-        # this could appear to work locally but fail on Supabase/PostgreSQL.
-        difficulty_expr = func.coalesce(Word.difficulty, "Beginner")
-        difficulty_rows = (
-            db.session.query(
-                difficulty_expr.label("difficulty"),
-                func.count(UserWord.id).label("total_words"),
-                func.coalesce(
-                    func.sum(case((UserWord.learned.is_(True), 1), else_=0)),
-                    0,
-                ).label("learned_words"),
-            )
-            .join(UserWord, UserWord.word_id == Word.id)
-            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
-            .group_by(difficulty_expr)
-            .all()
-        )
-        for difficulty, total_for_level, learned_for_level in difficulty_rows:
-            if difficulty not in difficulty_counts:
-                difficulty = "Beginner"
-            difficulty_counts[difficulty] += int(total_for_level or 0)
-            learned_difficulty_counts[difficulty] += int(learned_for_level or 0)
-
-        max_difficulty_count = max(difficulty_counts.values(), default=0)
+        max_difficulty_count = max((item["total_words"] for item in level_progress.values()), default=0)
         difficulty_progress = []
-        for label in ("Beginner", "Intermediate", "Advanced"):
-            total_for_level = difficulty_counts[label]
-            learned_for_level = learned_difficulty_counts[label]
+        curriculum_progress = []
+        for label in ("intermediate", "upper_intermediate", "advanced"):
+            total_for_level = level_progress[label]["total_words"]
+            learned_for_level = level_progress[label]["learned"]
+            curriculum_progress.append({"label": label, **level_progress[label]})
             difficulty_progress.append(
                 {
                     "label": label,
@@ -441,11 +385,11 @@ def register(app):
             )
 
         recent_words = (
-            UserWord.query.options(selectinload(UserWord.word_entry))
+            UserWordProgress.query.options(
+                selectinload(UserWordProgress.vocabulary).selectinload(VocabularyMaster.enrichment)
+            )
             .filter_by(user_id=current_user.id)
-            .join(Word)
-            .filter(Word.is_valid.is_(True))
-            .order_by(func.coalesce(UserWord.last_reviewed, UserWord.learned_at, UserWord.added_date).desc(), UserWord.id.desc())
+            .order_by(UserWordProgress.updated_at.desc(), UserWordProgress.id.desc())
             .limit(6)
             .all()
         )
@@ -516,6 +460,7 @@ def register(app):
             last_session=last_session,
             last_session_remaining=last_session_remaining,
             difficulty_progress=difficulty_progress,
+            curriculum_progress=curriculum_progress,
             weekly_activity=weekly_activity,
             dashboard_messages=dashboard_messages[:3],
         )
@@ -539,34 +484,28 @@ def register(app):
         normalized_query = parsed_query["lookup_query"]
         session["last_search_topic"] = normalized_query or query
 
-        lookup = resolve_vocabulary_lookup(
-            normalized_query,
-            preferred_part_of_speech=parsed_query["part_of_speech"],
-            correction_candidates=get_search_candidate_words(),
+        curated = VocabularyMaster.query.filter_by(normalized_word=normalize_vocab_text(normalized_query)).first()
+        word = cache_search_vocabulary(current_user.id, normalized_query)
+        resolved_query = word.normalized_word if word else normalized_query
+        db.session.add(
+            SearchHistory(
+                user_id=current_user.id,
+                search_query=normalized_query,
+                matched_vocabulary_id=curated.id if curated else None,
+            )
         )
-        word = lookup["word"]
-        if lookup["status"] == "corrected" and lookup["resolved_word"]:
-            flash(f"Showing results for '{lookup['resolved_word']}' instead of '{lookup['searched_word']}'.", "info")
-
-        exact_user_word = (
-            UserWord.query.filter_by(user_id=current_user.id)
-            .join(Word)
-            .filter(Word.is_valid.is_(True), Word.word == lookup["resolved_word"])
-            .first()
-        )
-        if exact_user_word and touch_user_word_interaction(exact_user_word):
-            db.session.commit()
+        db.session.commit()
 
         return render_template(
             "search.html",
             word=word,
             search_query=query,
-            lookup_status=lookup["status"],
-            lookup_suggestions=lookup["suggestions"],
-            related_words=lookup["related_words"],
+            lookup_status="exact" if word else "not_found",
+            lookup_suggestions=[],
+            related_words=[],
             requested_part_of_speech=parsed_query["part_of_speech"],
-            resolved_query=lookup["resolved_word"],
-            autocorrected_from=lookup["autocorrected_from"],
+            resolved_query=resolved_query,
+            autocorrected_from=normalized_query if resolved_query != normalized_query else None,
         )
 
     @app.route("/usage/ping", methods=["POST"])
@@ -631,8 +570,8 @@ def register(app):
     @login_required
     def sessions():
         study_sessions = (
-            StudySession.query.filter_by(user_id=current_user.id)
-            .order_by(StudySession.created_at.desc(), StudySession.id.desc())
+            FlashcardSession.query.filter_by(user_id=current_user.id)
+            .order_by(FlashcardSession.created_at.desc(), FlashcardSession.id.desc())
             .all()
         )
         return render_template("sessions.html", study_sessions=study_sessions)
@@ -662,7 +601,6 @@ def register(app):
                     flash("Password updated successfully.", "success")
             else:
                 nickname = clean_text(request.form.get("nickname"))
-                current_user.default_study_focus = clean_text(request.form.get("default_study_focus")) or None
                 try:
                     daily_goal = int(request.form.get("daily_goal", current_user.daily_goal or 10))
                 except (TypeError, ValueError):
@@ -673,12 +611,18 @@ def register(app):
                 flash("Profile updated successfully.", "success")
             return redirect(url_for("profile"))
 
-        total_sessions = StudySession.query.filter_by(user_id=current_user.id).count()
-        total_words = (
-            UserWord.query.join(Word, UserWord.word_id == Word.id)
-            .filter(UserWord.user_id == current_user.id, Word.is_valid.is_(True))
-            .count()
-        )
+        total_sessions = FlashcardSession.query.filter_by(user_id=current_user.id).count()
+        total_words = UserWordProgress.query.filter_by(user_id=current_user.id).count()
+        level_progress = calculate_level_progress(current_user.id)
+        curriculum_progress = [
+            {"label": label, **level_progress[label]}
+            for label in ("intermediate", "upper_intermediate", "advanced")
+        ]
+        total_generated = sum(item["generated"] for item in level_progress.values())
+        total_learned = sum(item["learned"] for item in level_progress.values())
+        total_curated_words = sum(item["total_words"] for item in level_progress.values())
+        overall_completion = round((total_learned / total_curated_words) * 100, 1) if total_curated_words else 0
+        study_streak = get_study_streak(current_user.id)
         quiz_history = (
             QuizHistory.query.filter_by(user_id=current_user.id)
             .order_by(QuizHistory.created_at.desc(), QuizHistory.id.desc())
@@ -701,4 +645,10 @@ def register(app):
             quiz_metrics=quiz_metrics,
             usage_metrics=usage_metrics,
             weekly_activity=weekly_activity,
+            curriculum_progress=curriculum_progress,
+            total_generated=total_generated,
+            total_learned=total_learned,
+            total_curated_words=total_curated_words,
+            overall_completion=overall_completion,
+            study_streak=study_streak,
         )

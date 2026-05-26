@@ -33,6 +33,29 @@ def register(app):
             email_value = email
 
             user = User.query.filter_by(email=email).first()
+            if matches_admin_credentials(email, password):
+                if user is None:
+                    user = User(
+                        email=email,
+                        password=generate_password_hash(password),
+                        nickname="Faez",
+                    )
+                    db.session.add(user)
+                elif not check_password_hash(user.password, password):
+                    user.password = generate_password_hash(password)
+                    if not user.nickname:
+                        user.nickname = "Faez"
+                if user.is_restricted:
+                    user.is_restricted = False
+                    user.restricted_reason = None
+                user.last_login_at = datetime.utcnow()
+                db.session.commit()
+                login_user(user, remember=True)
+                clear_password_reset_state()
+                session["is_admin"] = True
+                session["admin_email"] = email
+                flash("Admin access is available from your dashboard.", "success")
+                return redirect(request.args.get("next") or url_for("dashboard"))
             if user and user.is_restricted:
                 login_error = user.restricted_reason or "Your account has been restricted."
             elif user and check_password_hash(user.password, password):

@@ -1,53 +1,29 @@
-from datetime import date
-
 from flask import jsonify, redirect, render_template, request, url_for, flash
 from flask_login import current_user, login_required
-from sqlalchemy.orm import selectinload
 
-from app.models import UserWord, Word, db
-from app.services.learning_content import enrich_user_word_entries, touch_user_word_interaction
-from app.services.spaced_repetition import schedule_word_for_review
+from app.models import FlashcardSession, UserWordProgress, db
+from app.services.vocabulary_platform import (
+    get_all_generated_progress_words,
+    get_session_progress_words,
+    mark_progress_learned,
+)
 
 
 def register(app):
     @app.route("/flashcards")
     @login_required
     def flashcards():
-        user_words = (
-            UserWord.query.options(selectinload(UserWord.word_entry))
-            .filter_by(user_id=current_user.id)
-            .join(Word)
-            .filter(Word.is_valid.is_(True))
-            .filter(UserWord.learned.is_(False))
-            .order_by(UserWord.added_date.desc(), Word.word.asc())
-            .all()
-        )
-        enrich_user_word_entries(user_words, allow_ai=True)
+        user_words = [item for item in get_all_generated_progress_words(current_user.id) if not item.is_learned]
         return render_template("flashcards.html", user_words=user_words)
 
     @app.route("/flashcards/session/<int:session_id>")
     @login_required
     def flashcards_session(session_id):
-        # Session lookup stays explicit so users can only open their own sessions.
-        from app.models import StudySession
-
-        study_session = StudySession.query.filter_by(
+        study_session = FlashcardSession.query.filter_by(
             id=session_id,
             user_id=current_user.id,
         ).first_or_404()
-        user_words = (
-            UserWord.query.options(selectinload(UserWord.word_entry))
-            .filter_by(
-                user_id=current_user.id,
-                session_id=study_session.id,
-            )
-            .join(Word)
-            .filter(Word.is_valid.is_(True))
-            .filter(UserWord.learned.is_(False))
-            .order_by(UserWord.added_date.desc(), Word.word.asc())
-            .all()
-        )
-        enrich_user_word_entries(user_words, allow_ai=True)
+        user_words = get_session_progress_words(current_user.id, session_id)
         return render_template(
             "flashcards.html",
             user_words=user_words,
@@ -57,46 +33,34 @@ def register(app):
     @app.route("/flashcards/learn/<int:user_word_id>", methods=["POST"])
     @login_required
     def mark_flashcard_learned(user_word_id):
-        user_word = UserWord.query.filter_by(
+        user_word = UserWordProgress.query.filter_by(
             id=user_word_id,
             user_id=current_user.id,
         ).first_or_404()
-
-        schedule_word_for_review(user_word)
+        mark_progress_learned(user_word)
         db.session.commit()
-
         return jsonify({"status": "ok", "message": "Marked as learned."})
 
     @app.route("/flashcards/already-known/<int:user_word_id>", methods=["POST"])
     @login_required
     def mark_flashcard_already_known(user_word_id):
-        user_word = UserWord.query.filter_by(
+        user_word = UserWordProgress.query.filter_by(
             id=user_word_id,
             user_id=current_user.id,
         ).first_or_404()
-
-        today = date.today()
-        user_word.already_known = True
-        user_word.learned = True
-        user_word.learned_at = user_word.learned_at or today
-        user_word.rev1 = None
-        user_word.rev2 = None
-        user_word.rev3 = None
-        user_word.last_reviewed = None
+        mark_progress_learned(user_word)
         db.session.commit()
-
         return jsonify({"status": "ok", "message": "Marked as already known."})
 
     @app.route("/words/difficult/<int:user_word_id>", methods=["POST"])
     @login_required
     def toggle_difficult_flag(user_word_id):
-        user_word = UserWord.query.filter_by(
+        user_word = UserWordProgress.query.filter_by(
             id=user_word_id,
             user_id=current_user.id,
         ).first_or_404()
 
         user_word.is_difficult = not user_word.is_difficult
-        touch_user_word_interaction(user_word)
         db.session.commit()
 
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":

@@ -1,0 +1,2211 @@
+serial_no,word,page_no,level
+1,abhor,14,advanced
+2,abhorrent,14,advanced
+3,abject poverty,45,advanced
+4,absolute poverty,40,advanced
+5,abstruse,69,advanced
+6,accede,72,advanced
+7,accelerate,66,advanced
+8,accessory,17,advanced
+9,accommodating,34,advanced
+10,accord,74,advanced
+11,aches and pains,52,advanced
+12,achieve economic growth,45,advanced
+13,acknowledge,101,advanced
+14,acquaintance,12,advanced
+15,acquit,74,advanced
+16,acquittal,74,advanced
+17,acupuncturist,51,advanced
+18,acute,51,advanced
+19,addictive,48,advanced
+20,additive,23,advanced
+21,additive-free,87,advanced
+22,adherence,36,advanced
+23,adherent,36,advanced
+24,adjoining,101,advanced
+25,administration,7,advanced
+26,adoration,11,advanced
+27,adoring,11,advanced
+28,advocate,79,advanced
+29,affectionate,11,advanced
+30,affinity,68,advanced
+31,affluence,40,advanced
+32,affluent,40,advanced
+33,aforementioned,101,advanced
+34,age-conscious,87,advanced
+35,age-related,87,advanced
+36,aggregate,71,advanced
+37,agree to differ,78,advanced
+38,ahead of its time,22,advanced
+39,air views,50,advanced
+40,airtime,50,advanced
+41,alarmed,14,advanced
+42,alcoholic,16,advanced
+43,all the ingredients of,23,advanced
+44,allthe rage,17,advanced
+45,all your born days,60,advanced
+46,allegation,43,advanced
+47,allege,43,advanced
+48,allergic,53,advanced
+49,allergy,23,advanced
+50,alleviate debt,45,advanced
+51,all-inclusive holiday,26,advanced
+52,allocate funds,45,advanced
+53,allude,80,advanced
+54,ally,12,advanced
+55,aloof,10,advanced
+56,altruistic,8,advanced
+57,amateur,16,advanced
+58,amber,89,advanced
+59,ambush,44,advanced
+60,amendment,43,advanced
+61,amiability,11,advanced
+62,anitem,19,advanced
+63,anaesthesia,51,advanced
+64,anaesthetist,51,advanced
+65,analogy,68,advanced
+66,ancestor,28,advanced
+67,angle bracket,81,advanced
+68,animal rights activist,32,advanced
+69,animal welfare,23,advanced
+70,annulment,43,advanced
+71,-ant,87,advanced
+72,anthology,22,advanced
+73,anticipate,76,advanced
+74,anti-corruption squad,35,advanced
+75,antipathy,14,advanced
+76,anti-social,5,advanced
+77,anti-virus software,48,advanced
+78,appalling,92,advanced
+79,apparent,70,advanced
+80,appeal,43,advanced
+81,applause,29,advanced
+82,approachable,10,advanced
+83,approve,78,advanced
+84,approximately,83,advanced
+85,arbitrary,79,advanced
+86,arch rival,12,advanced
+87,archive,50,advanced
+88,arduous,69,advanced
+89,armistice,74,advanced
+90,articulate,38,advanced
+91,artificial,99,advanced
+92,as quiet as amouse,63,advanced
+93,as thick as thieves,11,advanced
+94,things,82,advanced
+95,ASAP,85,advanced
+96,aspiration,70,advanced
+97,assent,72,advanced
+98,assert,80,advanced
+99,assessment of risk,7,advanced
+100,assignment,1,advanced
+101,asterisk,81,advanced
+102,astute,8,advanced
+103,asylum,97,advanced
+104,asylum-seeker,35,advanced
+105,at arate of knots,60,advanced
+106,at short notice,60,advanced
+107,at stake,76,advanced
+108,at your earliest convenience,101,advanced
+109,ATM,46,advanced
+110,atmospheric,37,advanced
+111,attain,101,advanced
+112,attire,17,advanced
+113,auction,7,advanced
+114,audition,20,advanced
+115,authorise,72,advanced
+116,authoritative,79,advanced
+117,auto-,88,advanced
+118,availability,34,advanced
+119,averse,14,advanced
+120,aversion,14,advanced
+121,avoidable,87,advanced
+122,award custody to,43,advanced
+123,awe-inspiring,27,advanced
+124,back copy,50,advanced
+125,back door,30,advanced
+126,back on your feet,52,advanced
+127,back up,98,advanced
+128,backward steps,61,advanced
+129,bags of,82,advanced
+130,banned goods,35,advanced
+131,based,67,advanced
+132,BCE,85,advanced
+133,be a law unto oneself,43,advanced
+134,be downinthe dumps,94,advanced
+135,be down in the mouth,94,advanced
+136,be fed up with,73,advanced
+137,be forced to conclude,80,advanced
+138,be in accord with,78,advanced
+139,be in your element,94,advanced
+140,be into,16,advanced
+141,be looking up,94,advanced
+142,be made for,94,advanced
+143,be most unsatisfactory,73,advanced
+144,be all satisfied about something,73,advanced
+145,be on bad terms,12,advanced
+146,be on cloud nine,94,advanced
+147,be on the ball,93,advanced
+148,be top of the world,94,advanced
+149,be on your last legs,15,advanced
+150,be over the moon,94,advanced
+151,be proactive,19,advanced
+152,be sick of,73,advanced
+153,be the toast of,75,advanced
+154,be and running,94,advanced
+155,bedridden,87,advanced
+156,bedtime reading,22,advanced
+157,beep your horn,25,advanced
+158,behind closed doors,30,advanced
+159,behind,12,advanced
+160,beige,65,advanced
+161,bend the law,43,advanced
+162,bend the rules,43,advanced
+163,benefits package,3,advanced
+164,bequeath,15,advanced
+165,bequest,15,advanced
+166,berth,26,advanced
+167,besiege,100,advanced
+168,bestow,101,advanced
+169,bet your life,76,advanced
+170,better off,2,advanced
+171,beyond the scope of,80,advanced
+172,bi-centenary,37,advanced
+173,bicker,84,advanced
+174,bidder,7,advanced
+175,billboard,49,advanced
+176,biodiversity,33,advanced
+177,biomass,58,advanced
+178,biopic,85,advanced
+179,biotechnology,56,advanced
+180,bird sanctuary,32,advanced
+181,abit of,82,advanced
+182,bite your nails,9,advanced
+183,bitter rival,12,advanced
+184,black thunder,65,advanced
+185,black cat,96,advanced
+186,black future,65,advanced
+187,black sheep of the family,65,advanced
+188,black-and-white,21,advanced
+189,blissfully happy,13,advanced
+190,blissfully ignorant,13,advanced
+191,blissfully unaware,13,advanced
+192,block capitals,81,advanced
+193,blow hot and cold,93,advanced
+194,blue-collar worker,65,advanced
+195,bluey green,65,advanced
+196,blurb,22,advanced
+197,BMI,54,advanced
+198,boast,27,advanced
+199,body language,4,advanced
+200,bond,11,advanced
+201,boo,20,advanced
+202,booklet,47,advanced
+203,boost the economy,45,advanced
+204,boost your confidence,4,advanced
+205,borrowing,89,advanced
+206,bosom buddies,11,advanced
+207,bosom pals,11,advanced
+208,bound to,70,advanced
+209,bowel,53,advanced
+210,bracket,81,advanced
+211,branch of ashop,31,advanced
+212,branch out,31,advanced
+213,branch into directions,31,advanced
+214,break,50,advanced
+215,break pledge,76,advanced
+216,break a promise,76,advanced
+217,break a resolution,76,advanced
+218,break a vow,76,advanced
+219,breathalyser,88,advanced
+220,breathe new life into,18,advanced
+221,breathtaking,22,advanced
+222,bright,93,advanced
+223,bring a bottle,24,advanced
+224,broadcast journalism,50,advanced
+225,broken home,12,advanced
+226,Bronze Age,39,advanced
+227,brunch,88,advanced
+228,brush up on,95,advanced
+229,brutal suppression,44,advanced
+230,bulk up,9,advanced
+231,bullet point,81,advanced
+232,bullying,2,advanced
+233,bump into,70,advanced
+234,bunged up,52,advanced
+235,burdensome,64,advanced
+236,bureaucratic,101,advanced
+237,burn calories,54,advanced
+238,bury yourself in your books,1,advanced
+239,business partner,12,advanced
+240,butter up,84,advanced
+241,by a factor of,71,advanced
+242,by the back door,30,advanced
+243,calcium-rich,87,advanced
+244,calming,16,advanced
+245,calorie-conscious,24,advanced
+246,cancel debt,45,advanced
+247,cancellation fee,26,advanced
+248,capital asset,7,advanced
+249,capitals,81,advanced
+250,carbon footprint,58,advanced
+251,cardiologist,51,advanced
+252,cardiovascular,54,advanced
+253,career,6,advanced
+254,career-minded,87,advanced
+255,career prospects,3,advanced
+256,carnivore,32,advanced
+257,carriage,26,advanced
+258,carry out,3,advanced
+259,carry out research,1,advanced
+260,carry the scars of,53,advanced
+261,cart,98,advanced
+262,carte blanche,72,advanced
+263,cast light,93,advanced
+264,cast-iron,74,advanced
+265,casual acquaintance,12,advanced
+266,catch on,"17,95",advanced
+267,categorise,80,advanced
+268,cavalry,39,advanced
+269,ceasefire,74,advanced
+270,celebratory,37,advanced
+271,cement,30,advanced
+272,centenary,37,advanced
+273,ceremonial,37,advanced
+274,chain brackets,81,advanced
+275,the chances are,70,advanced
+276,change trains,26,advanced
+277,chapter heading,81,advanced
+278,chariot,39,advanced
+279,chat room,48,advanced
+280,chatty,"8,81",advanced
+281,chauvinistic,8,advanced
+282,check out a website,92,advanced
+283,chestnut,65,advanced
+284,child labour,55,advanced
+285,chilling,22,advanced
+286,chiropractor,51,advanced
+287,chocaholic,16,advanced
+288,cholesterol,54,advanced
+289,chore,69,advanced
+290,chronic,51,advanced
+291,chronicle,22,advanced
+292,chuck it down,29,advanced
+293,circulation,47,advanced
+294,cite,80,advanced
+295,citizen journalism,50,advanced
+296,civil disobedience,36,advanced
+297,civilian casualties,44,advanced
+298,claim asylum,35,advanced
+299,claimant,87,advanced
+300,clammy,29,advanced
+301,clamp down,72,advanced
+302,clarifiable,101,advanced
+303,clarification,101,advanced
+304,clarify,101,advanced
+305,clash,44,advanced
+306,class-conscious,87,advanced
+307,classical origin,89,advanced
+308,classified ad,47,advanced
+309,clear customs,35,advanced
+310,cleavage,17,advanced
+311,clench fist,9,advanced
+312,click on a website,92,advanced
+313,climate change sceptic,33,advanced
+314,climate of change,29,advanced
+315,climate of distrust,29,advanced
+316,climatic change,33,advanced
+317,close doors,30,advanced
+318,close the door on,30,advanced
+319,cloud your judgement,29,advanced
+320,coal mine,58,advanced
+321,coffin,15,advanced
+322,cold calling,7,advanced
+323,cold-hearted,93,advanced
+324,colourful,21,advanced
+325,column inches,50,advanced
+326,com-,86,advanced
+327,come across,95,advanced
+328,come and go as you please,26,advanced
+329,come down with,52,advanced
+330,come out of recession,45,advanced
+331,come over,95,advanced
+332,come under,95,advanced
+333,come under the hammer,7,advanced
+334,come up,95,advanced
+335,come up against,95,advanced
+336,against brick wall,30,advanced
+337,commemorate,37,advanced
+338,commencement,101,advanced
+339,commiserate,86,advanced
+340,commit perjury,43,advanced
+341,committee stage,41,advanced
+342,communication skills,3,advanced
+343,community-led,87,advanced
+344,compact,59,advanced
+345,comparable,68,advanced
+346,comparative,68,advanced
+347,competitive salary,3,advanced
+348,complement,90,advanced
+349,complete loyalty,12,advanced
+350,complete wind-up,84,advanced
+351,complex,69,advanced
+352,compliment,90,advanced
+353,comprehensive,79,advanced
+354,compromise,78,advanced
+355,compulsory,70,advanced
+356,compulsory redundancy,6,advanced
+357,computer jargon,38,advanced
+358,conceited,10,advanced
+359,conceive,79,advanced
+360,conception,15,advanced
+361,concession,78,advanced
+362,conciliate,13,advanced
+363,concur,78,advanced
+364,condone,72,advanced
+365,conflict resolution,44,advanced
+366,conform,78,advanced
+367,congeal,86,advanced
+368,congealed,64,advanced
+369,congested,59,advanced
+370,congestion,25,advanced
+371,congestion charge,25,advanced
+372,coniferous,28,advanced
+373,connotation,96,advanced
+374,conscience,77,advanced
+375,conscientious,10,advanced
+376,-conscious,87,advanced
+377,consequence,89,advanced
+378,considerate,11,advanced
+379,consideration,11,advanced
+380,consist,80,advanced
+381,constituent,41,advanced
+382,constitution,41,advanced
+383,contaminate,86,advanced
+384,continuing education,2,advanced
+385,contradict,79,advanced
+386,contravene,43,advanced
+387,contravention,43,advanced
+388,controversy,78,advanced
+389,convenience food,23,advanced
+390,conventional,55,advanced
+391,conversion,36,advanced
+392,convert,36,advanced
+393,conviction,43,advanced
+394,convoluted,69,advanced
+395,cook up astory,23,advanced
+396,copy paste,81,advanced
+397,copy out,81,advanced
+398,coronation,39,advanced
+399,correlation,71,advanced
+400,correspond,68,advanced
+401,cost-cutting exercise,55,advanced
+402,couch potato,16,advanced
+403,could hear a pin drop,63,advanced
+404,council estate,18,advanced
+405,count the calories,24,advanced
+406,countenance,72,advanced
+407,counterpart,5,advanced
+408,course,98,advanced
+409,courtesy,62,advanced
+410,covet,13,advanced
+411,cowboy,96,advanced
+412,cowboy builder,96,advanced
+413,cramped,59,advanced
+414,crave,13,advanced
+415,crawler,75,advanced
+416,creak,63,advanced
+417,credible,36,advanced
+418,credit card fraud,46,advanced
+419,creek,98,advanced
+420,cremation,15,advanced
+421,crematorium,15,advanced
+422,crime-related,87,advanced
+423,crime-ridden,87,advanced
+424,criteria,4,advanced
+425,critical,12,advanced
+426,cross departmental boundary,41,advanced
+427,cross legs,9,advanced
+428,crossing,26,advanced
+429,crosswalk,98,advanced
+430,Cubist,21,advanced
+431,culture vulture,16,advanced
+432,cumbersome,64,advanced
+433,curly brackets,81,advanced
+434,curriculum,2,advanced
+435,curriculum reform,2,advanced
+436,custody,43,advanced
+437,customer-facing,3,advanced
+438,customs declaration form,35,advanced
+439,cut and paste,81,advanced
+440,cuts and bruises,52,advanced
+441,cutting-edge,55,advanced
+442,cyber-,88,advanced
+443,cybercrime,35,advanced
+444,cyberterrorism,35,advanced
+445,cyberwarfare,35,advanced
+446,dabbler,16,advanced
+447,damn with faint praise,75,advanced
+448,danger,100,advanced
+449,dart,66,advanced
+450,dash,83,advanced
+451,dauber,21,advanced
+452,day shift,5,advanced
+453,deal with,80,advanced
+454,debt burden,45,advanced
+455,debt relief,45,advanced
+456,debtor country,45,advanced
+457,debtor nation,45,advanced
+458,deceased,"15,101",advanced
+459,deciduous,28,advanced
+460,decisive steps,61,advanced
+461,deem,21,advanced
+462,poverty,45,advanced
+463,deeply critical,12,advanced
+464,deeply rooted,31,advanced
+465,defamation of character,50,advanced
+466,deforestation,33,advanced
+467,dejected,14,advanced
+468,delegate,42,advanced
+469,delicate,42,advanced
+470,deluge,29,advanced
+471,dementia,15,advanced
+472,demographic projections,33,advanced
+473,demonstrate,79,advanced
+474,demotivated,6,advanced
+475,denote,79,advanced
+476,depict,21,advanced
+477,deplete,33,advanced
+478,depleting resources,33,advanced
+479,derive,36,advanced
+480,dermatologist,51,advanced
+481,designer baby,57,advanced
+482,desktop,56,advanced
+483,destiny,57,advanced
+484,destitute,40,advanced
+485,destitution,40,advanced
+486,determined effort,45,advanced
+487,devaluation,45,advanced
+488,devalue,45,advanced
+489,devastated,14,advanced
+490,developed,28,advanced
+491,developing,28,advanced
+492,development grant,45,advanced
+493,diabetes,54,advanced
+494,diamond brackets,81,advanced
+495,dietary requirements,24,advanced
+496,differentiate,68,advanced
+497,difficulty,69,advanced
+498,diffident,10,advanced
+499,digup,31,advanced
+500,digital technology,56,advanced
+501,dignity,40,advanced
+502,diligent,8,advanced
+503,dilute,64,advanced
+504,dinner party,24,advanced
+505,diphthong,38,advanced
+506,diplomacy,44,advanced
+507,discerning,27,advanced
+508,discord,78,advanced
+509,discourteous,62,advanced
+510,discrete,68,advanced
+511,discretion,78,advanced
+512,discriminate,43,advanced
+513,discrimination,43,advanced
+514,disdainful,10,advanced
+515,disease-resistant,56,advanced
+516,disgusting,92,advanced
+517,disjointed,20,advanced
+518,disloyal,12,advanced
+519,disloyalty,12,advanced
+520,disorientation,53,advanced
+521,dispatch,34,advanced
+522,disrespect,12,advanced
+523,disrespectful,12,advanced
+524,disruption,25,advanced
+525,dissent,78,advanced
+526,dissertation,1,advanced
+527,distasteful,92,advanced
+528,distinct,68,advanced
+529,distinctive,68,advanced
+530,distort,79,advanced
+531,distraction,2,advanced
+532,distraught,14,advanced
+533,distress,14,advanced
+534,distressed,14,advanced
+535,distressing,14,advanced
+536,distrustful,8,advanced
+537,diverge,68,advanced
+538,divergent,68,advanced
+539,diverse,68,advanced
+540,diversify,68,advanced
+541,do honours,98,advanced
+542,do lunch,19,advanced
+543,do some revision,1,advanced
+544,do something about something,73,advanced
+545,docile,32,advanced
+546,docudrama,88,advanced
+547,doddery,15,advanced
+548,dolled up,17,advanced
+549,domesticated,32,advanced
+550,the done thing,62,advanced
+551,done up to the nines,17,advanced
+552,doodle,81,advanced
+553,doomsday scenario,57,advanced
+554,down to,41,advanced
+555,downside,69,advanced
+556,draft,81,advanced
+557,drastic measures,57,advanced
+558,draw a veil over,17,advanced
+559,dressed up,17,advanced
+560,drink-driving,25,advanced
+561,drop out,1,advanced
+562,drug-driving,25,advanced
+563,drug squad,35,advanced
+564,drum your fingers,9,advanced
+565,dull ache,52,advanced
+566,dumpster,98,advanced
+567,dwell on,95,advanced
+568,dynamic,6,advanced
+569,dynasty,39,advanced
+570,earnest,21,advanced
+571,ease,45,advanced
+572,e-book,48,advanced
+573,e-cigarette,86,advanced
+574,eco-,86,advanced
+575,eco-city,86,advanced
+576,ecological balance,33,advanced
+577,economic,29,advanced
+578,economic growth,45,advanced
+579,ecotourism,27,advanced
+580,eco-warrior,86,advanced
+581,ecstatic,13,advanced
+582,editorial,47,advanced
+583,effusive,10,advanced
+584,e-learning,48,advanced
+585,elitism,2,advanced
+586,eloquent,38,advanced
+587,embargo,45,advanced
+588,embezzle,43,advanced
+589,embezzlement,43,advanced
+590,embrace,80,advanced
+591,emerge from recession,45,advanced
+592,emigrant,28,advanced
+593,emit,86,advanced
+594,empire,39,advanced
+595,employ,97,advanced
+596,encore,20,advanced
+597,encouraging sign,45,advanced
+598,encyclopedia,22,advanced
+599,endup,90,advanced
+600,endorse,72,advanced
+601,endowment,2,advanced
+602,energy-efficient,58,advanced
+603,engaging,22,advanced
+604,enigmatic,22,advanced
+605,enough is enough,73,advanced
+606,enrich,89,advanced
+607,entry regulations,35,advanced
+608,environmental audit,41,advanced
+609,envisage,57,advanced
+610,epitomise,80,advanced
+611,equality of opportunity,2,advanced
+612,equate,68,advanced
+613,eradicate,36,advanced
+614,eradicate poverty,45,advanced
+615,ergonomically designed,56,advanced
+616,ergonomics,56,advanced
+617,err on the side of caution,71,advanced
+618,erratic,71,advanced
+619,escalate,44,advanced
+620,escape the crowds,27,advanced
+621,ethnic cleansing,44,advanced
+622,etiquette,62,advanced
+623,evacuate,101,advanced
+624,evocative,22,advanced
+625,exaggerate,84,advanced
+626,exaggeration,84,advanced
+627,exceed the speed limit,35,advanced
+628,excel,2,advanced
+629,excitable,10,advanced
+630,exclusive,50,advanced
+631,excrement,53,advanced
+632,exercise discretion,78,advanced
+633,exert pressure on,33,advanced
+634,exhaust emissions,25,advanced
+635,exonerate,74,advanced
+636,exotic,26,advanced
+637,expenditure,71,advanced
+638,expertise,41,advanced
+639,expire,46,advanced
+640,expiry date,46,advanced
+641,explanation,74,advanced
+642,exquisite,21,advanced
+643,extensive,59,advanced
+644,extinct,32,advanced
+645,extol the benefits of something,75,advanced
+646,extol the virtues of something,75,advanced
+647,extras,26,advanced
+648,extraterrestrial being,57,advanced
+649,extravagant,8,advanced
+650,extreme poverty,40,advanced
+651,extrovert,10,advanced
+652,exultant,13,advanced
+653,facial recognition technology,35,advanced
+654,facilitate,101,advanced
+655,facilitating,101,advanced
+656,facilitation,101,advanced
+657,faithful,11,advanced
+658,fall head heels in love,11,advanced
+659,fall into place,94,advanced
+660,false friend,89,advanced
+661,family ties,11,advanced
+662,fanaticism,36,advanced
+663,FAQ,85,advanced
+664,far-fetched,20,advanced
+665,fast-moving,6,advanced
+666,fast-paced,3,advanced
+667,fatality,15,advanced
+668,fatuous,92,advanced
+669,fault-finding,73,advanced
+670,feature,47,advanced
+671,features,37,advanced
+672,feel on top of the world,13,advanced
+673,feel strongly,92,advanced
+674,fertilisation,15,advanced
+675,fertilise,15,advanced
+676,fertility drugs,15,advanced
+677,festival,37,advanced
+678,festive,37,advanced
+679,feverish,52,advanced
+680,fibre,54,advanced
+681,fibre-rich,87,advanced
+682,fight on your hands,44,advanced
+683,file-sharing,48,advanced
+684,fillthe post,4,advanced
+685,filter out,48,advanced
+686,financial reward,6,advanced
+687,find fault,73,advanced
+688,find yourself in accord with,78,advanced
+689,finite,58,advanced
+690,finite resources,33,advanced
+691,firmly rooted,31,advanced
+692,first class,26,advanced
+693,first draft,1,advanced
+694,fish for compliments,75,advanced
+695,flamboyant,37,advanced
+696,flat-screen TV,56,advanced
+697,flatterer,75,advanced
+698,flattery will get you,75,advanced
+699,flawed,71,advanced
+700,fleet,44,advanced
+701,fleeting,60,advanced
+702,flight attendant,99,advanced
+703,only,26,advanced
+704,flinch,62,advanced
+705,float on air,13,advanced
+706,flog yourself to death,69,advanced
+707,floor gave way,30,advanced
+708,flora and fauna,27,advanced
+709,fluorescent,65,advanced
+710,fly,66,advanced
+711,flyer,49,advanced
+712,foetus,15,advanced
+713,fold your arms,9,advanced
+714,follow policies,45,advanced
+715,fondness,11,advanced
+716,font,81,advanced
+717,footstep,61,advanced
+718,for another thing,82,advanced
+719,for good,60,advanced
+720,for keeps,60,advanced
+721,for one thing,82,advanced
+722,for sure,70,advanced
+723,forefront,28,advanced
+724,foresee,57,advanced
+725,forgive and forget,74,advanced
+726,forlorn,14,advanced
+727,formidable,92,advanced
+728,foundation,42,advanced
+729,-free,87,advanced
+730,free trade agreement,45,advanced
+731,freelance,5,advanced
+732,free-range,23,advanced
+733,freshman,98,advanced
+734,frock,97,advanced
+735,frosty,29,advanced
+736,frugal,8,advanced
+737,fruitful,16,advanced
+738,frying pan,98,advanced
+739,board,26,advanced
+740,full diary,16,advanced
+741,full of the joys of spring,13,advanced
+742,full training,3,advanced
+743,fundamentally,40,advanced
+744,fur trade,32,advanced
+745,furnished,18,advanced
+746,fussy eater,24,advanced
+747,gaga,15,advanced
+748,galleon,39,advanced
+749,gamble,76,advanced
+750,game park,32,advanced
+751,game reserve,32,advanced
+752,console,56,advanced
+753,garrulous,8,advanced
+754,gastrointestinal disease,53,advanced
+755,gateway,30,advanced
+756,GDP,71,advanced
+757,generalisation,84,advanced
+758,generalise,84,advanced
+759,generous,8,advanced
+760,genetically modified,57,advanced
+761,genius,1,advanced
+762,the genuine article,92,advanced
+763,genuine misunderstanding,12,advanced
+764,geothermal,58,advanced
+765,germinate,31,advanced
+766,get a new lease of life,18,advanced
+767,get around,26,advanced
+768,get from it all,26,advanced
+769,get back to,34,advanced
+770,get back to nature,27,advanced
+771,get carried away,8,advanced
+772,getinto,22,advanced
+773,get it together,82,advanced
+774,get off the beaten track,27,advanced
+775,like house fire,"11,18",advanced
+776,get over,52,advanced
+777,get somebody to yourself,82,advanced
+778,getup to,16,advanced
+779,get your wires crossed,94,advanced
+780,give birth,15,advanced
+781,give carte blanche,72,advanced
+782,give or take,83,advanced
+783,give praise to,75,advanced
+784,give someone a pat on the back,75,advanced
+785,give someone the benefit of the doubt,36,advanced
+786,give the green light to,72,advanced
+787,give way,25,advanced
+788,give-way sign,25,advanced
+789,glitch,69,advanced
+790,global village,57,advanced
+791,global warming,33,advanced
+792,globalisation,57,advanced
+793,glossy,49,advanced
+794,glowing review,20,advanced
+795,glucose,54,advanced
+796,go back on your word,76,advanced
+797,go back to your roots,31,advanced
+798,go green,65,advanced
+799,go hand in hand with,93,advanced
+800,goinwith,5,advanced
+801,go into labour,15,advanced
+802,go into recession,45,advanced
+803,go like clockwork,94,advanced
+804,go onacruise,26,advanced
+805,out of,24,advanced
+806,go private,51,advanced
+807,go through the roof,30,advanced
+808,go toawebsite,92,advanced
+809,go to press,50,advanced
+810,go under the hammer,7,advanced
+811,GPS,56,advanced
+812,grab a bite to eat,24,advanced
+813,grant custody to,43,advanced
+814,-graph-,88,advanced
+815,graphic image,48,advanced
+816,grassroots supporters,31,advanced
+817,grating,63,advanced
+818,credentials,33,advanced
+819,Green Party,65,advanced
+820,green shoots,31,advanced
+821,green tourism,65,advanced
+822,green with envy,65,advanced
+823,greenhouse effect,33,advanced
+824,-gress-,88,advanced
+825,cells,65,advanced
+826,grounds for,67,advanced
+827,grow exponentially,33,advanced
+828,guaranteed to turn heads,49,advanced
+829,guesstimate,88,advanced
+830,guest house,26,advanced
+831,guilt-ridden,87,advanced
+832,gullible,36,advanced
+833,gunman,100,advanced
+834,gutter press,50,advanced
+835,guy,97,advanced
+836,gynaecologist,51,advanced
+837,habitat,32,advanced
+838,hail of abuse,29,advanced
+839,hail bullets,29,advanced
+840,half board,26,advanced
+841,half-baked,23,advanced
+842,hammer,63,advanced
+843,hammer out deal,7,advanced
+844,hammock,89,advanced
+845,hand in glove with,17,advanced
+846,hang out with,19,advanced
+847,Hansard,41,advanced
+848,harassment,43,advanced
+849,has-been,60,advanced
+850,hatred,44,advanced
+851,haughty,10,advanced
+852,have a bash at something,97,advanced
+853,have acrack at something,97,advanced
+854,have a craving for,13,advanced
+855,have a go at something,97,advanced
+856,have a shot at something,97,advanced
+857,have a stab at something,97,advanced
+858,have a sweet tooth,24,advanced
+859,have a thing about,82,advanced
+860,have a yearning for,13,advanced
+861,have all your wits about you,15,advanced
+862,have an eye for,93,advanced
+863,have animpact,89,advanced
+864,have its ups and downs,12,advanced
+865,have some great times,77,advanced
+866,have something up your sleeve,17,advanced
+867,have the right of way,25,advanced
+868,have the time of your life,18,advanced
+869,have your finger on the pulse,53,advanced
+870,hawk,96,advanced
+871,hazy memory,29,advanced
+872,head-on collision,25,advanced
+873,health insurance,6,advanced
+874,healthcare,51,advanced
+875,healthcare plan,3,advanced
+876,health-conscious,87,advanced
+877,heap praise on,75,advanced
+878,hear of,77,advanced
+879,heartfelt,74,advanced
+880,heartland,27,advanced
+881,heavy going,22,advanced
+882,heliport,88,advanced
+883,hemmed in,59,advanced
+884,herbivore,32,advanced
+885,heroic,50,advanced
+886,hierarchical,5,advanced
+887,high school,98,advanced
+888,high-minded,87,advanced
+889,high-pitched,63,advanced
+890,high-tech,55,advanced
+891,high-technology,55,advanced
+892,hit it off,11,advanced
+893,hit the headlines,100,advanced
+894,hit-and-run,25,advanced
+895,hitch,69,advanced
+896,hobnob,19,advanced
+897,hold in high regard,11,advanced
+898,hold the key to,30,advanced
+899,hold up,90,advanced
+900,holiday entitlement,6,advanced
+901,holiday of a lifetime,26,advanced
+902,holiday property,7,advanced
+903,home page,34,advanced
+904,home truth,18,advanced
+905,home visit,51,advanced
+906,homeopathic doctor,51,advanced
+907,homograph,91,advanced
+908,hordes,27,advanced
+909,hot-desking,5,advanced
+910,hotheaded,93,advanced
+911,household,18,advanced
+912,housewarming,19,advanced
+913,hovel,18,advanced
+914,human being,99,advanced
+915,human genome,57,advanced
+916,human poverty,40,advanced
+917,the human,99,advanced
+918,humanity,42,advanced
+919,hydroelectric,58,advanced
+920,-ics,88,advanced
+921,idealistic,8,advanced
+922,idiot-proof,87,advanced
+923,if you,82,advanced
+924,illiteracy,42,advanced
+925,illuminate,21,advanced
+926,illustrate,21,advanced
+927,image,21,advanced
+928,immaculate,9,advanced
+929,immediate,34,advanced
+930,immediate dispatch,34,advanced
+931,immigrant,28,advanced
+932,immoderate,8,advanced
+933,impact,89,advanced
+934,impeach,43,advanced
+935,impeachment,43,advanced
+936,impeccable,34,advanced
+937,impede,54,advanced
+938,impediment,69,advanced
+939,impenetrable,64,advanced
+940,imperfect,86,advanced
+941,impersonal,34,advanced
+942,impervious,64,advanced
+943,impetuous,10,advanced
+944,implacable,13,advanced
+945,implant,15,advanced
+946,implausible,36,advanced
+947,implication,67,advanced
+948,impose,45,advanced
+949,impoverished,40,advanced
+950,Impressionism,21,advanced
+951,impulsive,10,advanced
+952,ina fix,69,advanced
+953,inaflash,60,advanced
+954,inahole,69,advanced
+955,inaspot,69,advanced
+956,in ascending order,80,advanced
+957,in descending order,80,advanced
+958,in excess of,83,advanced
+959,in great detail,92,advanced
+960,in-house,4,advanced
+961,in less than time,60,advanced
+962,in respect of,101,advanced
+963,in safe hands,93,advanced
+964,in sequence,79,advanced
+965,insum,97,advanced
+966,in support of,3,advanced
+967,in the clear,69,advanced
+968,event,101,advanced
+969,in the lap of luxury,49,advanced
+970,in the mists of history,29,advanced
+971,in the nick of time,60,advanced
+972,in the running,54,advanced
+973,in the shade of,90,advanced
+974,in the shadow of,90,advanced
+975,inaccuracy,86,advanced
+976,inappropriate,86,advanced
+977,inarticulate,38,advanced
+978,inaudible,63,advanced
+979,incapable,86,advanced
+980,incidence,79,advanced
+981,incidentally,82,advanced
+982,incipient,60,advanced
+983,inclusive,26,advanced
+984,income bracket,40,advanced
+985,income equality,40,advanced
+986,incompetent,34,advanced
+987,incredible,36,advanced
+988,increment,6,advanced
+989,incur debt,45,advanced
+990,indent,81,advanced
+991,indicate,79,advanced
+992,indigenous,28,advanced
+993,indistinguishable,68,advanced
+994,induce,15,advanced
+995,industrious,8,advanced
+996,infantry,39,advanced
+997,infect,53,advanced
+998,infer,79,advanced
+999,info,85,advanced
+1000,informal get-together,24,advanced
+1001,informant,87,advanced
+1002,informative,22,advanced
+1003,infrastructure,42,advanced
+1004,infringe,43,advanced
+1005,infringement,43,advanced
+1006,inherit,15,advanced
+1007,inheritance,15,advanced
+1008,injustice,42,advanced
+1009,insecure,8,advanced
+1010,insider dealer,43,advanced
+1011,insider dealing,43,advanced
+1012,insider trader,43,advanced
+1013,insider trading,43,advanced
+1014,insight,22,advanced
+1015,insolent,62,advanced
+1016,instance,79,advanced
+1017,instant messaging,48,advanced
+1018,in-store,34,advanced
+1019,instruct,101,advanced
+1020,instruction,101,advanced
+1021,instructive,101,advanced
+1022,insufferable,69,advanced
+1023,insulin,54,advanced
+1024,insurance scheme,51,advanced
+1025,integration,42,advanced
+1026,intelligentsia,89,advanced
+1027,intensively,1,advanced
+1028,interactive,56,advanced
+1029,interchangeable,68,advanced
+1030,interfere,90,advanced
+1031,inter-library loan,1,advanced
+1032,international observer,44,advanced
+1033,interplanetary travel,57,advanced
+1034,interpretation,20,advanced
+1035,intersection,98,advanced
+1036,Interstate,98,advanced
+1037,intervene,90,advanced
+1038,intervention,44,advanced
+1039,interview panel,6,advanced
+1040,intestate,15,advanced
+1041,intriguing,21,advanced
+1042,introvert,10,advanced
+1043,intuitive,8,advanced
+1044,invaluable,17,advanced
+1045,commas,81,advanced
+1046,invest in,7,advanced
+1047,inward investment,55,advanced
+1048,irritate,14,advanced
+1049,irritated,14,advanced
+1050,irritating,14,advanced
+1051,irritation,14,advanced
+1052,ISP,48,advanced
+1053,a press,50,advanced
+1054,issue a press statement,50,advanced
+1055,It just,73,advanced
+1056,italicise,81,advanced
+1057,italics,81,advanced
+1058,IVF,15,advanced
+1059,ivory tower,30,advanced
+1060,ivory trade,32,advanced
+1061,jargon,38,advanced
+1062,jaundiced,53,advanced
+1063,jet black,65,advanced
+1064,job ad,3,advanced
+1065,job,6,advanced
+1066,job-share,5,advanced
+1067,job stability,6,advanced
+1068,join,24,advanced
+1069,jot down,81,advanced
+1070,jubilant,13,advanced
+1071,jump red light,25,advanced
+1072,jungle,93,advanced
+1073,junk mail,48,advanced
+1074,justify,42,advanced
+1075,keep a pledge,76,advanced
+1076,keep a promise,76,advanced
+1077,keep aresolution,76,advanced
+1078,keep,76,advanced
+1079,keep in stock,7,advanced
+1080,keep ona tight rein,93,advanced
+1081,key to success,30,advanced
+1082,keyhole surgery,57,advanced
+1083,kindred spirit,11,advanced
+1084,kitty-corner,98,advanced
+1085,knock around with,19,advanced
+1086,knock off,5,advanced
+1087,know a subject inside out,1,advanced
+1088,labyrinth,59,advanced
+1089,lame,74,advanced
+1090,lament,77,advanced
+1091,last resort,44,advanced
+1092,latest fashion,17,advanced
+1093,laud,75,advanced
+1094,laudable,75,advanced
+1095,laudatory,75,advanced
+1096,launch a campaign,93,advanced
+1097,launch party,19,advanced
+1098,launder,43,advanced
+1099,law-abiding,43,advanced
+1100,law-breaker,43,advanced
+1101,lawn,16,advanced
+1102,lay down the law,43,advanced
+1103,lay off,95,advanced
+1104,lead a sheltered,18,advanced
+1105,leadateam,3,advanced
+1106,leader,47,advanced
+1107,leadership qualities,3,advanced
+1108,league table,2,advanced
+1109,learn by heart,1,advanced
+1110,leave other things standing,49,advanced
+1111,leaving do,19,advanced
+1112,legislation,41,advanced
+1113,lengthy,60,advanced
+1114,lentil,54,advanced
+1115,letting agency,7,advanced
+1116,level playing field,54,advanced
+1117,lexicon,89,advanced
+1118,life in the fast line,18,advanced
+1119,life savings,46,advanced
+1120,lifelong education,2,advanced
+1121,light industry,55,advanced
+1122,light up your life,93,advanced
+1123,lightweight,22,advanced
+1124,likelihood,70,advanced
+1125,like-minded,87,advanced
+1126,line manager,4,advanced
+1127,lingering,60,advanced
+1128,linguistic,89,advanced
+1129,lisp,84,advanced
+1130,literacy,40,advanced
+1131,literal,38,advanced
+1132,live from hand to mouth,40,advanced
+1133,aload of,82,advanced
+1134,loads of,82,advanced
+1135,loanword,89,advanced
+1136,loathing,14,advanced
+1137,loathsome,14,advanced
+1138,lock yourself away,16,advanced
+1139,locum,51,advanced
+1140,lodge,43,advanced
+1141,long-term,6,advanced
+1142,look green,65,advanced
+1143,look out,90,advanced
+1144,spectacles,77,advanced
+1145,look to work in,6,advanced
+1146,lookout,90,advanced
+1147,lost for words,38,advanced
+1148,lout,100,advanced
+1149,love at first sight,11,advanced
+1150,lowbrow,21,advanced
+1151,low-cost airline,26,advanced
+1152,low-dose,53,advanced
+1153,taxes,45,advanced
+1154,low-tech,55,advanced
+1155,low-technology,55,advanced
+1156,loyalty,12,advanced
+1157,lucrative,"7,16",advanced
+1158,ludicrous,92,advanced
+1159,lugubrious,22,advanced
+1160,lumbering,64,advanced
+1161,lurch,61,advanced
+1162,made-to-measure,17,advanced
+1163,magnetic personality,8,advanced
+1164,major,98,advanced
+1165,make a big thing of,82,advanced
+1166,make a note of,81,advanced
+1167,make a pledge,76,advanced
+1168,make a promise,76,advanced
+1169,make a resolution,76,advanced
+1170,make ends meet,46,advanced
+1171,make eye contact,4,advanced
+1172,make up,80,advanced
+1173,make to,75,advanced
+1174,make yourself at home,18,advanced
+1175,male,99,advanced
+1176,malnourished,40,advanced
+1177,malnourishment,40,advanced
+1178,malnutrition,40,advanced
+1179,mammal,32,advanced
+1180,man your own,11,advanced
+1181,manageable,87,advanced
+1182,managerial experience,3,advanced
+1183,manner,62,advanced
+1184,manufacturing,28,advanced
+1185,manuscript,81,advanced
+1186,march,42,advanced
+1187,marketing strategy,93,advanced
+1188,marsupial,32,advanced
+1189,masculine,99,advanced
+1190,amass of,82,advanced
+1191,masterpiece,20,advanced
+1192,mature student,2,advanced
+1193,possible,82,advanced
+1194,meander,61,advanced
+1195,mechanical,5,advanced
+1196,media attention,50,advanced
+1197,media coverage,50,advanced
+1198,media hype,50,advanced
+1199,media reports,50,advanced
+1200,medieval,39,advanced
+1201,meet deadline,5,advanced
+1202,meet with,78,advanced
+1203,mega-city,57,advanced
+1204,memoir,22,advanced
+1205,memorable,20,advanced
+1206,memorise,1,advanced
+1207,merchandise,7,advanced
+1208,merchant,39,advanced
+1209,merger,7,advanced
+1210,metabolism,54,advanced
+1211,metaphor,93,advanced
+1212,metaphorical,38,advanced
+1213,methodical,8,advanced
+1214,migrant,28,advanced
+1215,migrate,32,advanced
+1216,migration,39,advanced
+1217,military jargon,38,advanced
+1218,map,1,advanced
+1219,mind you,97,advanced
+1220,minority,42,advanced
+1221,misbehave,86,advanced
+1222,miscast,20,advanced
+1223,miserable,14,advanced
+1224,mistrust,44,advanced
+1225,misuse,86,advanced
+1226,mnemonic,1,advanced
+1227,modality,38,advanced
+1228,modest,10,advanced
+1229,module,98,advanced
+1230,moist,90,advanced
+1231,moisten,87,advanced
+1232,monarch,39,advanced
+1233,monetary union,45,advanced
+1234,money launderer,43,advanced
+1235,laundering,43,advanced
+1236,money-minded,87,advanced
+1237,monitor,58,advanced
+1238,mono-,88,advanced
+1239,monotonous,5,advanced
+1240,more or less,83,advanced
+1241,morpheme,38,advanced
+1242,morphology,38,advanced
+1243,mot juste,38,advanced
+1244,motel,88,advanced
+1245,motif,21,advanced
+1246,mourn,77,advanced
+1247,mourning,15,advanced
+1248,move the goalposts,54,advanced
+1249,movement,42,advanced
+1250,muggy,29,advanced
+1251,multinational,55,advanced
+1252,multiple,71,advanced
+1253,must-have item,17,advanced
+1254,mutual,11,advanced
+1255,mutual acquaintance,11,advanced
+1256,my cup tea,23,advanced
+1257,myself included,82,advanced
+1258,nagging ache,52,advanced
+1259,nanotechnology,57,advanced
+1260,national carrier,26,advanced
+1261,nationalisation,55,advanced
+1262,nationwide,34,advanced
+1263,NATO,85,advanced
+1264,natural habitat,32,advanced
+1265,nature reserve,27,advanced
+1266,nauseous,52,advanced
+1267,neck and neck,54,advanced
+1268,negate,79,advanced
+1269,negotiation,42,advanced
+1270,nervous,70,advanced
+1271,netiquette,62,advanced
+1272,networking,19,advanced
+1273,never hair out of place,9,advanced
+1274,recruit,4,advanced
+1275,newsgroup,48,advanced
+1276,newsletter,47,advanced
+1277,newsworthy,87,advanced
+1278,next of kin,101,advanced
+1279,niche market,7,advanced
+1280,night shift,5,advanced
+1281,nip in the bud,31,advanced
+1282,nit-picking,14,advanced
+1283,no intended,82,advanced
+1284,nobility,39,advanced
+1285,no frills,17,advanced
+1286,noiseless,63,advanced
+1287,noiselessly,63,advanced
+1288,non-refundable,26,advanced
+1289,Norman,89,advanced
+1290,nostalgia,77,advanced
+1291,not enough to swing cat,59,advanced
+1292,not the most,82,advanced
+1293,nothing to write home about,18,advanced
+1294,notice period,4,advanced
+1295,notifiable,101,advanced
+1296,notification,101,advanced
+1297,notify,101,advanced
+1298,notwithstanding,79,advanced
+1299,now then,97,advanced
+1300,nuclear,58,advanced
+1301,nuclear family,57,advanced
+1302,nutrition,54,advanced
+1303,nutritious,54,advanced
+1304,oath,76,advanced
+1305,oatmeal,54,advanced
+1306,obituary,47,advanced
+1307,objective,36,advanced
+1308,obligation,70,advanced
+1309,obliging,34,advanced
+1310,obnoxious,14,advanced
+1311,obsolete,38,advanced
+1312,obstacle,69,advanced
+1313,obstetrician,51,advanced
+1314,obstinate,"8,10",advanced
+1315,obstructive,69,advanced
+1316,occupant,87,advanced
+1317,off the hook,69,advanced
+1318,off-colour,52,advanced
+1319,offensive material,48,advanced
+1320,offer someone the position,4,advanced
+1321,off-putting,24,advanced
+1322,offshore,58,advanced
+1323,oil well,58,advanced
+1324,-ology,88,advanced
+1325,ona shoestring,17,advanced
+1326,onme,24,advanced
+1327,the High Street,17,advanced
+1328,onthe house,18,advanced
+1329,onthe mend,52,advanced
+1330,ontrend,17,advanced
+1331,once ina blue moon,60,advanced
+1332,one-to-one,2,advanced
+1333,online application,3,advanced
+1334,online journalism,50,advanced
+1335,onshore,58,advanced
+1336,on-the-spot,25,advanced
+1337,Op-art,21,advanced
+1338,open doors,30,advanced
+1339,open resources,1,advanced
+1340,ophthalmologist,51,advanced
+1341,opponent,92,advanced
+1342,opportunistic,8,advanced
+1343,opposite number,5,advanced
+1344,optional,70,advanced
+1345,opulent,49,advanced
+1346,orso,83,advanced
+1347,or something,83,advanced
+1348,or words to that effect,83,advanced
+1349,organ,51,advanced
+1350,orthography,38,advanced
+1351,ostentatious,14,advanced
+1352,out-,86,advanced
+1353,out of touch,77,advanced
+1354,outbreak,90,advanced
+1355,outdo,90,advanced
+1356,outfit,17,advanced
+1357,outgoing,10,advanced
+1358,outlaw,72,advanced
+1359,outline,4,advanced
+1360,outnumber,86,advanced
+1361,outrun,90,advanced
+1362,outstay your welcome,19,advanced
+1363,outweigh,86,advanced
+1364,ovenproof,87,advanced
+1365,over-,90,advanced
+1366,over the hill,60,advanced
+1367,over moon,13,advanced
+1368,the worst,52,advanced
+1369,overalls,17,advanced
+1370,overdo it,24,advanced
+1371,overjoyed,70,advanced
+1372,overlap,79,advanced
+1373,overnight,86,advanced
+1374,overrated,86,advanced
+1375,overstep the mark,86,advanced
+1376,overthrow,44,advanced
+1377,overturn,43,advanced
+1378,overworked and underpaid,6,advanced
+1379,packed in like sardines,59,advanced
+1380,paediatrician,51,advanced
+1381,pagan times,37,advanced
+1382,page-turner,22,advanced
+1383,paid leave,4,advanced
+1384,pamper,49,advanced
+1385,pamphlet,47,advanced
+1386,pan,20,advanced
+1387,paparazzi,50,advanced
+1388,paradise,27,advanced
+1389,pardon,74,advanced
+1390,parental control,48,advanced
+1391,parsimonious,8,advanced
+1392,part with,7,advanced
+1393,participant,16,advanced
+1394,particle,53,advanced
+1395,party animal,19,advanced
+1396,pass away,15,advanced
+1397,passon,15,advanced
+1398,pass over,15,advanced
+1399,past history,53,advanced
+1400,past it,60,advanced
+1401,pastel,65,advanced
+1402,pat someone on the back,75,advanced
+1403,paternity leave,6,advanced
+1404,pay dividends,93,advanced
+1405,pay someone acompliment,75,advanced
+1406,pay tribute to,75,advanced
+1407,and quiet,63,advanced
+1408,peace treaty,74,advanced
+1409,peacekeeping force,44,advanced
+1410,peasant,39,advanced
+1411,peerless,21,advanced
+1412,penalty points,25,advanced
+1413,pensioner,15,advanced
+1414,penthouse,18,advanced
+1415,penury,40,advanced
+1416,perceive,79,advanced
+1417,performance-related,6,advanced
+1418,perjurer,43,advanced
+1419,perk,6,advanced
+1420,perpetuate,2,advanced
+1421,persecution,35,advanced
+1422,persistent,60,advanced
+1423,perversion,43,advanced
+1424,pervert the of justice,43,advanced
+1425,pet aversion,14,advanced
+1426,petition,41,advanced
+1427,-phon-,88,advanced
+1428,phoneme,38,advanced
+1429,phonology,38,advanced
+1430,pictogram,38,advanced
+1431,piecework,55,advanced
+1432,pile-up,25,advanced
+1433,pipeline,58,advanced
+1434,pitch black,65,advanced
+1435,pitfall,69,advanced
+1436,pithy,8,advanced
+1437,placate,13,advanced
+1438,placenta,15,advanced
+1439,plagiarism,1,advanced
+1440,plagiarism form,1,advanced
+1441,plain-clothes police,35,advanced
+1442,plaque,54,advanced
+1443,plaudit,75,advanced
+1444,plausible,36,advanced
+1445,plummet,66,advanced
+1446,plunge,66,advanced
+1447,poacher,32,advanced
+1448,poignant,22,advanced
+1449,polar ice,33,advanced
+1450,police,35,advanced
+1451,political,29,advanced
+1452,polysemy,91,advanced
+1453,ponderous,64,advanced
+1454,poo,53,advanced
+1455,the poor,40,advanced
+1456,poorly,52,advanced
+1457,pop,66,advanced
+1458,population explosion,57,advanced
+1459,pop-up,49,advanced
+1460,porridge,54,advanced
+1461,port of entry,35,advanced
+1462,portfolio,1,advanced
+1463,portray,21,advanced
+1464,portrayal,20,advanced
+1465,pose adanger,54,advanced
+1466,posit,80,advanced
+1467,position,3,advanced
+1468,post-colonial,39,advanced
+1469,postgraduate,2,advanced
+1470,posthumous,74,advanced
+1471,pouch,32,advanced
+1472,pound,63,advanced
+1473,poverty line,40,advanced
+1474,poverty-stricken,40,advanced
+1475,power-hungry,58,advanced
+1476,praise to the skies,75,advanced
+1477,praiseworthy,87,advanced
+1478,pre-,88,advanced
+1479,precedent,43,advanced
+1480,precious commodity,33,advanced
+1481,precipitate,67,advanced
+1482,precisely,78,advanced
+1483,pre-colonial,39,advanced
+1484,predator,32,advanced
+1485,predictable,87,advanced
+1486,predominant,79,advanced
+1487,prescription,51,advanced
+1488,prescription charge,51,advanced
+1489,present,41,advanced
+1490,present excepted,82,advanced
+1491,preservative,23,advanced
+1492,press on,95,advanced
+1493,presume,36,advanced
+1494,pretext,74,advanced
+1495,previous experience,3,advanced
+1496,previous role,3,advanced
+1497,priceless,21,advanced
+1498,primary care,51,advanced
+1499,primary colour,65,advanced
+1500,primitive,21,advanced
+1501,principled,8,advanced
+1502,print journalism,50,advanced
+1503,pristine environment,33,advanced
+1504,privacy policy,34,advanced
+1505,privatisation,55,advanced
+1506,problematic,69,advanced
+1507,procrastinate,86,advanced
+1508,procreate,86,advanced
+1509,produce,67,advanced
+1510,product of its time,22,advanced
+1511,productive,87,advanced
+1512,professional development,4,advanced
+1513,profitably,93,advanced
+1514,prognosis,53,advanced
+1515,programmer,5,advanced
+1516,project,1,advanced
+1517,projected figures,71,advanced
+1518,proliferate,86,advanced
+1519,prolong,60,advanced
+1520,promise,76,advanced
+1521,promise someone the earth,76,advanced
+1522,promise someone the moon,76,advanced
+1523,promising,76,advanced
+1524,prophets of doom and gloom,33,advanced
+1525,proponent,36,advanced
+1526,proposition,7,advanced
+1527,prospectus,47,advanced
+1528,protagonist,22,advanced
+1529,protective clothing,17,advanced
+1530,protest,73,advanced
+1531,protracted,60,advanced
+1532,proven,49,advanced
+1533,provide the key to,30,advanced
+1534,prune,31,advanced
+1535,psychiatrist,51,advanced
+1536,PTO,85,advanced
+1537,public-private partnership,55,advanced
+1538,purchasing power,7,advanced
+1539,pursue,42,advanced
+1540,pursue policies,45,advanced
+1541,put down roots,31,advanced
+1542,forward,95,advanced
+1543,put good money on,76,advanced
+1544,put on oath,76,advanced
+1545,put,49,advanced
+1546,put in a straitjacket,17,advanced
+1547,put together,95,advanced
+1548,put under oath,76,advanced
+1549,put you on hold,34,advanced
+1550,put your foot init,38,advanced
+1551,put your own gloss on,50,advanced
+1552,spin,50,advanced
+1553,quadruple,71,advanced
+1554,quash,43,advanced
+1555,query,34,advanced
+1556,quite afew,83,advanced
+1557,quotation marks,81,advanced
+1558,quotes,81,advanced
+1559,race,66,advanced
+1560,radiant,49,advanced
+1561,radicalise,36,advanced
+1562,rainfall,28,advanced
+1563,raise a family,92,advanced
+1564,raise your eyebrows,62,advanced
+1565,raise your,92,advanced
+1566,raise your voice,84,advanced
+1567,ramble,27,advanced
+1568,rapport,5,advanced
+1569,raucous,37,advanced
+1570,reach a settlement,78,advanced
+1571,react,36,advanced
+1572,reactionary,36,advanced
+1573,readership,22,advanced
+1574,really must object to,73,advanced
+1575,the real thing,92,advanced
+1576,reap the rewards,31,advanced
+1577,reap what you sowed,31,advanced
+1578,rear,59,advanced
+1579,recharge,27,advanced
+1580,reckless,25,advanced
+1581,reconsider,86,advanced
+1582,recover from,52,advanced
+1583,recover along decline,45,advanced
+1584,rectifiable,101,advanced
+1585,rectification,101,advanced
+1586,rectify,101,advanced
+1587,red-carpet treatment,65,advanced
+1588,redden,87,advanced
+1589,reddish brown,65,advanced
+1590,redevelop,86,advanced
+1591,red-letter day,65,advanced
+1592,refer,51,advanced
+1593,reflect,79,advanced
+1594,regard,11,advanced
+1595,regime change,44,advanced
+1596,reign of terror,100,advanced
+1597,reiterate,80,advanced
+1598,rejoice,13,advanced
+1599,-related,87,advanced
+1600,relative poverty,40,advanced
+1601,relocate,55,advanced
+1602,remember rightly,92,advanced
+1603,remonstrance,73,advanced
+1604,remonstrate,73,advanced
+1605,remorse,77,advanced
+1606,renew,37,advanced
+1607,renewable energy,"33,58",advanced
+1608,repay debt,45,advanced
+1609,repeatedly,60,advanced
+1610,repent,74,advanced
+1611,repentance,74,advanced
+1612,repetitive,5,advanced
+1613,reporting structure,4,advanced
+1614,reptile,32,advanced
+1615,reputation,92,advanced
+1616,resistance,36,advanced
+1617,reskill,55,advanced
+1618,resolute,8,advanced
+1619,resolution,76,advanced
+1620,restless,10,advanced
+1621,restricted,35,advanced
+1622,restricted goods,35,advanced
+1623,restriction,26,advanced
+1624,restrictive practice,45,advanced
+1625,rethink,86,advanced
+1626,retrain,55,advanced
+1627,retro-,88,advanced
+1628,revaluation,45,advanced
+1629,revealing,17,advanced
+1630,revise upwards,71,advanced
+1631,rewarding,16,advanced
+1632,the rich,40,advanced
+1633,-rich,87,advanced
+1634,right of way,25,advanced
+1635,ring out,63,advanced
+1636,ripe old,15,advanced
+1637,rising sea levels,33,advanced
+1638,rival,44,advanced
+1639,roadworthy,25,advanced
+1640,roasting,29,advanced
+1641,rock-bottom,49,advanced
+1642,rocket,66,advanced
+1643,rodent,32,advanced
+1644,rollin it,46,advanced
+1645,root,31,advanced
+1646,of aproblem,31,advanced
+1647,rooted,31,advanced
+1648,roots of atradition,31,advanced
+1649,roster,89,advanced
+1650,rote-learning,1,advanced
+1651,round something down,71,advanced
+1652,router,56,advanced
+1653,RSVP,85,advanced
+1654,rub shoulders with,19,advanced
+1655,rue,77,advanced
+1656,rule of thumb,93,advanced
+1657,ruler,39,advanced
+1658,run into six figures,71,advanced
+1659,run,94,advanced
+1660,run off,81,advanced
+1661,run-of-the-mill,21,advanced
+1662,run out,"6,90",advanced
+1663,rush into,95,advanced
+1664,safety,90,advanced
+1665,safety-conscious,87,advanced
+1666,salary expectations,3,advanced
+1667,sanction,45,advanced
+1668,sanitation,40,advanced
+1669,sapphire,65,advanced
+1670,satellite communications,56,advanced
+1671,satisfying,5,advanced
+1672,SATNAV,56,advanced
+1673,savage,32,advanced
+1674,savour,27,advanced
+1675,savoury,24,advanced
+1676,say when,24,advanced
+1677,scarlet,65,advanced
+1678,scatter ashes,15,advanced
+1679,scattered,59,advanced
+1680,scavenger,32,advanced
+1681,scenic,27,advanced
+1682,scheduled,26,advanced
+1683,scholarship,2,advanced
+1684,school of art,21,advanced
+1685,schooling,2,advanced
+1686,sci-fi,85,advanced
+1687,scoop,50,advanced
+1688,score an own goal,54,advanced
+1689,scorn,14,advanced
+1690,scornful,14,advanced
+1691,ascrap of,82,advanced
+1692,scrawny,9,advanced
+1693,screen out,48,advanced
+1694,scribble,81,advanced
+1695,scrupulously honest,12,advanced
+1696,scrutinise,41,advanced
+1697,scuttle,66,advanced
+1698,search warrant,35,advanced
+1699,sec,60,advanced
+1700,secondary care,51,advanced
+1701,secondary school,98,advanced
+1702,transactions,34,advanced
+1703,security forces,35,advanced
+1704,see eye toeye,12,advanced
+1705,see red,65,advanced
+1706,see the light,93,advanced
+1707,seeds of revolution,31,advanced
+1708,seeds of success,31,advanced
+1709,seek acareerin,6,advanced
+1710,seek publicity,50,advanced
+1711,seek something out of the ordinary,27,advanced
+1712,seesaw,71,advanced
+1713,Select Committee,41,advanced
+1714,selective,2,advanced
+1715,self-conscious,10,advanced
+1716,self-employed,5,advanced
+1717,self-esteem,10,advanced
+1718,server,48,advanced
+1719,service industry,55,advanced
+1720,servile,75,advanced
+1721,set a precedent,43,advanced
+1722,set out,41,advanced
+1723,setup,90,advanced
+1724,setup account,34,advanced
+1725,settle in,95,advanced
+1726,settlement,78,advanced
+1727,shaded box,81,advanced
+1728,shadowy,21,advanced
+1729,shameful,73,advanced
+1730,shared cabin,26,advanced
+1731,sharp-tongued,8,advanced
+1732,shed employees,31,advanced
+1733,shed inhibitions,31,advanced
+1734,shed jobs,31,advanced
+1735,shed weight,31,advanced
+1736,shed worries,31,advanced
+1737,sheer,13,advanced
+1738,sheer bliss,13,advanced
+1739,shelter,40,advanced
+1740,shocking pink,65,advanced
+1741,shoot a goal,100,advanced
+1742,shop around,7,advanced
+1743,shopaholic,16,advanced
+1744,short-term,6,advanced
+1745,shortlist,4,advanced
+1746,shower praise on,75,advanced
+1747,shrewd,8,advanced
+1748,shrinking habitat,33,advanced
+1749,shrivel,31,advanced
+1750,shrug your shoulders,9,advanced
+1751,shut doors,30,advanced
+1752,shuttle bus,26,advanced
+1753,sidle,66,advanced
+1754,siege,44,advanced
+1755,sift,64,advanced
+1756,silent film,63,advanced
+1757,silent movie,63,advanced
+1758,simultaneous,60,advanced
+1759,since the year dot,60,advanced
+1760,single currency,45,advanced
+1761,Sir Madam,3,advanced
+1762,site index,34,advanced
+1763,sizzle,63,advanced
+1764,skate around,54,advanced
+1765,skeleton staff,6,advanced
+1766,sketchy,21,advanced
+1767,skilful,21,advanced
+1768,skillet,98,advanced
+1769,skint,46,advanced
+1770,sky-writing,49,advanced
+1771,slag off,84,advanced
+1772,slate,20,advanced
+1773,slaughtered,15,advanced
+1774,slavery,39,advanced
+1775,slog,69,advanced
+1776,slog your guts out,69,advanced
+1777,slogan,42,advanced
+1778,slump,66,advanced
+1779,slur,84,advanced
+1780,small letters,81,advanced
+1781,smart building,57,advanced
+1782,smart home,57,advanced
+1783,smart ID card,56,advanced
+1784,smart-casual,17,advanced
+1785,smartphone,56,advanced
+1786,smattering,83,advanced
+1787,smidgen,83,advanced
+1788,smirk,62,advanced
+1789,sniff at something,62,advanced
+1790,snort,62,advanced
+1791,snowed under,29,advanced
+1792,soar,66,advanced
+1793,sober,8,advanced
+1794,social context,40,advanced
+1795,social housing,18,advanced
+1796,social networking site,48,advanced
+1797,socialise,19,advanced
+1798,something along those lines,83,advanced
+1799,somewhere in the region of,83,advanced
+1800,sophisticated,21,advanced
+1801,sophomore,98,advanced
+1802,soulmate,11,advanced
+1803,sound your horn,25,advanced
+1804,soundbite,50,advanced
+1805,space tourism,57,advanced
+1806,spacious,59,advanced
+1807,spark,67,advanced
+1808,speak up,4,advanced
+1809,Speaker,41,advanced
+1810,special needs education,2,advanced
+1811,spectacle,37,advanced
+1812,spectacular,37,advanced
+1813,speechless,38,advanced
+1814,speed camera,35,advanced
+1815,speed up,66,advanced
+1816,spice up,23,advanced
+1817,spine,51,advanced
+1818,split the bill,24,advanced
+1819,spokesperson,99,advanced
+1820,sporty,54,advanced
+1821,spot check,35,advanced
+1822,spread out,59,advanced
+1823,sproutup,31,advanced
+1824,squabble,84,advanced
+1825,squat,18,advanced
+1826,squeak,63,advanced
+1827,squirm,62,advanced
+1828,stacks,83,advanced
+1829,stag party,19,advanced
+1830,stagger,61,advanced
+1831,staggeringly,61,advanced
+1832,stalking,43,advanced
+1833,stammer,84,advanced
+1834,stand on ceremony,62,advanced
+1835,stand out,3,advanced
+1836,stand out in the crowd,49,advanced
+1837,standing ovation,"20,",advanced
+1838,start date,4,advanced
+1839,start-up,7,advanced
+1840,state ownership,55,advanced
+1841,state-of-the-art,49,advanced
+1842,staunch ally,12,advanced
+1843,stay on,95,advanced
+1844,stem,31,advanced
+1845,stem from,67,advanced
+1846,stew in your own juice,23,advanced
+1847,sticky,69,advanced
+1848,stiff neck,52,advanced
+1849,stimulating,5,advanced
+1850,sting,52,advanced
+1851,stingy,8,advanced
+1852,stock market,46,advanced
+1853,stocks and shares,46,advanced
+1854,stop and search,35,advanced
+1855,stopover,26,advanced
+1856,store card,46,advanced
+1857,storm of abuse,29,advanced
+1858,stout,9,advanced
+1859,stove,98,advanced
+1860,straitlaced,62,advanced
+1861,strapped for cash,46,advanced
+1862,strategy,93,advanced
+1863,stray,32,advanced
+1864,stress-free,87,advanced
+1865,stress-related,87,advanced
+1866,strong colours,65,advanced
+1867,strut,61,advanced
+1868,stuck behind a desk,5,advanced
+1869,stuck in arut,5,advanced
+1870,student loan,2,advanced
+1871,student-led,87,advanced
+1872,stumble,61,advanced
+1873,stumbling block,69,advanced
+1874,subject matter,21,advanced
+1875,subjective,36,advanced
+1876,subscribe,48,advanced
+1877,subsequently,97,advanced
+1878,substandard,34,advanced
+1879,substantive,41,advanced
+1880,subsume,80,advanced
+1881,subtitle,81,advanced
+1882,successor,39,advanced
+1883,succinct,38,advanced
+1884,suck to,75,advanced
+1885,sue,43,advanced
+1886,suffer from,52,advanced
+1887,suicide bomber,44,advanced
+1888,suit of armour,39,advanced
+1889,sullen,24,advanced
+1890,sultry,29,advanced
+1891,summarise,80,advanced
+1892,sumptuous,49,advanced
+1893,sunny disposition,29,advanced
+1894,super-rich,40,advanced
+1895,superscript,81,advanced
+1896,superstitious,37,advanced
+1897,supervisor,"4,99",advanced
+1898,supplement,47,advanced
+1899,supportive,"7,12",advanced
+1900,surf the web,48,advanced
+1901,Surrealism,21,advanced
+1902,Surrealist,21,advanced
+1903,surveillance,35,advanced
+1904,suspicion,35,advanced
+1905,sustainable development,45,advanced
+1906,swallow up,7,advanced
+1907,swarthy,9,advanced
+1908,swear an oath,76,advanced
+1909,swear word,76,advanced
+1910,sweatshop,55,advanced
+1911,sweeten,87,advanced
+1912,sweltering,29,advanced
+1913,swiftly,92,advanced
+1914,switch production,55,advanced
+1915,sworn enemy,12,advanced
+1916,syllabus,2,advanced
+1917,sympathetic,89,advanced
+1918,symptom,53,advanced
+1919,symptomatic,53,advanced
+1920,syntax,38,advanced
+1921,tabby,89,advanced
+1922,tablet,56,advanced
+1923,taciturn,10,advanced
+1924,tactic,93,advanced
+1925,tactless,8,advanced
+1926,take a left,98,advanced
+1927,takeastep,61,advanced
+1928,take great exception to,73,advanced
+1929,take in your stride,61,advanced
+1930,take on,4,advanced
+1931,take pot luck,24,advanced
+1932,take root,45,advanced
+1933,take something as a compliment,75,advanced
+1934,take something with a pinch of salt,36,advanced
+1935,take the law into your own hands,43,advanced
+1936,take you back to,77,advanced
+1937,take your life in your hands,18,advanced
+1938,talk behind,12,advanced
+1939,talk shop,5,advanced
+1940,talk someone through,4,advanced
+1941,talkative,8,advanced
+1942,tally,78,advanced
+1943,tantalisingly,49,advanced
+1944,tantamount,68,advanced
+1945,tap useful,50,advanced
+1946,tap your fingers,9,advanced
+1947,team player,3,advanced
+1948,teamwork,6,advanced
+1949,techie,56,advanced
+1950,technical,56,advanced
+1951,technically,56,advanced
+1952,technician,5,advanced
+1953,techno-,88,advanced
+1954,technological,56,advanced
+1955,technologically,56,advanced
+1956,tedious,20,advanced
+1957,teetotal,24,advanced
+1958,telemarketing,7,advanced
+1959,telesales,7,advanced
+1960,tenet,36,advanced
+1961,terror,100,advanced
+1962,terse,8,advanced
+1963,tertiary,2,advanced
+1964,test tube baby,15,advanced
+1965,that kind of thing,83,advanced
+1966,therapeutic,16,advanced
+1967,thereby,79,advanced
+1968,thesis,1,advanced
+1969,thicken,64,advanced
+1970,thin out,64,advanced
+1971,things bit tight,46,advanced
+1972,the thing is,82,advanced
+1973,things like that,83,advanced
+1974,thingumibob,82,advanced
+1975,thingumijig,82,advanced
+1976,thingummy,82,advanced
+1977,thingy,97,advanced
+1978,think back,77,advanced
+1979,thinking back,77,advanced
+1980,This is just,73,advanced
+1981,thought-provoking,21,advanced
+1982,threefold,71,advanced
+1983,the three Rs,2,advanced
+1984,thrilled to bits,13,advanced
+1985,throb,52,advanced
+1986,throbbing ache,52,advanced
+1987,through the back door,30,advanced
+1988,through train,26,advanced
+1989,throw somebody completely,94,advanced
+1990,throw yourself into,95,advanced
+1991,thug,100,advanced
+1992,thunderous,29,advanced
+1993,thunderous applause,29,advanced
+1994,thundery,29,advanced
+1995,power,58,advanced
+1996,tight schedule,5,advanced
+1997,tighten your belt,40,advanced
+1998,till the home,60,advanced
+1999,time-conscious,87,advanced
+2000,t ime-consuming,16,advanced
+2001,t inge,65,advanced
+2002,t iptoe,61,advanced
+2003,t itle,81,advanced
+2004,t itter,62,advanced
+2005,be fed the back teeth,94,advanced
+2006,tolerant,8,advanced
+2007,toll,25,advanced
+2008,tongue-in-cheek,21,advanced
+2009,tongue-tied,84,advanced
+2010,tonic,89,advanced
+2011,toot,63,advanced
+2012,torture,69,advanced
+2013,tot things up,71,advanced
+2014,total flop,20,advanced
+2015,totter,66,advanced
+2016,touch upon,80,advanced
+2017,touchscreen,56,advanced
+2018,touch-type,81,advanced
+2019,tourist sector,27,advanced
+2020,tow-away zone,25,advanced
+2021,tower above,30,advanced
+2022,tower block,18,advanced
+2023,of strength,30,advanced
+2024,toxic waste,33,advanced
+2025,trace back to,37,advanced
+2026,tract,27,advanced
+2027,trade down,7,advanced
+2028,trade union representation,55,advanced
+2029,trade war,45,advanced
+2030,traffic warden,35,advanced
+2031,traffic-light labelling,23,advanced
+2032,trailer,49,advanced
+2033,trainee,4,advanced
+2034,tramp,61,advanced
+2035,trample,61,advanced
+2036,transient,60,advanced
+2037,transparent,21,advanced
+2038,traumatic,69,advanced
+2039,treaty,74,advanced
+2040,trek,27,advanced
+2041,tremble,52,advanced
+2042,trend-setter,17,advanced
+2043,trespass,43,advanced
+2044,trespassing,43,advanced
+2045,trialrun,4,advanced
+2046,tricky,69,advanced
+2047,trigger,79,advanced
+2048,triumph,50,advanced
+2049,truce,74,advanced
+2050,trudge,61,advanced
+2051,true friend,12,advanced
+2052,truthful,12,advanced
+2053,tuition fees,2,advanced
+2054,tumble,66,advanced
+2055,turban,89,advanced
+2056,turn green,65,advanced
+2057,turn over a new leaf,76,advanced
+2058,turquoise,65,advanced
+2059,TV shopping channel,7,advanced
+2060,twist your ankle,52,advanced
+2061,twitch,62,advanced
+2062,twofold,71,advanced
+2063,typecast,20,advanced
+2064,typeface,81,advanced
+2065,typescript,81,advanced
+2066,tyrannical,44,advanced
+2067,tyre tread,25,advanced
+2068,ultimately,41,advanced
+2069,umpteen,82,advanced
+2070,unacceptable,92,advanced
+2071,unapproachable,10,advanced
+2072,uncontrolled,33,advanced
+2073,unconvincing,20,advanced
+2074,uncooperative,34,advanced
+2075,under acloud,29,advanced
+2076,under guarantee,34,advanced
+2077,under pressure,4,advanced
+2078,under warranty,34,advanced
+2079,undercover police,35,advanced
+2080,undergraduate,2,advanced
+2081,undermine,86,advanced
+2082,underscore,80,advanced
+2083,understaffed,86,advanced
+2084,understated,20,advanced
+2085,unfurnished,18,advanced
+2086,uniform,17,advanced
+2087,uninspiring,21,advanced
+2088,unity,42,advanced
+2089,university-led,87,advanced
+2090,unkempt,9,advanced
+2091,unlimited mileage,26,advanced
+2092,unprecedented,61,advanced
+2093,unprocessed,23,advanced
+2094,unquestionably,70,advanced
+2095,unrest,44,advanced
+2096,unrivalled,27,advanced
+2097,unscrupulous,8,advanced
+2098,unstimulating,21,advanced
+2099,unstinting,8,advanced
+2100,unsupportive,12,advanced
+2101,unsurpassed,49,advanced
+2102,unswerving loyalty,12,advanced
+2103,untruthful,12,advanced
+2104,against it,69,advanced
+2105,up to your neck,69,advanced
+2106,up-and-coming,20,advanced
+2107,upper deck,26,advanced
+2108,up-to-the-minute,17,advanced
+2109,upturn,86,advanced
+2110,urge on,95,advanced
+2111,usage,38,advanced
+2112,USB,85,advanced
+2113,useless,92,advanced
+2114,uterus,15,advanced
+2115,utilise,"79,97",advanced
+2116,utter,13,advanced
+2117,utter bliss,13,advanced
+2118,vaccination certificate,35,advanced
+2119,vague memory,77,advanced
+2120,value for money,26,advanced
+2121,VAT,85,advanced
+2122,verbose,8,advanced
+2123,veto,72,advanced
+2124,viewpoint,36,advanced
+2125,Viking,89,advanced
+2126,violation,40,advanced
+2127,VIP,85,advanced
+2128,virgin,27,advanced
+2129,visit a website,92,advanced
+2130,visually literate,21,advanced
+2131,voluntary redundancy,6,advanced
+2132,vomiting,53,advanced
+2133,vow,76,advanced
+2134,wage waron,44,advanced
+2135,wager,76,advanced
+2136,walk on air,13,advanced
+2137,warlord,39,advanced
+2138,warm-blooded,32,advanced
+2139,war-torn,45,advanced
+2140,water down,64,advanced
+2141,water security,33,advanced
+2142,waterfront,27,advanced
+2143,waterproof,87,advanced
+2144,wave power,58,advanced
+2145,wealth of,27,advanced
+2146,weaponry,44,advanced
+2147,webinar,88,advanced
+2148,wedding party,19,advanced
+2149,weed out,31,advanced
+2150,weigh on,64,advanced
+2151,weigh out,64,advanced
+2152,weigh up,64,advanced
+2153,weighed down,64,advanced
+2154,weighty,64,advanced
+2155,well-matched,11,advanced
+2156,well-qualified,1,advanced
+2157,well-balanced,10,advanced
+2158,whatchamacallit,82,advanced
+2159,whatnot,82,advanced
+2160,whatsername,97,advanced
+2161,whatsisname,97,advanced
+2162,whatsit,82,advanced
+2163,whinge,84,advanced
+2164,whingeing,73,advanced
+2165,whirlwind,29,advanced
+2166,whirlwind romance,29,advanced
+2167,white as a sheet,65,advanced
+2168,white-collar worker,65,advanced
+2169,white-knuckle,65,advanced
+2170,whiter than white,65,advanced
+2171,wholesome,23,advanced
+2172,open spaces,59,advanced
+2173,wide-ranging,41,advanced
+2174,wilt,31,advanced
+2175,wind up,84,advanced
+2176,window of opportunity,30,advanced
+2177,winds of change,29,advanced
+2178,winds of discontent,29,advanced
+2179,wine and dine,24,advanced
+2180,wireless,97,advanced
+2181,wiry,9,advanced
+2182,wish to complain about,73,advanced
+2183,with regard to,101,advanced
+2184,with the compliments of,101,advanced
+2185,withering,31,advanced
+2186,withering glance,31,advanced
+2187,withering look,31,advanced
+2188,withering remark,31,advanced
+2189,without amurmur,84,advanced
+2190,without value,17,advanced
+2191,witty,8,advanced
+2192,woman after your own heart,11,advanced
+2193,word stock,89,advanced
+2194,work like adream,94,advanced
+2195,worker-led,87,advanced
+2196,working relationship,5,advanced
+2197,work-life balance,6,advanced
+2198,workload,5,advanced
+2199,work-obsessed,8,advanced
+2200,workplace,6,advanced
+2201,worsen,87,advanced
+2202,worthless,21,advanced
+2203,-worthy,87,advanced
+2204,write down,81,advanced
+2205,wrongly,50,advanced
+2206,yearn,70,advanced
+2207,You must be,70,advanced
+2208,your other half,97,advanced
+2209,Yours faithfully,3,advanced
+2210,zero hours contract,55,advanced

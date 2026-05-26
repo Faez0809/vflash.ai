@@ -1,0 +1,411 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5004
+ * Running on http://192.168.0.104:5004
+Press CTRL+C to quit
+127.0.0.1 - - [26/May/2026 00:39:50] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:39:50] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:18] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:40:18] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:19] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:19] "GET /static/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:19] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:34] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:40:34] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:15] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:15] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:15] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:28] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:34] "POST /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:34] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 00:41:35] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:41:35] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:05] "POST /signup HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:42:05] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:06] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 00:42:06] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:20] "POST /login HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 00:42:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:21] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:22] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:22] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:22] "POST /quiz/warmup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:44] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:42:44] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:44] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:42:53] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:08] "GET /profile HTTP/1.1" 200 -
+C:\Users\faezm\OneDrive\Desktop\Vocabai\app\services\vocabulary_platform.py:297: SAWarning: Coercing Subquery object into a select() for use in IN(); please pass a select() construct explicitly
+  .filter(~VocabularyMaster.id.in_(_excluded_generated_or_learned_subquery(user_id)))
+C:\Users\faezm\OneDrive\Desktop\Vocabai\app\services\vocabulary_platform.py:349: SAWarning: Coercing Subquery object into a select() for use in IN(); please pass a select() construct explicitly
+  candidates = query.filter(~VocabularyMaster.id.in_(recent_seen)).order_by(func.random()).limit(max(count * 3, 18)).all()
+127.0.0.1 - - [26/May/2026 00:43:23] "POST /generate-words HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:43:23] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /flashcards/session/1 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:23] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:24] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:43:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:20] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:21] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:21] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:29] "GET /flashcards/session/1 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:45] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:55] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:44:57] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:44:57] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:07] "GET /flashcards/session/1 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:19] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:26] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:51] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:45:51] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:45:51] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:08] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /flashcards/session/1 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:09] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:21] "POST /usage/ping HTTP/1.1" 200 -
+[2026-05-26 00:46:42,147] ERROR in app: Exception on /usage/ping [POST]
+Traceback (most recent call last):
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: database is locked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\app\routes\dashboard.py", line 580, in usage_ping
+    db.session.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\scoping.py", line 597, in commit
+    return self._proxied.commit()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 121, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 85, in save_obj
+    _emit_update_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        update,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\faezm\OneDrive\Desktop\Vocabai\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) database is locked
+[SQL: UPDATE user_app_session SET last_active_at=?, active_seconds=?, interaction_count=? WHERE user_app_session.id = ?]
+[parameters: ('2026-05-25 18:46:36.483417', 255, 3112, 22)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+127.0.0.1 - - [26/May/2026 00:46:42] "POST /usage/ping HTTP/1.1" 500 -
+127.0.0.1 - - [26/May/2026 00:46:47] "POST /generate-words HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:47] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:48] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:46:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:47:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:47:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:47:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:47:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:02] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 00:48:02] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:02] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:03] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:30] "GET /search?q=raucous HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:51] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:48:52] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:49:06] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:49:21] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:49:36] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 00:49:51] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:05:53] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:05:53] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:05:53] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:05:54] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:05:55] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:00] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:03] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:04] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:06:04] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:04] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:05] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:18] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:25] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:25] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:25] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:25] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:25] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:33] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:06:48] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:07:03] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:08:41] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:08:48] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:03] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:18] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:28] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:29] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:30] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:30] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:33] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:37] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:40] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:09:40] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:40] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:40] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:40] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:47] "GET /logout HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:09:47] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:47] "POST /usage/ping HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:09:47] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:09:48] "GET /login?next=/usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:09:48] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:20] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:20] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:12:20] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:20] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:27] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:27] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:12:27] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:27] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:55] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:55] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:12:55] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:12:55] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:00] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:00] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:13:00] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:00] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:09] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:09] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:13:09] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:09] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:34] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:34] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:13:34] "GET /signup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:34] "GET /forgot-password?email=faezmahmud376@gmail.com HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:48] "POST /login HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:13:48] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:48] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:13:49] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:13:49] "POST /quiz/warmup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:14:03] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:14:18] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:14:33] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:56] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:56] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:15:57] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:03] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:18] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:22] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:33] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:34] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:16:49] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:18:34] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:18:49] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:18:51] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:18:58] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:19:04] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:19:34] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:19:49] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:11] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:11] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:11] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:11] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [26/May/2026 01:20:12] "POST /usage/ping HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /quiz HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /manual HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /flashcards HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:12] "GET /words HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:13] "GET /review HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:13] "GET /flashcards/session/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:13] "GET /profile HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:13] "POST /quiz/warmup HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 01:20:15] "POST /usage/ping HTTP/1.1" 200 -

@@ -63,7 +63,6 @@
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                         <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
                         <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
-                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
                         <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
                     </div>
                 </div>
@@ -77,24 +76,24 @@
                 <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-3">Profile</p>
                 <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
                     <div class="max-w-2xl">
-                        <h1 class="font-headline text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-0">Settings, quiz stats, and app activity.</h1>
+                        <h1 class="font-headline text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-0">Your learning progress and settings.</h1>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 min-w-[280px]">
                         <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Quiz Visits</p>
-                            <strong class="text-2xl font-headline text-on-surface">{{ quiz_metrics.total_attempts }}</strong>
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Learned</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ total_learned }}</strong>
                         </div>
                         <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Accuracy</p>
-                            <strong class="text-2xl font-headline text-primary">{{ quiz_metrics.accuracy }}%</strong>
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Explored</p>
+                            <strong class="text-2xl font-headline text-primary">{{ total_generated }}</strong>
                         </div>
                         <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Active Time</p>
-                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.total_active_minutes }}m</strong>
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Completion</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ overall_completion }}%</strong>
                         </div>
                         <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">App Visits</p>
-                            <strong class="text-2xl font-headline text-on-surface">{{ usage_metrics.total_visits }}</strong>
+                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Streak</p>
+                            <strong class="text-2xl font-headline text-on-surface">{{ study_streak }}</strong>
                         </div>
                     </div>
                 </div>
@@ -103,6 +102,30 @@
 
         <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-6 items-start">
             <div class="space-y-6">
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Curriculum</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Level Progress</h2>
+                    </div>
+                    <div class="space-y-4">
+                        {% for item in curriculum_progress %}
+                            {% set explored_percent = (item.generated / item.total_words * 100) if item.total_words else 0 %}
+                            <article class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
+                                <div class="flex items-center justify-between gap-4 mb-3">
+                                    <div>
+                                        <strong class="font-headline text-lg text-on-surface">{{ item.label|replace('_', ' ')|title }}</strong>
+                                        <p class="text-xs text-on-surface-variant mt-1 mb-0">{{ item.learned }} learned · {{ item.generated }} explored · {{ item.unseen_remaining }} unseen</p>
+                                    </div>
+                                    <span class="text-sm font-bold text-primary">{{ item.completion }}%</span>
+                                </div>
+                                <div class="h-2 rounded-full bg-white/10 overflow-hidden">
+                                    <span class="block h-full rounded-full bg-gradient-to-r from-primary to-secondary" style="width: {{ explored_percent|round(1) }}%;"></span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
                 <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
                     <div class="mb-4">
                         <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Account</p>
@@ -265,6 +288,28 @@
             <div class="space-y-6">
                 <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
                     <div class="mb-4">
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Help</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Learning Support</h2>
+                        <p class="mt-2 mb-0 text-sm text-on-surface-variant">Find the guide, adjust your settings, or jump to admin tools if your account has access.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <a href="{{ url_for('user_manual') }}" class="rounded-2xl border border-white/[0.06] bg-[#0d0f0f] p-4 no-underline text-on-surface">
+                            <span class="material-symbols-outlined text-primary mb-2">menu_book</span>
+                            <strong class="block">Open User Guide</strong>
+                            <small class="text-on-surface-variant">Quick help for study, review, and quiz.</small>
+                        </a>
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="rounded-2xl border border-primary/20 bg-primary/10 p-4 no-underline text-on-surface">
+                            <span class="material-symbols-outlined text-primary mb-2">shield_person</span>
+                            <strong class="block">Admin Panel</strong>
+                            <small class="text-on-surface-variant">Manage users and enrichment quality.</small>
+                        </a>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
+                    <div class="mb-4">
                         <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Defaults</p>
                         <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Study Settings</h2>
                     </div>
@@ -273,11 +318,6 @@
                         <div class="space-y-2">
                             <label for="nickname" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Nickname</label>
                             <input id="nickname" name="nickname" type="text" maxlength="80" value="{{ current_user.nickname or current_user.display_name }}" class="w-full bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border">
-                        </div>
-
-                        <div class="space-y-2">
-                            <label for="default_study_focus" class="text-[10px] font-bold text-outline tracking-[0.18em] uppercase block">Default Study Focus</label>
-                            <textarea id="default_study_focus" name="default_study_focus" rows="5" class="w-full min-h-[9rem] resize-y bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-2xl px-4 py-3.5 text-sm text-on-surface outline-none box-border" placeholder="Set a default topic such as Business English or IELTS">{{ current_user.default_study_focus or '' }}</textarea>
                         </div>
 
                         <div class="space-y-2">

@@ -130,7 +130,6 @@
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                         <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
                         <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
-                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
                         <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
                     </div>
                 </div>
@@ -150,12 +149,11 @@
                     "already_known": {{ item.already_known|tojson }},
                     "part_of_speech": {{ (item.word_entry.part_of_speech or "")|tojson }},
                     "meaning": {{ item.word_entry.meaning|tojson }},
-                    "bangla_meaning": {{ (item.word_entry.bangla_meaning or "No Bangla translation")|tojson }},
-                    "sentence": {{ (item.word_entry.sentence or "No example provided.")|tojson }},
-                    "phonetic": {{ (item.word_entry.phonetic or "N/A")|tojson }},
-                    "synonym": {{ (item.word_entry.synonym_hint or item.word_entry.synonym or "No synonyms available")|tojson }},
-                    "antonym": {{ (item.word_entry.antonym_hint or "")|tojson }},
-                    "memory_trick": {{ (item.word_entry.memory_trick or "No memory trick added.")|tojson }}
+                    "bangla_meaning": {{ (item.word_entry.bangla_meaning or "")|tojson }},
+                    "sentence": {{ (item.word_entry.sentence or "")|tojson }},
+                    "phonetic": {{ (item.word_entry.phonetic or "")|tojson }},
+                    "synonym": {{ (item.word_entry.synonym_hint or item.word_entry.synonym or "")|tojson }},
+                    "antonym": {{ (item.word_entry.antonym_hint or "")|tojson }}
                 }{{ "," if not loop.last }}
             {% endfor %}
             ]'
@@ -191,12 +189,12 @@
             <form method="post" action="{{ url_for('generate_words') }}" class="w-full max-w-[600px] mb-4">
                 <input type="hidden" name="difficulty" value="{{ study_session.difficulty }}">
                 <input type="hidden" name="word_count" value="{{ study_session.word_count }}">
-                <input type="hidden" name="custom_prompt" value="{{ study_session.custom_prompt or '' }}">
+                <input type="hidden" name="order_mode" value="mixed">
                 <button
                     type="submit"
                     class="w-full rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-bold uppercase tracking-[0.18em] text-primary transition-all hover:bg-primary/15 hover:brightness-110"
                 >
-                    Generate More On This Topic
+                    Start More From This Level
                 </button>
             </form>
             {% endif %}
@@ -205,10 +203,10 @@
             <div class="relative w-full max-w-[600px]">
                 
                 <!-- Card Meta Header -->
-                <div class="flex justify-between items-center mb-4 px-2">
+                <div class="flashcard-session-toolbar flex justify-between items-center mb-4 px-2">
                     <span class="font-label text-xs text-teal-400/70 tracking-wider font-bold uppercase">{{ "Review Queue" if review_mode else "Current Session" }}</span>
-                    <button class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant hover:bg-surface-bright transition-all duration-300 active:scale-95 border-none outline-none cursor-pointer" onclick="window.location.reload()" title="Restart Session">
-                        <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;">sync</span>
+                    <button type="button" id="flashcard-restart-btn" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-variant hover:bg-surface-bright transition-all duration-300 active:scale-95 border-none outline-none cursor-pointer" title="Restart Session" aria-label="Restart session">
+                        <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;">restart_alt</span>
                     </button>
                 </div>
 
@@ -230,7 +228,13 @@
                             
                             <!-- Card Footer -->
                             <div class="p-4 sm:p-6 flex items-center justify-center gap-4 relative z-10 mt-auto border-t border-white/[0.02]">
-                                <button class="material-symbols-outlined text-emerald-400/80 hover:text-emerald-300 transition-colors p-2 hover:bg-white/5 rounded-full border border-white/5 cursor-pointer text-lg outline-none backdrop-blur-sm shadow-sm" style="font-variation-settings: 'FILL' 0;" onclick="event.stopPropagation();">volume_up</button>
+                                <button id="flashcard-speak-btn" type="button" class="text-emerald-400/80 hover:text-emerald-300 transition-colors p-2 hover:bg-white/5 rounded-full border border-white/5 cursor-pointer outline-none backdrop-blur-sm shadow-sm inline-flex items-center justify-center" onclick="event.stopPropagation();" aria-label="Hear pronunciation" title="Hear pronunciation">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 5 6 9H3v6h3l5 4V5z"></path>
+                                        <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                                        <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+                                    </svg>
+                                </button>
                                 <span class="text-sm font-medium text-emerald-300/80 font-mono tracking-tight" id="flashcard-front-phonetic"></span>
                             </div>
 
@@ -240,50 +244,37 @@
 
                         <!-- BACK OF CARD -->
                         <div class="flashcard-back absolute inset-0 w-full h-full bg-surface-container-low rounded-xl p-5 sm:p-8 editorial-shadow border border-white/[0.03] flex flex-col items-center text-center" style="transform: rotateY(180deg);">
-                            <!-- Branding Accent -->
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
-                            
-                            <!-- Word Title -->
-                            <div class="mb-4 w-full flex-shrink-0 overflow-visible">
-                                <h1 class="font-headline text-3xl sm:text-5xl font-extrabold tracking-tighter bg-gradient-to-br from-emerald-200 via-teal-200 to-cyan-400 bg-clip-text text-transparent m-0 drop-shadow-sm pb-2 leading-tight" id="flashcard-word-back" style="word-break: break-word;"></h1>
+                            <div class="flashcard-direct-head mb-4 w-full flex-shrink-0 overflow-visible">
+                                <div class="search-word-heading">
+                                    <h1 class="font-headline text-3xl sm:text-5xl font-extrabold tracking-tighter m-0 pb-2 leading-tight" id="flashcard-word-back" style="word-break: break-word;"></h1>
+                                    <span class="flashcard-pos" id="flashcard-part-of-speech-back"></span>
+                                </div>
+                                <p class="search-flashcard-meaning" id="flashcard-meaning"></p>
                             </div>
                             
                             <!-- Fields Stack -->
-                            <div class="space-y-3 sm:space-y-4 w-full max-w-md overflow-y-auto no-scrollbar flex-grow relative z-10 px-1">
-                                <!-- Meaning & Bangla Row -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    <div class="bg-surface-container-lowest/40 p-3 sm:p-4 rounded-lg border border-white/[0.02]">
-                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Meaning</p>
-                                        <p class="font-body text-slate-200 text-[0.85rem] sm:text-sm leading-relaxed m-0" id="flashcard-meaning"></p>
-                                    </div>
-                                    <div class="bg-surface-container-lowest/40 p-3 sm:p-4 rounded-lg border border-white/[0.02]">
-                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Bangla</p>
-                                        <p class="font-body text-amber-400 text-base sm:text-lg font-medium m-0 mt-1" id="flashcard-bangla-meaning"></p>
-                                    </div>
+                            <div class="flashcard-back-grid search-flashcard-grid search-direct-grid w-full overflow-y-auto no-scrollbar flex-grow relative z-10 px-1">
+                                <div class="flashcard-detail" data-flashcard-field="bangla">
+                                        <p class="stitch-label mb-2 m-0 text-[#8a9291]">Bangla meaning</p>
+                                        <p class="font-body text-base sm:text-lg font-medium m-0 mt-1" id="flashcard-bangla-meaning"></p>
                                 </div>
-                                
-                                <!-- Synonym & Antonym -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    <div class="bg-emerald-500/5 border border-emerald-500/10 p-3 sm:p-4 rounded-lg text-center">
-                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Synonym</p>
+                                <div class="flashcard-detail" data-flashcard-field="phonetic">
+                                    <p class="stitch-label mb-2 m-0 text-[#8a9291]">Pronunciation</p>
+                                    <p class="font-body text-slate-200 text-[0.85rem] sm:text-sm leading-relaxed m-0" id="flashcard-phonetic"></p>
+                                </div>
+                                <div class="flashcard-detail" data-flashcard-field="synonym">
+                                        <p class="stitch-label mb-2 m-0 text-[#8a9291]">Synonym</p>
                                         <p class="font-body text-emerald-300 text-[0.8rem] sm:text-sm leading-relaxed m-0" id="flashcard-synonym"></p>
-                                    </div>
-                                    <div class="bg-orange-500/5 border border-orange-500/10 p-3 sm:p-4 rounded-lg text-center" id="flashcard-antonym-card">
-                                        <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Antonym</p>
+                                </div>
+                                <div class="flashcard-detail" id="flashcard-antonym-card" data-flashcard-field="antonym">
+                                        <p class="stitch-label mb-2 m-0 text-[#8a9291]">Antonym</p>
                                         <p class="font-body text-orange-200 text-[0.8rem] sm:text-sm leading-relaxed m-0" id="flashcard-antonym"></p>
-                                    </div>
                                 </div>
 
                                 <!-- Sentence -->
-                                <div class="bg-sky-500/5 border border-sky-500/10 p-3 sm:p-4 text-center rounded-lg">
-                                    <p class="stitch-label mb-2 m-0 opacity-[0.15] text-[#8a9291]">Sentence</p>
+                                <div class="flashcard-detail search-flashcard-detail-wide" data-flashcard-field="sentence">
+                                    <p class="stitch-label mb-2 m-0 text-[#8a9291]">Sentence</p>
                                     <p class="font-body italic text-sky-200 leading-relaxed text-[0.85rem] sm:text-sm m-0" id="flashcard-sentence"></p>
-                                </div>
-
-                                <!-- Memory Trick -->
-                                <div class="bg-[#dec38f]/5 rounded-lg p-3 border-l-2 border-[#dec38f]/40 text-left">
-                                    <p class="stitch-label mb-1 opacity-[0.15] text-[#8a9291] m-0">Memory Trick</p>
-                                    <p class="font-body text-xs text-[#f0dfba] leading-relaxed m-0" id="flashcard-memory-trick"></p>
                                 </div>
                             </div>
                         </div>
@@ -315,10 +306,6 @@
                 </div>
                 <div id="flashcard-status" class="text-center text-xs mt-4 text-[#dec38f] font-mono tracking-widest uppercase min-h-[1.5rem] flex items-center justify-center"></div>
             </div>
-
-            <!-- Ambient Background Decor -->
-            <div class="fixed top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-primary/5 blur-[120px] rounded-full pointer-events-none z-[-1]"></div>
-            <div class="fixed bottom-[-5%] left-[-5%] w-[30vw] h-[30vw] bg-primary-container/5 blur-[100px] rounded-full pointer-events-none z-[-1]"></div>
 
         </div>
     {% else %}

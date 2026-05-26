@@ -67,16 +67,243 @@
                 <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Active Hours</p>
                 <strong class="font-['Manrope'] text-3xl">{{ admin_summary.total_active_hours }}</strong>
             </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Flagged Enrichments</p>
+                <strong class="font-['Manrope'] text-3xl text-[#dec38f]">{{ admin_summary.flagged_enrichments }}</strong>
+            </article>
+            <article class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-4">
+                <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Review Flags</p>
+                <strong class="font-['Manrope'] text-3xl text-[#ffb4ab]">{{ admin_summary.review_flags }}</strong>
+            </article>
         </section>
 
-        <section class="rounded-3xl border border-white/5 bg-[#1a1c1c] shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-5 border-b border-white/5">
+        {% set dh = db_health|default({}) %}
+        {% set dh_counts = dh.get('counts', {}) %}
+        {% set dh_missing_tables = dh.get('missing_tables', []) %}
+        {% set dh_warnings = dh.get('warnings', []) %}
+        <section class="rounded-3xl border border-white/5 bg-[#1a1c1c] p-5 mb-6">
+            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#9dd0cd] font-bold mb-2">Database health</p>
+                    <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight m-0">{{ dh.get('status', 'unknown')|replace('_', ' ')|title }}</h2>
+                </div>
+                {% if dh.get('fallback_used', false) %}
+                <span class="rounded-full bg-[#93000a]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffb4ab]">Fallback DB Active</span>
+                {% elif not dh.get('healthy', false) %}
+                <span class="rounded-full bg-[#dec38f]/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f]">Diagnostics Unavailable</span>
+                {% else %}
+                <span class="rounded-full bg-[#2d5f5d]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9dd0cd]">Primary DB Active</span>
+                {% endif %}
+            </div>
+            {% if dh.get('error') %}
+            <p class="mt-4 mb-0 text-sm text-[#ffb4ab]">Database diagnostics unavailable: {{ dh.get('error') }}</p>
+            {% endif %}
+            <div class="mt-5 grid gap-3 md:grid-cols-4">
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Type</p>
+                    <strong>{{ dh.get('db_type', dh.get('database_type', 'unknown')) }}{% if dh.get('provider') %} / {{ dh.get('provider') }}{% endif %}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Host</p>
+                    <strong class="break-all">{{ dh.get('host') or 'local file' }}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Database</p>
+                    <strong class="break-all">{{ dh.get('database', dh.get('database_name', 'unknown')) or 'unknown' }}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Migration</p>
+                    <strong>{{ dh.get('alembic_version', dh.get('migration_version', 'not recorded')) or 'not recorded' }}</strong>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-3">
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Vocabulary</p>
+                    <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('vocabulary_master', dh.get('vocabulary_count', 0)) }}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Users</p>
+                    <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('users', dh.get('user_count', 0)) }}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Enrichments</p>
+                    <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('vocabulary_enrichment', dh.get('enrichment_count', 0)) }}</strong>
+                </div>
+            </div>
+            {% if dh_missing_tables %}
+            <p class="mt-4 mb-0 text-sm text-[#ffb4ab]">Missing tables: {{ dh_missing_tables|join(', ') }}. Run the Alembic migrations before using this database.</p>
+            {% endif %}
+            {% if dh_warnings %}
+            <p class="mt-4 mb-0 text-sm text-[#dec38f]">{{ dh_warnings|join(' ') }}</p>
+            {% endif %}
+        </section>
+
+        <details class="rounded-3xl border border-white/5 bg-[#1a1c1c] shadow-2xl overflow-hidden mb-6" open>
+            <summary class="flex cursor-pointer items-center justify-between px-6 py-5 border-b border-white/5">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#dec38f] font-bold mb-2">Enrichment cache</p>
+                    <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">Quality audit and correction</h2>
+                </div>
+                <span class="text-xs text-[#c0c8c7]">{{ enrichment_total }} rows</span>
+            </summary>
+            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 md:grid-cols-[1fr_180px_180px_auto]">
+                <input name="enrichment_q" value="{{ enrichment_q }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none" placeholder="Search enrichment cache">
+                <select name="level_filter" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
+                    <option value="">All levels</option>
+                    {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
+                    <option value="{{ level }}" {% if level_filter == level %}selected{% endif %}>{{ level|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+                <select name="quality_filter" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
+                    <option value="">All quality states</option>
+                    {% for value, label in [('flagged', 'Flagged Only'), ('low_quality', 'Low Quality'), ('never_audited', 'Never Audited'), ('recently_audited', 'Recently Audited'), ('corrected', 'Corrected Words'), ('regenerated', 'Regenerated')] %}
+                    <option value="{{ value }}" {% if quality_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="rounded-xl bg-[#2d5f5d] px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Filter</button>
+            </form>
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full min-w-[1200px]">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-[0.18em] text-[#8a9291]">
+                            <th class="px-6 py-4 font-bold">Word</th>
+                            <th class="px-6 py-4 font-bold">Score</th>
+                            <th class="px-6 py-4 font-bold">Flags</th>
+                            <th class="px-6 py-4 font-bold">Correction</th>
+                            <th class="px-6 py-4 font-bold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrichment in enrichment_rows %}
+                        <tr class="border-t border-white/5 align-top">
+                            <td class="px-6 py-5">
+                                <p class="font-semibold text-[#e2e2e2] m-0">{{ enrichment.vocabulary.word }}</p>
+                                <p class="text-xs text-[#c0c8c7] mt-1 mb-0">{{ enrichment.vocabulary.level }}</p>
+                                {% if enrichment.vocabulary.needs_admin_review %}
+                                <p class="text-xs text-[#ffb4ab] mt-2 mb-0">{{ enrichment.vocabulary.review_reason or 'Needs review' }}</p>
+                                {% endif %}
+                                {% if enrichment.vocabulary.original_word %}
+                                <p class="text-[10px] text-[#8a9291] mt-2 mb-0">Original: {{ enrichment.vocabulary.original_word }}</p>
+                                {% endif %}
+                                {% if enrichment.corrected_manually %}
+                                <p class="text-[10px] text-[#9dd0cd] mt-2 mb-0 uppercase tracking-[0.14em]">Manual correction</p>
+                                {% endif %}
+                                <p class="text-[10px] text-[#8a9291] mt-2 mb-0">Audited: {{ enrichment.last_audited_at.strftime('%Y-%m-%d %H:%M') if enrichment.last_audited_at else 'never' }}</p>
+                                <p class="text-[10px] text-[#8a9291] mt-1 mb-0">Regenerated: {{ enrichment.last_regenerated_at.strftime('%Y-%m-%d %H:%M') if enrichment.last_regenerated_at else 'never' }}</p>
+                                {% if enrichment.vocabulary.corrected_at %}
+                                <p class="text-[10px] text-[#8a9291] mt-1 mb-0">Corrected: {{ enrichment.vocabulary.corrected_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ enrichment.enrichment_quality_score }}</td>
+                            <td class="px-6 py-5 text-xs text-[#dec38f]">{{ enrichment.audit_flags or 'clean' }}</td>
+                            <td class="px-6 py-5">
+                                <form method="post" action="{{ url_for('admin_edit_enrichment', enrichment_id=enrichment.id) }}" class="grid grid-cols-2 gap-2 m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                    <input name="word" value="{{ enrichment.vocabulary.word }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Vocabulary word">
+                                    <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
+                                        {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
+                                        <option value="{{ level }}" {% if enrichment.vocabulary.level == level %}selected{% endif %}>{{ level|replace('_', ' ')|title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <textarea name="definition" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">{{ enrichment.definition or '' }}</textarea>
+                                    <input name="bangla_meaning" value="{{ enrichment.bangla_meaning or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Bangla meaning">
+                                    <input name="pronunciation" value="{{ enrichment.pronunciation or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Pronunciation">
+                                    <input name="synonyms" value="{{ enrichment.synonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Synonym">
+                                    <input name="antonyms" value="{{ enrichment.antonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Antonym">
+                                    <textarea name="example_sentence" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Example sentence">{{ enrichment.example_sentence or '' }}</textarea>
+                                    <label class="col-span-2 flex items-center gap-2 text-xs text-[#c0c8c7]">
+                                        <input type="checkbox" name="needs_admin_review" value="1" {% if enrichment.vocabulary.needs_admin_review %}checked{% endif %}>
+                                        Needs admin review
+                                    </label>
+                                    <input name="review_reason" value="{{ enrichment.vocabulary.review_reason or '' }}" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Review reason">
+                                    <button type="submit" class="col-span-2 rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Save Manual Correction</button>
+                                </form>
+                            </td>
+                            <td class="px-6 py-5">
+                                <form method="post" action="/admin/enrichments/{{ enrichment.id }}/regenerate" class="m-0 grid gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                    <textarea name="admin_prompt" rows="2" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Optional admin prompt"></textarea>
+                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Regenerate With AI</button>
+                                </form>
+                                <form method="post" action="{{ url_for('admin_delete_vocabulary', vocabulary_id=enrichment.vocabulary.id) }}" class="m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Delete Word</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/5 text-xs text-[#c0c8c7]">
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if enrichment_page <= 1 %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', enrichment_page=enrichment_page-1, enrichment_q=enrichment_q) }}">Previous</a>
+                <span>Page {{ enrichment_page }}</span>
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if enrichment_page * 15 >= enrichment_total %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', enrichment_page=enrichment_page+1, enrichment_q=enrichment_q) }}">Next</a>
+            </div>
+        </details>
+
+        <details class="rounded-3xl border border-white/5 bg-[#1a1c1c] shadow-2xl overflow-hidden mb-6" open>
+            <summary class="flex cursor-pointer items-center justify-between px-6 py-5 border-b border-white/5">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#ffb4ab] font-bold mb-2">Vocabulary review flags</p>
+                    <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">Correction queue</h2>
+                </div>
+                <span class="text-xs text-[#c0c8c7]">{{ review_flag_total }} rows</span>
+            </summary>
+            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 sm:grid-cols-[1fr_1fr_auto]">
+                <select name="flag_status" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
+                    {% for status in ['pending', 'approved', 'edited', 'reassigned', 'deleted', 'all'] %}
+                    <option value="{{ status }}" {% if flag_status == status %}selected{% endif %}>{{ status|title }}</option>
+                    {% endfor %}
+                </select>
+                <select name="flag_type" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
+                    <option value="">All flag types</option>
+                    {% for type in ['malformed_word', 'suspicious_ocr', 'too_easy_for_level', 'duplicate_meaning', 'invalid_english', 'corrupted_phrase'] %}
+                    <option value="{{ type }}" {% if flag_type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+                <button class="rounded-xl bg-[#2d5f5d] px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Filter</button>
+            </form>
+            <div class="divide-y divide-white/5">
+                {% for flag in review_flags %}
+                <details class="px-6 py-4">
+                    <summary class="cursor-pointer">
+                        <span class="font-semibold">{{ flag.original_word }}</span>
+                        <span class="ml-2 text-xs text-[#dec38f]">{{ flag.flag_type }}</span>
+                        <span class="ml-2 text-xs text-[#8a9291]">{{ flag.status }}</span>
+                    </summary>
+                    <form method="post" action="{{ url_for('admin_review_flag_action', flag_id=flag.id) }}" class="mt-4 grid gap-2 md:grid-cols-4">
+                        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                        <input name="word" value="{{ flag.vocabulary.word if flag.vocabulary else flag.corrected_word or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Correct word">
+                        <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
+                            {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
+                            <option value="{{ level }}" {% if (flag.vocabulary and flag.vocabulary.level == level) or flag.level == level %}selected{% endif %}>{{ level }}</option>
+                            {% endfor %}
+                        </select>
+                        <button name="action" value="edit" class="rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Edit</button>
+                        <button name="action" value="approve" class="rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#e2e2e2] bg-transparent cursor-pointer">Approve</button>
+                        <button name="action" value="reassign" class="rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Reassign</button>
+                        <button name="action" value="delete" class="rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Delete</button>
+                    </form>
+                    {% if flag.notes %}<p class="mt-3 mb-0 text-xs text-[#c0c8c7]">{{ flag.notes }}</p>{% endif %}
+                </details>
+                {% endfor %}
+            </div>
+            <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/5 text-xs text-[#c0c8c7]">
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if flag_page <= 1 %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', flag_page=flag_page-1, flag_status=flag_status, flag_type=flag_type) }}">Previous</a>
+                <span>Page {{ flag_page }}</span>
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if flag_page * 15 >= review_flag_total %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', flag_page=flag_page+1, flag_status=flag_status, flag_type=flag_type) }}">Next</a>
+            </div>
+        </details>
+
+        <details class="rounded-3xl border border-white/5 bg-[#1a1c1c] shadow-2xl overflow-hidden">
+            <summary class="flex cursor-pointer items-center justify-between px-6 py-5 border-b border-white/5">
                 <div>
                     <p class="text-[10px] uppercase tracking-[0.18em] text-[#9dd0cd] font-bold mb-2">Users</p>
                     <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight">User controls</h2>
                 </div>
-                <p class="text-xs text-[#c0c8c7] m-0 hidden md:block">Restricted users cannot log in or use the app.</p>
-            </div>
+                <p class="text-xs text-[#c0c8c7] m-0 hidden md:block">{{ user_total }} users. Restricted users cannot log in or use the app.</p>
+            </summary>
 
             <div class="overflow-x-auto no-scrollbar">
                 <table class="w-full min-w-[1100px]">
@@ -130,6 +357,10 @@
                                     <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Restrict</button>
                                     {% endif %}
                                 </form>
+                                <form method="post" action="{{ url_for('admin_reset_learning_journey', user_id=row.user.id) }}" class="mt-2 m-0">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Reset Learning Journey</button>
+                                </form>
                                 {% if row.last_seen_at %}
                                 <p class="text-[10px] text-[#8a9291] mt-2 mb-0">Last seen {{ row.last_seen_at.strftime('%Y-%m-%d %H:%M') }}</p>
                                 {% endif %}
@@ -139,7 +370,12 @@
                     </tbody>
                 </table>
             </div>
-        </section>
+            <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/5 text-xs text-[#c0c8c7]">
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if user_page <= 1 %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', user_page=user_page-1, enrichment_page=enrichment_page, enrichment_q=enrichment_q, flag_page=flag_page, flag_status=flag_status, flag_type=flag_type) }}">Previous</a>
+                <span>Page {{ user_page }}</span>
+                <a class="rounded-xl border border-white/10 px-3 py-2 text-[#e2e2e2] no-underline {% if user_page * 25 >= user_total %}opacity-40 pointer-events-none{% endif %}" href="{{ url_for('admin_dashboard', user_page=user_page+1, enrichment_page=enrichment_page, enrichment_q=enrichment_q, flag_page=flag_page, flag_status=flag_status, flag_type=flag_type) }}">Next</a>
+            </div>
+        </details>
     </main>
 </div>
 {% endblock %}

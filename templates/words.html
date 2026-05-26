@@ -230,7 +230,6 @@
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                         <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
                         <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
-                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
                         <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
                     </div>
                 </div>
@@ -331,10 +330,6 @@
                                 <div class="word-lookup-detail is-wide">
                                     <p class="word-lookup-detail-label">Sentence</p>
                                     <p class="word-lookup-detail-value">{{ lookup_word.sentence or 'No example sentence yet.' }}</p>
-                                </div>
-                                <div class="word-lookup-detail is-wide">
-                                    <p class="word-lookup-detail-label">Memory trick</p>
-                                    <p class="word-lookup-detail-value word-lookup-detail-memory">{{ lookup_word.memory_trick or 'Not added yet.' }}</p>
                                 </div>
                                 {% if related_words %}
                                     <div class="word-lookup-detail is-wide">
@@ -441,16 +436,20 @@
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Meaning</span>
                                         <p class="text-[0.9rem] text-white leading-relaxed m-0 font-medium">{{ item.word_entry.meaning }}</p>
                                     </div>
+                                    {% if item.word_entry.sentence %}
                                     <div style="margin-top: 1.5rem;">
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Example</span>
-                                        <p class="text-[0.9rem] italic text-[#8a9291] m-0">"{{ item.word_entry.sentence or 'No example provided.' }}"</p>
+                                        <p class="text-[0.9rem] italic text-[#8a9291] m-0">"{{ item.word_entry.sentence }}"</p>
                                     </div>
+                                    {% endif %}
                                 </div>
                                 <div class="space-y-4">
+                                    {% if item.word_entry.synonym_hint or item.word_entry.synonym %}
                                     <div class="m-0">
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Synonyms</span>
-                                        <p class="text-[0.85rem] text-[#dec38f] m-0">{{ item.word_entry.synonym_hint or item.word_entry.synonym or 'None available' }}</p>
+                                        <p class="text-[0.85rem] text-[#dec38f] m-0">{{ item.word_entry.synonym_hint or item.word_entry.synonym }}</p>
                                     </div>
+                                    {% endif %}
                                     {% if item.word_entry.antonym_hint %}
                                         <div style="margin-top: 1.5rem;">
                                             <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Antonym</span>
@@ -461,7 +460,7 @@
                                         <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Personal Note</span>
                                         <form method="post" action="{{ url_for('save_word_note', user_word_id=item.id) }}" class="bg-[#121414] rounded-lg p-3 flex flex-col gap-2 border border-white/[0.05] shadow-inner mb-0">
                                             <input type="hidden" name="next" value="{{ request.full_path }}">
-                                            <textarea name="note" class="w-full bg-transparent border-none outline-none focus:ring-0 text-[0.85rem] text-[#e2e2e2] p-0 placeholder:text-[#404848] no-scrollbar m-0 min-h-[2.5rem] resize-y" placeholder="Add a personal mnemonic or memory trick..." rows="2">{{ item.note or '' }}</textarea>
+                                            <textarea name="note" class="w-full bg-transparent border-none outline-none focus:ring-0 text-[0.85rem] text-[#e2e2e2] p-0 placeholder:text-[#404848] no-scrollbar m-0 min-h-[2.5rem] resize-y" placeholder="Add a personal note..." rows="2">{{ item.note or '' }}</textarea>
                                             <button type="submit" class="words-note-button self-end text-[0.65rem] font-bold uppercase tracking-widest hover:brightness-125 transition-colors border-none p-0 cursor-pointer m-0 mt-1">Save Note</button>
                                         </form>
                                     </div>

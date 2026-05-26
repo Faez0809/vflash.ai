@@ -112,7 +112,6 @@
                         <a href="{{ url_for('flashcards') }}"><span class="material-symbols-outlined">amp_stories</span><span>Flashcards</span></a>
                         <a href="{{ url_for('quiz') }}"><span class="material-symbols-outlined">quiz</span><span>Quiz</span></a>
                         <a href="{{ url_for('review') }}"><span class="material-symbols-outlined">rule</span><span>Review</span></a>
-                        <a href="{{ url_for('user_manual') }}"><span class="material-symbols-outlined">menu_book</span><span>User Manual</span></a>
                         <a href="{{ url_for('logout') }}"><span class="material-symbols-outlined">logout</span><span>Sign Out</span></a>
                     </div>
                 </div>
@@ -233,8 +232,8 @@
 
                     <header class="mb-10 text-center md:text-left">
                         <p class="text-[10px] font-bold tracking-[0.2em] text-primary uppercase mb-3 font-headline">QUIZ SETUP</p>
-                        <h1 class="text-3xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-3">Build a focused quiz</h1>
-                        <p class="text-outline text-sm md:text-base max-w-md">Choose a source, level, and instruction to shape a more useful practice round.</p>
+                        <h1 class="text-3xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-3">Build a curriculum quiz</h1>
+                        <p class="text-outline text-sm md:text-base max-w-md">Choose database vocabulary by source, level, and focus.</p>
                     </header>
 
                     <form method="post" action="{{ url_for('quiz_start') }}" class="space-y-8" data-async-page="true" data-loading-messages='["Preparing quiz...","Selecting questions...","Almost ready..."]'>
@@ -258,7 +257,7 @@
                                 <div class="relative group">
                                     <select id="word_source" name="word_source" class="w-full bg-[#0d0f0f] border border-white/10 text-on-surface rounded-lg px-4 py-3 appearance-none focus:border-primary/40 focus:ring-1 focus:ring-primary/40 transition-all outline-none text-sm font-medium">
                                         {% for value, label in quiz_setup.word_sources %}
-                                            <option value="{{ value }}" {{ 'selected' if value == 'my_words' else '' }}>{{ label }}</option>
+                                            <option value="{{ value }}" {{ 'selected' if value == 'mixed_curriculum' else '' }}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
                                     <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-sm">expand_more</span>
@@ -284,7 +283,7 @@
                                 <div class="relative group">
                                     <select id="question_count" name="question_count" class="w-full bg-[#0d0f0f] border border-white/10 text-on-surface rounded-lg px-4 py-3 appearance-none focus:border-primary/40 focus:ring-1 focus:ring-primary/40 transition-all outline-none text-sm font-medium">
                                         {% for value in quiz_setup.question_counts %}
-                                            <option value="{{ value }}" {{ 'selected' if value == 10 else '' }}>{{ value }} {{ 'Question' if value == 1 else 'Questions' }}</option>
+                                            <option value="{{ value }}" {{ 'selected' if value == 5 else '' }}>{{ value }} {{ 'Question' if value == 1 else 'Questions' }}</option>
                                         {% endfor %}
                                     </select>
                                     <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-sm">expand_more</span>
@@ -292,11 +291,11 @@
                             </div>
                         </div>
 
-                        <!-- Custom Instruction -->
+                        <!-- Optional Focus -->
                         <div class="space-y-2">
-                            <label for="custom_quiz_instruction" class="text-[10px] font-bold text-outline tracking-[0.1em] uppercase ml-1 block">Custom quiz instruction (Optional)</label>
+                            <label for="focus" class="text-[10px] font-bold text-outline tracking-[0.1em] uppercase ml-1 block">Optional Focus</label>
                             <div class="ai-input-enhanced-shell">
-                                <textarea id="custom_quiz_instruction" name="custom_quiz_instruction" class="ai-input-enhanced ai-input-enhanced-textarea w-full min-h-[3.5rem] text-on-surface resize-y text-sm font-medium" placeholder="Describe how you want this quiz tailored..." rows="2"></textarea>
+                                <textarea id="focus" name="focus" class="ai-input-enhanced ai-input-enhanced-textarea w-full min-h-[3.5rem] text-on-surface resize-y text-sm font-medium" placeholder="Academic words, recently difficult words, revision focus..." rows="2"></textarea>
                             </div>
                         </div>
 

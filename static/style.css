@@ -7758,7 +7758,7 @@ body.dashboard-page .small-stat-card {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1rem;
-    padding: 0 0.5rem;
+    padding: 0;
 }
 
 .tw-scope .stitch-label,
@@ -7777,21 +7777,38 @@ body.dashboard-page .small-stat-card {
     font: inherit;
 }
 
-.tw-scope button[onclick*="reload"] {
-    width: 2rem;
-    height: 2rem;
+.tw-scope #flashcard-restart-btn {
+    width: 3rem;
+    height: 3rem;
     display: grid;
     place-items: center;
+    border: 1px solid rgba(157, 208, 205, 0.16);
     border-radius: 999px;
-    background: var(--tw-surface-highest);
+    background: rgba(157, 208, 205, 0.08);
     color: var(--tw-primary);
     cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.tw-scope #flashcard-restart-btn:hover {
+    border-color: rgba(157, 208, 205, 0.34);
+    background: rgba(157, 208, 205, 0.14);
+}
+
+.tw-scope #flashcard-restart-btn:active {
+    transform: scale(0.94);
+}
+
+.tw-scope #flashcard-restart-btn:focus-visible {
+    outline: 2px solid rgba(157, 208, 205, 0.55);
+    outline-offset: 3px;
 }
 
 .tw-scope #flashcard-flip {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    height: min(68vh, 650px);
+    min-height: 560px;
     perspective: 1000px;
     cursor: pointer;
     outline: 0;
@@ -7843,7 +7860,7 @@ body.dashboard-page .small-stat-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem;
+    padding: clamp(1.4rem, 3vw, 2.4rem);
     text-align: center;
     transform: rotateY(180deg);
 }
@@ -7877,21 +7894,17 @@ body.dashboard-page .small-stat-card {
     margin: 0;
     padding-bottom: 0.5rem;
     max-width: 100%;
-    color: #b9f5ef;
-    background: linear-gradient(135deg, #a7f3d0, #99f6e4, #22d3ee);
-    -webkit-background-clip: text;
-    background-clip: text;
+    color: #f4f8f8;
     font-family: "Manrope", "Inter", sans-serif;
     font-size: 3.7rem;
     font-weight: 800;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
     overflow-wrap: anywhere;
-    -webkit-text-fill-color: transparent;
 }
 
 .tw-scope #flashcard-word-back {
-    font-size: 3rem;
+    font-size: clamp(2.65rem, 5vw, 4rem);
 }
 
 .tw-scope #flashcard-part-of-speech {
@@ -7949,62 +7962,93 @@ body.dashboard-page .small-stat-card {
 .tw-scope .flashcard-back > div:first-child {
     flex: 0 0 auto;
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 1.15rem;
 }
 
-.tw-scope .flashcard-back .space-y-3 {
-    width: min(100%, 28rem);
+.tw-scope .flashcard-direct-head {
+    display: grid;
+    justify-items: center;
+    gap: 0.9rem;
+    padding-top: 0.35rem;
+    text-align: center;
+}
+
+.tw-scope .flashcard-direct-head .search-word-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.tw-scope .flashcard-direct-head .search-flashcard-meaning {
+    max-width: 32ch;
+    margin: 0;
+    color: #f2f7f7;
+    font-family: "Inter", sans-serif;
+    font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.tw-scope .flashcard-back .flashcard-back-grid {
+    width: 100%;
     flex: 1 1 auto;
     min-height: 0;
     display: grid;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
     overflow-y: auto;
     scrollbar-width: thin;
 }
 
-.tw-scope .flashcard-back .grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+.tw-scope .flashcard-back .flashcard-detail {
+    min-height: 112px;
+    padding: 1.35rem 1rem 1.25rem 0;
+    border: 0;
+    border-top: 1px solid rgba(142, 165, 164, 0.22);
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
 }
 
-.tw-scope .flashcard-back .space-y-3 > div:not(.grid),
-.tw-scope .flashcard-back .grid > div {
-    padding: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    border-radius: 0.65rem;
-    background: rgba(13, 15, 15, 0.42);
+.tw-scope .flashcard-back .flashcard-detail:nth-child(even) {
+    padding-left: 1rem;
+}
+
+.tw-scope .flashcard-back .search-flashcard-detail-wide {
+    grid-column: 1 / -1;
+}
+
+.tw-scope .flashcard-back [hidden] {
+    display: none !important;
 }
 
 .tw-scope .flashcard-back p {
     margin: 0;
-    color: #dbe7e6;
+    color: #f2f7f7;
     font-family: "Inter", sans-serif;
-    line-height: 1.55;
+    font-size: 1rem;
+    line-height: 1.72;
 }
 
 .tw-scope #flashcard-bangla-meaning {
-    color: #f59e0b;
+    color: #f2f7f7;
     font-size: 1.06rem;
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .tw-scope #flashcard-synonym {
-    color: #6ee7b7;
+    color: #f2f7f7;
 }
 
 .tw-scope #flashcard-antonym {
-    color: #fed7aa;
+    color: #f2f7f7;
 }
 
 .tw-scope #flashcard-sentence {
-    color: #bae6fd;
-    font-style: italic;
-}
-
-.tw-scope #flashcard-memory-trick {
-    color: #f0dfba;
-    font-size: 0.82rem;
+    color: #f2f7f7;
+    font-style: normal;
 }
 
 .tw-scope .grid.grid-cols-3 {
@@ -8144,7 +8188,8 @@ body.dashboard-page .small-stat-card {
     }
 
     .tw-scope #flashcard-flip {
-        aspect-ratio: 4 / 5;
+        height: min(74vh, 620px);
+        min-height: 520px;
     }
 
     .tw-scope .flashcard-front > div:first-child {
@@ -8160,21 +8205,31 @@ body.dashboard-page .small-stat-card {
     }
 
     .tw-scope #flashcard-word-back {
-        font-size: 2.15rem;
+        font-size: 2.45rem;
     }
 
-    .tw-scope .flashcard-back .grid {
+    .tw-scope .flashcard-back .flashcard-back-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
     }
 
-    .tw-scope .flashcard-back .space-y-3 {
-        gap: 0.75rem;
+    .tw-scope .flashcard-back .flashcard-detail {
+        min-height: auto;
+        padding: 1rem 0 0.95rem;
     }
 
-    .tw-scope .flashcard-back .space-y-3 > div:not(.grid),
-    .tw-scope .flashcard-back .grid > div {
-        padding: 0.78rem;
+    .tw-scope .flashcard-back .flashcard-detail:nth-child(even) {
+        padding-left: 0;
+    }
+
+    .tw-scope .flashcard-direct-head {
+        gap: 0.65rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .tw-scope .flashcard-direct-head .search-flashcard-meaning {
+        font-size: 1.12rem;
+        line-height: 1.45;
     }
 
     .tw-scope .grid.grid-cols-3 {
@@ -8904,5 +8959,491 @@ body.dashboard-page .small-stat-card {
         min-height: 5rem;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+body.dashboard-page .learning-home-main {
+    padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+body.dashboard-page .learning-home-stack {
+    display: grid;
+    gap: 1rem;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+body.dashboard-page .learning-primary-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+body.dashboard-page .learning-action-card,
+body.dashboard-page .learning-practice-panel,
+body.dashboard-page .learning-levels-panel,
+body.dashboard-page .learning-recent-panel {
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    background: linear-gradient(180deg, rgba(24, 27, 27, 0.98), rgba(18, 20, 20, 0.98));
+    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.18);
+}
+
+body.dashboard-page .learning-action-card {
+    min-height: 9.5rem;
+    padding: 1.35rem;
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #e2e2e2;
+    text-decoration: none;
+}
+
+body.dashboard-page .learning-action-card span.material-symbols-outlined {
+    width: 3rem;
+    height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: 1rem;
+    background: rgba(157, 208, 205, 0.1);
+    color: #9dd0cd;
+}
+
+body.dashboard-page .learning-action-card p,
+body.dashboard-page .learning-eyebrow {
+    margin: 0 0 0.45rem;
+    color: #9dd0cd;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+body.dashboard-page .learning-action-card h2 {
+    margin: 0;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    line-height: 1.08;
+    letter-spacing: 0;
+}
+
+body.dashboard-page .learning-action-card small {
+    display: block;
+    margin-top: 0.45rem;
+    color: #c0c8c7;
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
+body.dashboard-page .learning-action-primary {
+    background: linear-gradient(145deg, rgba(45, 95, 93, 0.36), rgba(18, 20, 20, 0.98));
+}
+
+body.dashboard-page .learning-practice-panel,
+body.dashboard-page .learning-levels-panel,
+body.dashboard-page .learning-recent-panel {
+    border-radius: 1.4rem;
+    padding: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+body.dashboard-page .learning-panel-head,
+body.dashboard-page .learning-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+body.dashboard-page .learning-panel-head h1,
+body.dashboard-page .learning-section-head h2 {
+    margin: 0;
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    line-height: 1.1;
+    letter-spacing: 0;
+}
+
+body.dashboard-page .learning-panel-head > span {
+    color: #9dd0cd;
+    font-size: 2rem;
+}
+
+body.dashboard-page .learning-section-head a {
+    color: #9dd0cd;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+body.dashboard-page .learning-practice-form {
+    display: grid;
+    grid-template-columns: 1fr 0.8fr 1fr auto;
+    gap: 0.85rem;
+    align-items: end;
+}
+
+body.dashboard-page .learning-practice-form label {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+}
+
+body.dashboard-page .learning-practice-form label span {
+    color: #8a9291;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body.dashboard-page .learning-practice-form select,
+body.dashboard-page .learning-practice-form button {
+    min-height: 3.5rem;
+    border-radius: 0.9rem;
+    font-size: 1rem;
+}
+
+body.dashboard-page .learning-practice-form select {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0d0f0f;
+    color: #e2e2e2;
+    padding: 0 1rem;
+    outline: none;
+}
+
+body.dashboard-page .learning-practice-form button {
+    border: 0;
+    background: #9dd0cd;
+    color: #003735;
+    padding: 0 1.8rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+body.dashboard-page .learning-level-list,
+body.dashboard-page .learning-recent-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+body.dashboard-page .learning-level-row {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(8rem, 2fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.95rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+body.dashboard-page .learning-level-row:first-child {
+    border-top: 0;
+}
+
+body.dashboard-page .learning-level-row strong,
+body.dashboard-page .learning-recent-item strong {
+    display: block;
+    color: #f4f8f8;
+    font-size: 1.05rem;
+    line-height: 1.25;
+}
+
+body.dashboard-page .learning-level-row span,
+body.dashboard-page .learning-level-row small {
+    color: #c0c8c7;
+    font-size: 0.9rem;
+}
+
+body.dashboard-page .learning-level-meter {
+    height: 0.65rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+body.dashboard-page .learning-level-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #9dd0cd, #dec38f);
+}
+
+body.dashboard-page .learning-recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.95rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+body.dashboard-page .learning-recent-item:first-child {
+    border-top: 0;
+}
+
+body.dashboard-page .learning-recent-item p {
+    margin: 0.35rem 0 0;
+    color: #c0c8c7;
+    line-height: 1.5;
+}
+
+body.dashboard-page .learning-recent-item > span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(222, 195, 143, 0.16);
+    color: #dec38f;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body.dashboard-page .learning-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    color: #c0c8c7;
+    padding: 1rem 0;
+}
+
+body.dashboard-page .learning-empty-state p {
+    margin: 0;
+}
+
+@media (max-width: 960px) {
+    body.dashboard-page .learning-primary-actions,
+    body.dashboard-page .learning-practice-form {
+        grid-template-columns: 1fr;
+    }
+
+    body.dashboard-page .learning-action-card {
+        min-height: 7rem;
+    }
+
+    body.dashboard-page .learning-practice-form button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 700px) {
+    body.dashboard-page .learning-home-main {
+        padding: 0.85rem;
+    }
+
+    body.dashboard-page .learning-home-stack {
+        gap: 0.85rem;
+    }
+
+    body.dashboard-page .learning-action-card,
+    body.dashboard-page .learning-practice-panel,
+    body.dashboard-page .learning-levels-panel,
+    body.dashboard-page .learning-recent-panel {
+        border-radius: 1rem;
+    }
+
+    body.dashboard-page .learning-action-card {
+        padding: 1rem;
+        gap: 0.85rem;
+    }
+
+    body.dashboard-page .learning-action-card span.material-symbols-outlined {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    body.dashboard-page .learning-panel-head,
+    body.dashboard-page .learning-section-head {
+        align-items: center;
+    }
+
+    body.dashboard-page .learning-level-row {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+    }
+
+    body.dashboard-page .learning-recent-item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    body.dashboard-page .dashboard-sidebar-meta {
+        display: none;
+    }
+}
+
+/* Focused learning dashboard refresh */
+body.dashboard-page {
+    background:
+        radial-gradient(circle at top left, rgba(157, 208, 205, 0.06), transparent 28rem),
+        #101212;
+}
+
+body.dashboard-page .learning-home-main {
+    padding: clamp(0.9rem, 2.2vw, 1.6rem);
+}
+
+body.dashboard-page .learning-home-stack {
+    max-width: 1060px;
+    gap: 0.9rem;
+}
+
+body.dashboard-page .learning-primary-actions {
+    gap: 0.8rem;
+}
+
+body.dashboard-page .learning-action-card,
+body.dashboard-page .learning-practice-panel,
+body.dashboard-page .learning-levels-panel,
+body.dashboard-page .learning-recent-panel {
+    border-color: rgba(255, 255, 255, 0.045);
+    background: rgba(20, 23, 23, 0.94);
+    box-shadow: none;
+}
+
+body.dashboard-page .learning-action-card {
+    min-height: 7.6rem;
+    border-radius: 1rem;
+    padding: 1.05rem;
+}
+
+body.dashboard-page .learning-action-primary {
+    background: linear-gradient(145deg, rgba(45, 95, 93, 0.28), rgba(20, 23, 23, 0.96));
+}
+
+body.dashboard-page .learning-action-card span.material-symbols-outlined {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.85rem;
+}
+
+body.dashboard-page .learning-action-card h2 {
+    font-size: clamp(1.2rem, 1.7vw, 1.55rem);
+}
+
+body.dashboard-page .learning-practice-panel,
+body.dashboard-page .learning-levels-panel,
+body.dashboard-page .learning-recent-panel {
+    border-radius: 1rem;
+    padding: clamp(1rem, 2vw, 1.35rem);
+}
+
+body.dashboard-page .learning-practice-form {
+    grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 0.75fr) minmax(8rem, 0.9fr) auto;
+}
+
+body.dashboard-page .learning-practice-form select,
+body.dashboard-page .learning-practice-form button {
+    min-height: 3.35rem;
+    border-radius: 0.75rem;
+}
+
+body.dashboard-page .learning-practice-form button {
+    min-width: 8rem;
+}
+
+body.dashboard-page .learning-level-row {
+    grid-template-columns: minmax(10rem, 1fr) minmax(9rem, 1.4fr) auto;
+    padding: 0.85rem 0;
+}
+
+body.dashboard-page .learning-recent-item {
+    padding: 0.8rem 0;
+}
+
+body.dashboard-page .dashboard-sidebar-nav a {
+    min-height: 3rem;
+}
+
+@media (max-width: 960px) {
+    body.dashboard-page .learning-primary-actions,
+    body.dashboard-page .learning-practice-form {
+        grid-template-columns: 1fr;
+    }
+
+    body.dashboard-page .learning-practice-form button {
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 700px) {
+    body.dashboard-page .dashboard-layout {
+        display: block;
+        padding-top: 9.25rem;
+        padding-bottom: 5.75rem;
+    }
+
+    body.dashboard-page .learning-home-main {
+        padding: 0.75rem;
+    }
+
+    body.dashboard-page .learning-home-stack {
+        gap: 0.75rem;
+    }
+
+    body.dashboard-page .learning-action-card {
+        min-height: 6.75rem;
+        padding: 0.95rem;
+    }
+
+    body.dashboard-page .learning-action-card p,
+    body.dashboard-page .learning-eyebrow {
+        font-size: 0.64rem;
+        letter-spacing: 0.14em;
+    }
+
+    body.dashboard-page .learning-action-card small,
+    body.dashboard-page .learning-level-row span,
+    body.dashboard-page .learning-level-row small,
+    body.dashboard-page .learning-recent-item p {
+        font-size: 0.86rem;
+    }
+
+    body.dashboard-page .learning-panel-head,
+    body.dashboard-page .learning-section-head {
+        align-items: flex-start;
+    }
+
+    body.dashboard-page .learning-panel-head > span {
+        display: none;
+    }
+
+    body.dashboard-page .learning-level-row {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+
+    body.dashboard-page .learning-level-meter {
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    body.dashboard-page .dashboard-topbar {
+        padding: 0.75rem;
+    }
+
+    body.dashboard-page .dashboard-layout {
+        padding-top: 8.75rem;
+    }
+
+    body.dashboard-page .learning-action-card {
+        align-items: flex-start;
+    }
+
+    body.dashboard-page .learning-action-card span.material-symbols-outlined {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    body.dashboard-page .learning-panel-head h1,
+    body.dashboard-page .learning-section-head h2 {
+        font-size: 1.25rem;
     }
 }
