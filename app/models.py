@@ -139,6 +139,8 @@ class VocabularyEnrichment(db.Model):
     generated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_audited_at = db.Column(db.DateTime, nullable=True)
     last_regenerated_at = db.Column(db.DateTime, nullable=True)
+    validation_status = db.Column(db.String(50), nullable=True)
+    generation_timestamp = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
 
     vocabulary = db.relationship("VocabularyMaster", back_populates="enrichment")
 

@@ -42,7 +42,7 @@ from flask_migrate import Migrate
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from config import BASE_DIR, Config, DatabaseConfig, DEFAULT_SQLITE_URI
+from config import BASE_DIR, Config, DatabaseConfig
 from app.db_health import get_database_health, print_database_health
 from app.models import User, db
 
@@ -84,14 +84,16 @@ def _print_db_diagnostics(db_config, connection_status=None):
         print("[DB] Using SQLite")
         print("[DB] Host: local file")
 
-    for warning in db_config.warnings:
-        print(f"[DB] Warning: {warning}")
+    if hasattr(db_config, "warnings"):
+        for warning in db_config.warnings:
+            print(f"[DB] Warning: {warning}")
 
-    if db_config.fallback_used:
+    if hasattr(db_config, "fallback_used") and db_config.fallback_used:
         print("[DB] Falling back to SQLite")
 
     if connection_status:
         print(f"[DB] {connection_status}")
+
 
 
 def _database_engine_options(database_uri):
@@ -129,35 +131,76 @@ def _verify_startup_connection(database_uri, engine_options, attempts=2):
 
 
 def _prepare_database_config(app):
+    import sys
     db_config = app.config["DB_CONFIG"]
     engine_options = _database_engine_options(db_config.uri)
 
-    if db_config.db_type == "postgresql":
-        ok, error = _verify_startup_connection(db_config.uri, engine_options)
-        if ok:
-            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
-            _print_db_diagnostics(db_config, "Connection successful")
-            return
+    # Verify PostgreSQL connectivity
+    ok, error = _verify_startup_connection(db_config.uri, engine_options)
+    if not ok:
+        app.logger.critical(f"CRITICAL DATABASE CONNECTION FAILURE: {error}")
+        raise RuntimeError(f"CRITICAL: Failed to connect to primary PostgreSQL database: {error}")
 
-        fallback_config = DatabaseConfig(
-            uri=DEFAULT_SQLITE_URI,
-            db_type="sqlite",
-            fallback_used=True,
-            warnings=(f"PostgreSQL unavailable ({error}); falling back to SQLite.",),
+    is_migration_command = (
+        len(sys.argv) > 0
+        and "flask" in sys.argv[0].lower()
+        and any(
+            cmd in sys.argv
+            for cmd in [
+                "db",
+                "upgrade",
+                "downgrade",
+                "migrate",
+                "revision",
+                "stamp",
+                "init"
+            ]
         )
-        app.config["DB_CONFIG"] = fallback_config
-        app.config["SQLALCHEMY_DATABASE_URI"] = fallback_config.uri
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = _database_engine_options(fallback_config.uri)
-        print("[DB] PostgreSQL unavailable")
-        _print_db_diagnostics(fallback_config)
+    )
+
+    if is_migration_command:
+        app.logger.warning("Migration command detected. Skipping strict schema validation.")
+        app.config["DATABASE_MODE"] = "postgres_primary"
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
         return
 
+    # Verify schema access & check required tables
+    try:
+        engine = create_engine(db_config.uri, **engine_options)
+        with engine.connect() as connection:
+            inspector = inspect(engine)
+            tables = set(inspector.get_table_names())
+            
+            # Check if alembic_version exists
+            if "alembic_version" not in tables:
+                app.logger.warning("Fresh database detected. Skipping strict schema validation until migrations run.")
+            else:
+                # Check required tables
+                required = {
+                    "vocabulary_master",
+                    "vocabulary_enrichment",
+                    "user_word_progress",
+                    "user_level_progress",
+                    "flashcard_sessions",
+                    "flashcard_session_words",
+                    "search_history",
+                    "vocabulary_review_flags",
+                }
+                missing = required - tables
+                if missing:
+                    app.logger.critical(f"CRITICAL DATABASE SCHEMA INSPECTION FAILURE: Missing tables: {missing}")
+                    raise RuntimeError(f"CRITICAL: Database schema is incomplete. Missing tables: {missing}")
+    except Exception as exc:
+        if isinstance(exc, RuntimeError):
+            raise exc
+        app.logger.critical(f"CRITICAL DATABASE HEALTH VERIFICATION FAILURE: {exc}")
+        raise RuntimeError(f"CRITICAL: Database health verification failed: {exc}")
+
+    app.config["DATABASE_MODE"] = "postgres_primary"
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
-    ok, error = _verify_startup_connection(db_config.uri, engine_options, attempts=1)
-    if ok:
-        _print_db_diagnostics(db_config, "Connection successful")
-    else:
-        _print_db_diagnostics(db_config, f"Connection failed: {error}")
+    _print_db_diagnostics(db_config, "Connection and health checks successful")
+
+
 
 
 def _auto_import_vocabulary_if_empty():
@@ -351,6 +394,8 @@ def run_migrations():
     ensure_column("vocabulary_master", "last_audited_at", "ALTER TABLE vocabulary_master ADD COLUMN last_audited_at DATETIME")
     ensure_column("vocabulary_enrichment", "last_audited_at", "ALTER TABLE vocabulary_enrichment ADD COLUMN last_audited_at DATETIME")
     ensure_column("vocabulary_enrichment", "last_regenerated_at", "ALTER TABLE vocabulary_enrichment ADD COLUMN last_regenerated_at DATETIME")
+    ensure_column("vocabulary_enrichment", "validation_status", "ALTER TABLE vocabulary_enrichment ADD COLUMN validation_status VARCHAR(50)")
+    ensure_column("vocabulary_enrichment", "generation_timestamp", "ALTER TABLE vocabulary_enrichment ADD COLUMN generation_timestamp DATETIME")
     ensure_column("quiz_history", "answered_questions", "ALTER TABLE quiz_history ADD COLUMN answered_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "configured_total_questions", "ALTER TABLE quiz_history ADD COLUMN configured_total_questions INTEGER DEFAULT 0")
     ensure_column("quiz_history", "was_quit", "ALTER TABLE quiz_history ADD COLUMN was_quit BOOLEAN DEFAULT FALSE")
@@ -404,11 +449,8 @@ def create_app():
     if local_dev:
         app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
         app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config["DB_FALLBACK_ACTIVE"] = bool(app.config["DB_CONFIG"].fallback_used)
-    app.config["DB_PRODUCTION_FALLBACK_BLOCKED"] = bool(
-        app.config["DB_FALLBACK_ACTIVE"]
-        and (os.environ.get("RENDER") or os.environ.get("FLASK_ENV", "").strip().lower() == "production")
-    )
+    app.config["DB_FALLBACK_ACTIVE"] = False
+    app.config["DB_PRODUCTION_FALLBACK_BLOCKED"] = False
     app.config["ADMIN_EMAIL"] = (os.environ.get("ADMIN_EMAIL") or "").strip().lower()
     app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD") or ""
     app.config["ADMIN_PASSWORD_HASH"] = os.environ.get("ADMIN_PASSWORD_HASH") or ""
@@ -448,9 +490,9 @@ def create_app():
     @app.context_processor
     def inject_database_state():
         return {
-            "db_fallback_active": app.config.get("DB_FALLBACK_ACTIVE", False),
-            "db_production_fallback_blocked": app.config.get("DB_PRODUCTION_FALLBACK_BLOCKED", False),
-            "active_db_type": app.config["DB_CONFIG"].db_type,
+            "db_fallback_active": False,
+            "db_production_fallback_blocked": False,
+            "active_db_type": "postgresql",
         }
 
     @app.before_request
@@ -470,22 +512,6 @@ def create_app():
         )
 
     @app.before_request
-    def block_production_fallback_database():
-        if not app.config.get("DB_PRODUCTION_FALLBACK_BLOCKED"):
-            return None
-        if request.endpoint in {"health", "static"} or (request.endpoint or "").startswith("admin"):
-            return None
-        return (
-            render_template(
-                "error.html",
-                error_code=503,
-                error_title="Database connection unavailable",
-                error_message="The production database could not be reached, so the app is refusing to use an empty fallback database.",
-            ),
-            503,
-        )
-
-    @app.before_request
     def enforce_restrictions():
         if not current_user.is_authenticated:
             return None
@@ -496,6 +522,17 @@ def create_app():
             flash("Your account has been restricted. Contact the administrator.", "error")
             return redirect(url_for("login"))
         return None
+
+    @app.errorhandler(SQLAlchemyError)
+    def handle_db_error(error):
+        app.logger.exception("Database error occurred during request execution")
+        db.session.rollback()
+        return render_template(
+            "error.html",
+            error_code=500,
+            error_title="Something went wrong",
+            error_message="A database error occurred. We are preparing a safe recovery path. Please return to your dashboard and continue from there.",
+        ), 500
 
     @app.after_request
     def apply_security_headers(response):
@@ -588,14 +625,12 @@ def create_app():
     auto_bootstrap_db = os.environ.get("AUTO_BOOTSTRAP_DB", "1").lower() in {"1", "true", "yes"}
 
     with app.app_context():
-        if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
-            db.create_all()
-        if auto_bootstrap_db and app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:"):
-            run_migrations()
-            cleanup_invalid_words()
-            _auto_import_vocabulary_if_empty()
         if auto_bootstrap_db:
             _backfill_legacy_learning_progress()
         app.config["DB_HEALTH"] = print_database_health(app)
+
+        # Start continuous background cache saturation safely
+        from app.services.vocabulary_platform import start_continuous_enrichment_worker
+        start_continuous_enrichment_worker(app)
 
     return app

@@ -6,6 +6,7 @@ from app.services.vocabulary_platform import (
     get_all_generated_progress_words,
     get_session_progress_words,
     mark_progress_learned,
+    is_session_generation_complete,
 )
 
 
@@ -78,3 +79,35 @@ def register(app):
         )
         next_page = request.form.get("next") or request.referrer or url_for("difficult_words")
         return redirect(next_page)
+
+    @app.route("/flashcards/session/<int:session_id>/poll")
+    @login_required
+    def flashcards_session_poll(session_id):
+        study_session = FlashcardSession.query.filter_by(
+            id=session_id,
+            user_id=current_user.id,
+        ).first_or_404()
+        user_words = get_session_progress_words(current_user.id, session_id, include_learned=False)
+
+        ready_cards = []
+        for item in user_words:
+            if item.vocabulary.enrichment is not None:
+                ready_cards.append({
+                    "id": item.id,
+                    "word": item.vocabulary.word,
+                    "is_difficult": item.is_difficult,
+                    "already_known": item.already_known,
+                    "part_of_speech": item.vocabulary.enrichment.part_of_speech or "",
+                    "meaning": item.vocabulary.enrichment.definition,
+                    "bangla_meaning": item.vocabulary.enrichment.bangla_meaning or "",
+                    "sentence": item.vocabulary.enrichment.example_sentence or "",
+                    "phonetic": item.vocabulary.enrichment.pronunciation or "",
+                    "synonym": item.vocabulary.enrichment.synonyms or "",
+                    "antonym": item.vocabulary.enrichment.antonyms or "",
+                })
+
+        completed = is_session_generation_complete(study_session)
+        return jsonify({
+            "completed": completed,
+            "cards": ready_cards
+        })

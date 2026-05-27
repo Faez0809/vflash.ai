@@ -140,8 +140,10 @@
     {% if user_words %}
         <div id="flashcard-app"
             data-mode="{{ 'review' if review_mode else 'study' }}"
+            data-session-id="{{ study_session.id if study_session else '' }}"
+            data-total-count="{{ user_words|length }}"
             data-cards='[
-            {% for item in user_words %}
+            {% for item in user_words if item.vocabulary.enrichment is not none %}
                 {
                     "id": {{ item.id }},
                     "word": {{ item.word_entry.word|tojson }},

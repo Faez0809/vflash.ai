@@ -26,6 +26,7 @@
 <body class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
     <!--app-shell-start-->
     <div data-app-shell data-body-class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
+
     {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual', 'search_word'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>

@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import random
 import re
+import threading
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import selectinload
@@ -20,6 +21,7 @@ from app.models import (
 )
 from app.services.ai_generator import generate_word_content, suggest_word_corrections
 from app.services.stats import clean_text
+from app.services.enrichment_engine import generate_enrichment_payload, validate_enrichment, calculate_quality_score
 
 
 LEVEL_ALIASES = {
@@ -311,60 +313,31 @@ def _valid_pronunciation(value):
 
 
 def validate_enrichment_payload(vocabulary, payload):
-    normalized_word = vocabulary.normalized_word
-    definition = clean_text(payload.get("meaning") or payload.get("definition"))
-    pronunciation = clean_text(payload.get("phonetic") or payload.get("pronunciation")) or _fallback_pronunciation(vocabulary.word)
-    example_sentence = clean_text(payload.get("sentence") or payload.get("example_sentence"))
-    part_of_speech = clean_text(payload.get("part_of_speech"))
-    synonyms = _clean_relation(payload.get("synonym") or payload.get("synonyms"), normalized_word)
-    antonyms = _clean_relation(payload.get("antonym") or payload.get("antonyms"), normalized_word)
-    bangla_meaning = _clean_bangla(payload.get("bangla_meaning"))
-
-    errors = []
-    definition_lower = definition.lower()
-    if (
-        len(definition) < 8
-        or len(definition) > 180
-        or definition_lower in {normalized_word, vocabulary.word.lower()}
-        or _is_placeholder(definition)
-        or re.search(r"\b(as an ai|lorem ipsum|undefined|null|cannot provide|i'm sorry)\b", definition_lower)
-    ):
-        errors.append("definition")
-    if not bangla_meaning:
-        errors.append("bangla_meaning")
-    if not _valid_pronunciation(pronunciation):
-        errors.append("pronunciation")
-    if (
-        not example_sentence
-        or len(example_sentence) < 20
-        or _is_placeholder(example_sentence)
-        or not _sentence_mentions_word(example_sentence, normalized_word)
-    ):
-        errors.append("example_sentence")
-    if synonyms and normalized_word in {normalize_vocab_text(part) for part in re.split(r"[,;]", synonyms)}:
-        errors.append("synonyms")
-    if antonyms and normalized_word in {normalize_vocab_text(part) for part in re.split(r"[,;]", antonyms)}:
-        errors.append("antonyms")
-
-    valid = not errors
+    word = vocabulary.word if vocabulary else (payload.get("word") or "")
+    mapped_payload = {
+        "definition": payload.get("meaning") or payload.get("definition"),
+        "bangla_meaning": payload.get("bangla_meaning"),
+        "pronunciation": payload.get("phonetic") or payload.get("pronunciation"),
+        "example_sentence": payload.get("sentence") or payload.get("example_sentence"),
+        "synonyms": payload.get("synonym") or payload.get("synonyms"),
+        "antonyms": payload.get("antonym") or payload.get("antonyms"),
+        "part_of_speech": payload.get("part_of_speech"),
+    }
+    validation_res = validate_enrichment(word, mapped_payload)
     return {
-        "valid": valid,
-        "errors": errors,
-        "definition": definition,
-        "bangla_meaning": bangla_meaning,
-        "pronunciation": pronunciation,
-        "example_sentence": example_sentence if "example_sentence" not in errors else None,
-        "part_of_speech": part_of_speech or None,
-        "synonyms": synonyms,
-        "antonyms": antonyms,
+        "valid": validation_res["valid"],
+        "errors": validation_res["errors"],
+        "definition": mapped_payload["definition"],
+        "bangla_meaning": mapped_payload["bangla_meaning"],
+        "pronunciation": mapped_payload["pronunciation"],
+        "example_sentence": mapped_payload["example_sentence"] if "missing_example_sentence" not in validation_res["errors"] else None,
+        "part_of_speech": mapped_payload["part_of_speech"] or None,
+        "synonyms": mapped_payload["synonyms"],
+        "antonyms": mapped_payload["antonyms"],
     }
 
 
 def audit_enrichment(vocabulary, enrichment):
-    flags = []
-    missing_fields = []
-    word_validation = normalize_and_validate_word(vocabulary.word if vocabulary else "", level=vocabulary.level if vocabulary else None, allow_ai=False)
-    flags.extend(word_validation["flags"])
     if enrichment is None:
         return {
             "passed": False,
@@ -373,79 +346,39 @@ def audit_enrichment(vocabulary, enrichment):
             "missing_fields": ["definition", "pronunciation", "example_sentence"],
         }
 
-    definition = clean_text(enrichment.definition)
-    bangla_meaning = clean_text(enrichment.bangla_meaning)
-    pronunciation = clean_text(enrichment.pronunciation)
-    example_sentence = clean_text(enrichment.example_sentence)
-    synonyms = clean_text(enrichment.synonyms)
-    antonyms = clean_text(enrichment.antonyms)
-    memory_tip = clean_text(enrichment.memory_tip)
-    normalized_word = vocabulary.normalized_word if vocabulary else normalize_vocab_text(getattr(enrichment, "word", ""))
-
-    if not definition:
-        flags.append("empty_definition")
-        missing_fields.append("definition")
-    elif len(definition) < 20:
-        flags.append("weak_definition")
-    if definition.lower() in {normalized_word, f"a curated vocabulary item: {normalized_word}."} or _is_placeholder(definition):
-        flags.append("duplicate_or_placeholder_meaning")
-    if re.search(r"\b(as an ai|lorem ipsum|undefined|null|cannot provide|i'm sorry)\b", definition.lower()):
-        flags.append("hallucinated_output")
-    if not _clean_bangla(bangla_meaning):
-        flags.append("weak_bangla_meaning")
-        missing_fields.append("bangla_meaning")
-
-    if not pronunciation:
-        flags.append("missing_pronunciation")
-        missing_fields.append("pronunciation")
-    elif not _valid_pronunciation(pronunciation):
-        flags.append("malformed_pronunciation")
-
-    if synonyms and not _clean_relation(synonyms, normalized_word):
-        flags.append("invalid_synonym")
-
-    if antonyms and not _clean_relation(antonyms, normalized_word):
-        flags.append("invalid_antonym")
-
-    if not example_sentence:
-        flags.append("missing_example")
-        missing_fields.append("example_sentence")
-    elif len(example_sentence) < 24:
-        flags.append("extremely_short_example")
-    elif vocabulary is not None and not _sentence_mentions_word(example_sentence, vocabulary.normalized_word):
-        flags.append("irrelevant_example")
-
-    score = 100
-    penalties = {
-        "empty_definition": 45,
-        "weak_definition": 25,
-        "duplicate_or_placeholder_meaning": 30,
-        "hallucinated_output": 60,
-        "missing_pronunciation": 20,
-        "malformed_pronunciation": 25,
-        "invalid_synonym": 12,
-        "invalid_antonym": 10,
-        "missing_example": 18,
-        "extremely_short_example": 12,
-        "irrelevant_example": 20,
-        "weak_bangla_meaning": 20,
-        "suspicious_ocr": 60,
-        "malformed_word": 50,
-        "corrupted_phrase": 70,
-        "invalid_english": 80,
-        "repeated_fragments": 65,
-        "non_english_token": 70,
-        "too_easy_for_level": 25,
-        "low_confidence_correction": 25,
+    word = vocabulary.word if vocabulary else (getattr(enrichment, "word", None) or "")
+    payload = {
+        "definition": enrichment.definition,
+        "bangla_meaning": enrichment.bangla_meaning,
+        "pronunciation": enrichment.pronunciation,
+        "example_sentence": enrichment.example_sentence,
+        "synonyms": enrichment.synonyms,
+        "antonyms": enrichment.antonyms,
+        "part_of_speech": enrichment.part_of_speech,
     }
-    for flag in flags:
-        score -= penalties.get(flag, 5)
-    score = max(0, min(100, score))
+
+    validation_res = validate_enrichment(word, payload)
+    score = calculate_quality_score(word, payload)
+
+    flags = validation_res["errors"]
+    word_validation = normalize_and_validate_word(word, level=vocabulary.level if vocabulary else None, allow_ai=False)
+    flags = sorted(list(set(flags + word_validation["flags"])))
+
+    missing_fields = []
+    for err in validation_res["errors"]:
+        if err.startswith("missing_"):
+            field = err.replace("missing_", "")
+            if field == "meaning":
+                field = "definition"
+            elif field == "sentence":
+                field = "example_sentence"
+            missing_fields.append(field)
+
     return {
-        "passed": score >= HIGH_QUALITY_SCORE and not flags,
+        "passed": validation_res["valid"] and len(word_validation["flags"]) == 0,
         "score": score,
         "flags": flags,
-        "missing_fields": sorted(set(missing_fields)),
+        "missing_fields": sorted(list(set(missing_fields))),
     }
 
 
@@ -454,6 +387,17 @@ def apply_enrichment_audit(vocabulary, enrichment):
     enrichment.enrichment_quality_score = result["score"]
     enrichment.audit_flags = ",".join(result["flags"]) if result["flags"] else None
     enrichment.quality_verified = result["passed"]
+    
+    # Strictly enforce validation status matching the quality metrics
+    if enrichment.corrected_manually:
+        enrichment.validation_status = "approved"
+    elif result["passed"] and result["score"] >= 80:
+        enrichment.validation_status = "approved"
+    else:
+        enrichment.validation_status = "passed" if result["passed"] else "failed"
+
+    if not enrichment.generation_timestamp:
+        enrichment.generation_timestamp = datetime.utcnow()
     enrichment.last_audited_at = datetime.utcnow()
     if vocabulary is not None:
         vocabulary.last_audited_at = enrichment.last_audited_at
@@ -475,55 +419,101 @@ def apply_enrichment_audit(vocabulary, enrichment):
 
 def get_or_create_enrichment(vocabulary, allow_ai=True):
     preprocessing = preprocess_vocabulary_entry(vocabulary)
-    if vocabulary.enrichment is not None:
-        if (
-            preprocessing["original_word"]
-            and normalize_vocab_text(preprocessing["original_word"]) != vocabulary.normalized_word
-            and not vocabulary.enrichment.corrected_manually
-        ):
-            db.session.delete(vocabulary.enrichment)
-            vocabulary.enrichment = None
-            db.session.flush()
-        else:
-            apply_enrichment_audit(vocabulary, vocabulary.enrichment)
-            vocabulary.enrichment.memory_tip = None
-            db.session.flush()
-            return vocabulary.enrichment
+    
+    existing = vocabulary.enrichment
+    
+    # Priority 1 & 2: verified cached or high-score generated enrichments
+    if existing is not None:
+        if existing.corrected_manually:
+            return existing
+        
+        audit = audit_enrichment(vocabulary, existing)
+        if audit["passed"] and audit["score"] >= 80:
+            # High-score enrichment; promote to "approved" if it is not already
+            if existing.validation_status != "approved" or not existing.quality_verified:
+                existing.validation_status = "approved"
+                existing.quality_verified = True
+                existing.enrichment_quality_score = audit["score"]
+                existing.audit_flags = ",".join(audit["flags"]) if audit["flags"] else None
+                db.session.commit()
+            return existing
 
-    payload = build_shared_enrichment_payload(vocabulary.normalized_word, allow_ai=allow_ai)
+    # Priority 3: Live generation fallback (if not allowed or fails, we return current/None)
+    if not allow_ai:
+        return existing
 
-    validation = validate_enrichment_payload(vocabulary, payload)
-    definition = validation["definition"] or "Definition pending review."
+    from flask import current_app
+    try:
+        payload = generate_enrichment_payload(vocabulary.word, level=vocabulary.level)
+    except Exception as e:
+        if current_app:
+            current_app.logger.error(f"Groq API generation failed for '{vocabulary.word}': {e}")
+        return existing
+
+    validation = validate_enrichment(vocabulary.word, payload)
+    score = calculate_quality_score(vocabulary.word, payload)
+
     if not validation["valid"]:
-        for error in validation["errors"]:
-            _flag_vocabulary(vocabulary, "invalid_english", original_word=vocabulary.word, notes=f"Rejected enrichment field: {error}")
-        if not _valid_pronunciation(validation["pronunciation"]):
-            validation["pronunciation"] = None
-        if "definition" in validation["errors"]:
-            definition = "Definition pending review."
+        # If validation fails: DO NOT cache permanently.
+        # Mark vocabulary as needing admin review.
+        vocabulary.needs_admin_review = True
+        errors_joined = ", ".join(validation["errors"])
+        vocabulary.review_reason = f"AI enrichment failed validation: {errors_joined}"
+        _flag_vocabulary(
+            vocabulary,
+            "invalid_english",
+            original_word=vocabulary.word,
+            notes=f"Rejected enrichment. Validation errors: {errors_joined}"
+        )
+        db.session.commit()
+        return existing
 
-    enrichment = VocabularyEnrichment(
-        vocabulary_id=vocabulary.id,
-        definition=definition,
-        bangla_meaning=validation["bangla_meaning"],
-        pronunciation=validation["pronunciation"],
-        synonyms=validation["synonyms"],
-        antonyms=validation["antonyms"],
-        example_sentence=validation["example_sentence"],
-        memory_tip=None,
-        part_of_speech=validation["part_of_speech"],
-        quality_verified=validation["valid"],
-        enrichment_quality_score=0,
-        generated_by_model=os.environ.get("GROQ_MODEL") or None,
-        corrected_manually=False,
-        generated_at=datetime.utcnow(),
-        last_regenerated_at=None,
-    )
-    apply_enrichment_audit(vocabulary, enrichment)
-    db.session.add(enrichment)
-    db.session.flush()
-    vocabulary.enrichment = enrichment
-    return enrichment
+    # If validation passes: save/overwrite cache permanently
+    if existing is not None:
+        current_score = existing.enrichment_quality_score or 0
+        if score > current_score:
+            # Overwrite weak cache with superior newly generated one
+            existing.definition = payload["definition"]
+            existing.bangla_meaning = payload["bangla_meaning"]
+            existing.pronunciation = payload["pronunciation"]
+            existing.synonyms = payload["synonyms"]
+            existing.antonyms = payload["antonyms"]
+            existing.example_sentence = payload["example_sentence"]
+            existing.part_of_speech = payload["part_of_speech"]
+            existing.enrichment_quality_score = score
+            existing.last_regenerated_at = datetime.utcnow()
+            
+            apply_enrichment_audit(vocabulary, existing)
+            db.session.commit()
+            return existing
+        else:
+            # Keep existing as it is better or equal
+            return existing
+    else:
+        # Create a new enrichment record
+        enrichment = VocabularyEnrichment(
+            vocabulary_id=vocabulary.id,
+            definition=payload["definition"],
+            bangla_meaning=payload["bangla_meaning"],
+            pronunciation=payload["pronunciation"],
+            synonyms=payload["synonyms"],
+            antonyms=payload["antonyms"],
+            example_sentence=payload["example_sentence"],
+            memory_tip=None,
+            part_of_speech=payload["part_of_speech"],
+            enrichment_quality_score=score,
+            generation_timestamp=datetime.utcnow(),
+            generated_by_model=os.environ.get("GROQ_MODEL") or "llama-3.3-70b-versatile",
+            corrected_manually=False,
+            generated_at=datetime.utcnow(),
+            last_regenerated_at=None,
+        )
+        apply_enrichment_audit(vocabulary, enrichment)
+        db.session.add(enrichment)
+        db.session.flush()
+        vocabulary.enrichment = enrichment
+        db.session.commit()
+        return enrichment
 
 
 def regenerate_vocabulary_enrichment(vocabulary, admin_prompt=None):
@@ -532,11 +522,12 @@ def regenerate_vocabulary_enrichment(vocabulary, admin_prompt=None):
         vocabulary.enrichment = None
         db.session.flush()
     enrichment = get_or_create_enrichment(vocabulary, allow_ai=True)
-    if admin_prompt:
-        enrichment.audit_flags = ",".join(filter(None, [enrichment.audit_flags, "admin_prompt_override"]))
-    enrichment.last_regenerated_at = datetime.utcnow()
-    enrichment.corrected_manually = False
-    apply_enrichment_audit(vocabulary, enrichment)
+    if enrichment is not None:
+        if admin_prompt:
+            enrichment.audit_flags = ",".join(filter(None, [enrichment.audit_flags, "admin_prompt_override"]))
+        enrichment.last_regenerated_at = datetime.utcnow()
+        enrichment.corrected_manually = False
+        apply_enrichment_audit(vocabulary, enrichment)
     return enrichment
 
 
@@ -544,7 +535,21 @@ def build_shared_enrichment_payload(word, allow_ai=True):
     normalized_word = normalize_vocab_text(word)
     if not normalized_word or not allow_ai:
         return {}
-    return generate_word_content(normalized_word) or {}
+    try:
+        res = generate_enrichment_payload(normalized_word)
+        return {
+            "word": res["word"],
+            "part_of_speech": res["part_of_speech"],
+            "meaning": res["definition"],
+            "bangla_meaning": res["bangla_meaning"],
+            "phonetic": res["pronunciation"],
+            "sentence": res["example_sentence"],
+            "synonym": res["synonyms"],
+            "antonym": res["antonyms"],
+            "topic": "general"
+        }
+    except Exception:
+        return generate_word_content(normalized_word) or {}
 
 
 def create_search_vocabulary_from_payload(user_id, normalized_word, payload):
@@ -737,6 +742,143 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
     else:
         vocabularies = get_unseen_words(user_id, level, requested_count, order_mode)
 
+def is_session_generation_complete(session):
+    for sw in session.session_words:
+        vocab = sw.vocabulary
+        if vocab.enrichment is None and not vocab.needs_admin_review:
+            return False
+    return True
+
+
+def get_replacement_vocabulary(user_id, level, order_mode, excluded_ids):
+    level = normalize_level(level)
+    order_mode = normalize_order_mode(order_mode)
+    
+    if order_mode in ("review", "mixed_review"):
+        # Fetch high-quality review candidate that is not already in this session
+        query = (
+            UserWordProgress.query.join(VocabularyMaster)
+            .filter(
+                UserWordProgress.user_id == user_id,
+                VocabularyMaster.level == level,
+                ~UserWordProgress.vocabulary_id.in_(excluded_ids),
+                VocabularyMaster.needs_admin_review == False
+            )
+        )
+        if order_mode == "review":
+            query = query.filter(UserWordProgress.is_difficult.is_(True))
+            
+        review_progress = query.order_by(func.random()).first()
+        if review_progress:
+            return review_progress.vocabulary
+
+    # Fallback to unseen words
+    query = _base_unseen_query(user_id, level)
+    if excluded_ids:
+        query = query.filter(~VocabularyMaster.id.in_(excluded_ids))
+    query = query.filter(VocabularyMaster.needs_admin_review == False)
+    candidate = query.order_by(func.random()).first()
+    return candidate
+
+
+def start_background_enrichment(app, session_id):
+    def run():
+        with app.app_context():
+            session = db.session.get(FlashcardSession, session_id)
+            if not session:
+                return
+
+            total_retries = 0
+            max_session_retries = 15
+            position = 2
+
+            while position <= session.generated_count:
+                try:
+                    sw = FlashcardSessionWord.query.filter_by(session_id=session_id, position=position).first()
+                    if not sw:
+                        break
+
+                    vocab = sw.vocabulary
+                    enrichment = get_or_create_enrichment(vocab, allow_ai=True)
+
+                    if enrichment and not vocab.needs_admin_review:
+                        position += 1
+                    else:
+                        # Attempt to replace failed word
+                        if total_retries >= max_session_retries:
+                            app.logger.warning(f"[EXACT COUNT] Max retries reached for session {session_id}.")
+                            position += 1
+                            continue
+
+                        excluded_ids = {item.vocabulary_id for item in session.session_words}
+                        replacement = get_replacement_vocabulary(session.user_id, session.level, session.order_mode, excluded_ids)
+                        if replacement:
+                            total_retries += 1
+                            app.logger.info(f"[EXACT COUNT] Replacing failed word '{vocab.word}' with '{replacement.word}' at position {position}")
+                            
+                            sw.vocabulary_id = replacement.id
+                            
+                            now = datetime.utcnow()
+                            progress = UserWordProgress.query.filter_by(
+                                user_id=session.user_id,
+                                vocabulary_id=replacement.id,
+                            ).first()
+                            if progress is None:
+                                progress = UserWordProgress(user_id=session.user_id, vocabulary_id=replacement.id)
+                                db.session.add(progress)
+                            progress.is_generated = True
+                            progress.times_seen = (progress.times_seen or 0) + 1
+                            progress.last_seen_at = now
+                            progress.updated_at = now
+
+                            db.session.commit()
+                            # Do not increment position, retry this index with replacement word
+                        else:
+                            app.logger.warning(f"[EXACT COUNT] No replacement available for level {session.level}")
+                            position += 1
+                except Exception as e:
+                    db.session.rollback()
+                    app.logger.error(f"[EXACT COUNT] Exception in background session enrichment: {e}")
+                    time.sleep(1.0)
+                    position += 1
+    threading.Thread(target=run, daemon=True).start()
+
+
+def create_flashcard_session(user_id, level, requested_count, order_mode, include_generated=False):
+    requested_count = _bounded_count(requested_count)
+    level = normalize_level(level)
+    order_mode = normalize_order_mode(order_mode)
+    review_progress_items = []
+
+    if order_mode == "review":
+        review_progress_items = get_review_words(user_id, level=level, count=requested_count)
+        vocabularies = [item.vocabulary for item in review_progress_items]
+    elif order_mode == "mixed_review":
+        review_progress_items, vocabularies = get_mixed_words(user_id, level, count=requested_count)
+        vocabularies = [item.vocabulary for item in review_progress_items] + vocabularies
+    elif order_mode == "regenerate" or include_generated:
+        vocabularies = (
+            VocabularyMaster.query.options(selectinload(VocabularyMaster.enrichment))
+            .join(UserWordProgress, UserWordProgress.vocabulary_id == VocabularyMaster.id)
+            .filter(
+                UserWordProgress.user_id == user_id,
+                VocabularyMaster.level == level,
+                UserWordProgress.is_learned.is_(False),
+            )
+            .order_by(UserWordProgress.last_seen_at.asc().nullsfirst(), VocabularyMaster.id.asc())
+            .limit(requested_count)
+            .all()
+        )
+        if len(vocabularies) < requested_count:
+            seen_ids = {item.id for item in vocabularies}
+            vocabularies += [
+                item
+                for item in get_unseen_words(user_id, level, requested_count - len(vocabularies), "mixed")
+                if item.id not in seen_ids
+            ]
+    else:
+        vocabularies = get_unseen_words(user_id, level, requested_count, order_mode)
+
     session = FlashcardSession(
         user_id=user_id,
         level=level,
@@ -748,8 +890,25 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
     db.session.flush()
 
     now = datetime.utcnow()
+    # Section 4: FIRST CARD EXACT COUNT PRIORITY (Synchronous Retry / Substitution)
+    if vocabularies:
+        retries = 0
+        while retries < 5:
+            first_vocab = vocabularies[0]
+            enrichment = get_or_create_enrichment(first_vocab, allow_ai=True)
+            if enrichment and not first_vocab.needs_admin_review:
+                break
+            
+            # Substitute synchronous first card
+            excluded_ids = {v.id for v in vocabularies}
+            replacement = get_replacement_vocabulary(user_id, level, order_mode, excluded_ids)
+            if not replacement:
+                break
+            
+            vocabularies[0] = replacement
+            retries += 1
+
     for position, vocabulary in enumerate(vocabularies, start=1):
-        get_or_create_enrichment(vocabulary, allow_ai=True)
         progress = UserWordProgress.query.filter_by(
             user_id=user_id,
             vocabulary_id=vocabulary.id,
@@ -775,6 +934,117 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
         _update_level_completion(user_id, level)
 
     return session
+
+
+class ContinuousEnrichmentWorker:
+    _lock = threading.Lock()
+    _started = False
+    _stop_event = threading.Event()
+
+    @classmethod
+    def start(cls, app):
+        with cls._lock:
+            if cls._started:
+                return
+            
+            # Avoid starting in the Werkzeug reloader master process
+            if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+                return
+            
+            cls._started = True
+            cls._stop_event.clear()
+            
+            raw_app = app._get_current_object() if hasattr(app, "_get_current_object") else app
+            
+            thread = threading.Thread(
+                target=cls._run,
+                args=(raw_app,),
+                daemon=True,
+                name="ContinuousEnrichmentWorker"
+            )
+            thread.start()
+            raw_app.logger.info("[ContinuousEnrichmentWorker] Singleton background worker thread successfully spawned.")
+
+    @classmethod
+    def stop(cls):
+        with cls._lock:
+            cls._stop_event.set()
+            cls._started = False
+
+    @classmethod
+    def _run(cls, app):
+        import time
+        from sqlalchemy import or_
+        
+        levels = ["intermediate", "upper_intermediate", "advanced"]
+        level_idx = 0
+        
+        throttle_interval = float(os.environ.get("CONTINUOUS_WORKER_THROTTLE", "6.0"))
+        idle_interval = 45.0
+        
+        while not cls._stop_event.is_set():
+            try:
+                with app.app_context():
+                    level = levels[level_idx]
+                    
+                    query = VocabularyMaster.query.outerjoin(VocabularyEnrichment).filter(
+                        VocabularyMaster.needs_admin_review == False,
+                        VocabularyMaster.level == level
+                    ).filter(
+                        or_(
+                            VocabularyEnrichment.id.is_(None),
+                            VocabularyEnrichment.validation_status != "approved",
+                            VocabularyEnrichment.enrichment_quality_score < 80
+                        )
+                    ).order_by(
+                        VocabularyMaster.word.asc(),
+                        VocabularyMaster.id.asc()
+                    )
+                    
+                    vocab = query.first()
+                    
+                    if vocab:
+                        app.logger.info(f"[ContinuousEnrichmentWorker] Saturation hit: enriching '{vocab.word}' (level: {level})")
+                        try:
+                            get_or_create_enrichment(vocab, allow_ai=True)
+                        except Exception as inner_e:
+                            app.logger.error(f"[ContinuousEnrichmentWorker] Error enriching '{vocab.word}': {inner_e}")
+                        
+                        level_idx = (level_idx + 1) % len(levels)
+                        cls._stop_event.wait(throttle_interval)
+                    else:
+                        has_work = False
+                        for other_lvl in levels:
+                            other_q = VocabularyMaster.query.outerjoin(VocabularyEnrichment).filter(
+                                VocabularyMaster.needs_admin_review == False,
+                                VocabularyMaster.level == other_lvl
+                            ).filter(
+                                or_(
+                                    VocabularyEnrichment.id.is_(None),
+                                    VocabularyEnrichment.validation_status != "approved",
+                                    VocabularyEnrichment.enrichment_quality_score < 80
+                                )
+                            )
+                            if other_q.first():
+                                has_work = True
+                                break
+                        
+                        if has_work:
+                            level_idx = (level_idx + 1) % len(levels)
+                            cls._stop_event.wait(2.0)
+                        else:
+                            app.logger.info("[ContinuousEnrichmentWorker] All levels fully saturated. Going to idle.")
+                            cls._stop_event.wait(idle_interval)
+            except Exception as e:
+                try:
+                    app.logger.error(f"[ContinuousEnrichmentWorker] Exception in loop: {e}")
+                except Exception:
+                    pass
+                time.sleep(10.0)
+
+
+def start_continuous_enrichment_worker(app):
+    ContinuousEnrichmentWorker.start(app)
 
 
 def get_session_progress_words(user_id, session_id, include_learned=False):

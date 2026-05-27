@@ -87,12 +87,10 @@
                     <p class="text-[10px] uppercase tracking-[0.18em] text-[#9dd0cd] font-bold mb-2">Database health</p>
                     <h2 class="font-['Manrope'] text-2xl font-extrabold tracking-tight m-0">{{ dh.get('status', 'unknown')|replace('_', ' ')|title }}</h2>
                 </div>
-                {% if dh.get('fallback_used', false) %}
-                <span class="rounded-full bg-[#93000a]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffb4ab]">Fallback DB Active</span>
-                {% elif not dh.get('healthy', false) %}
-                <span class="rounded-full bg-[#dec38f]/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f]">Diagnostics Unavailable</span>
+                {% if dh.get('healthy', false) %}
+                <span class="rounded-full bg-[#2d5f5d]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9dd0cd]">PostgreSQL Connected</span>
                 {% else %}
-                <span class="rounded-full bg-[#2d5f5d]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9dd0cd]">Primary DB Active</span>
+                <span class="rounded-full bg-[#93000a]/30 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffb4ab]">PostgreSQL Disconnected</span>
                 {% endif %}
             </div>
             {% if dh.get('error') %}
@@ -100,41 +98,42 @@
             {% endif %}
             <div class="mt-5 grid gap-3 md:grid-cols-4">
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Type</p>
-                    <strong>{{ dh.get('db_type', dh.get('database_type', 'unknown')) }}{% if dh.get('provider') %} / {{ dh.get('provider') }}{% endif %}</strong>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Active DB Host</p>
+                    <strong class="break-all text-xs text-[#9dd0cd]">{{ dh.get('host') or 'unknown' }}</strong>
                 </div>
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Host</p>
-                    <strong class="break-all">{{ dh.get('host') or 'local file' }}</strong>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Database Name</p>
+                    <strong class="break-all text-xs">{{ dh.get('database', dh.get('database_name', 'unknown')) or 'unknown' }}</strong>
                 </div>
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Database</p>
-                    <strong class="break-all">{{ dh.get('database', dh.get('database_name', 'unknown')) or 'unknown' }}</strong>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">DB Latency (Ping)</p>
+                    <strong class="text-[#dec38f]">{{ dh.get('latency_ms', 0) }} ms</strong>
                 </div>
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Migration</p>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Migration Version</p>
                     <strong>{{ dh.get('alembic_version', dh.get('migration_version', 'not recorded')) or 'not recorded' }}</strong>
                 </div>
             </div>
-            <div class="mt-4 grid gap-3 md:grid-cols-3">
+            <div class="mt-4 grid gap-3 md:grid-cols-4">
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Vocabulary</p>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Total Vocabulary</p>
                     <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('vocabulary_master', dh.get('vocabulary_count', 0)) }}</strong>
                 </div>
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Users</p>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Total Users</p>
                     <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('users', dh.get('user_count', 0)) }}</strong>
                 </div>
                 <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
-                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Enrichments</p>
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Total Enrichments</p>
                     <strong class="font-['Manrope'] text-3xl">{{ dh_counts.get('vocabulary_enrichment', dh.get('enrichment_count', 0)) }}</strong>
+                </div>
+                <div class="rounded-2xl border border-white/5 bg-[#0d0f0f] p-4">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-[#8a9291] font-bold mb-2">Total Progress Rows</p>
+                    <strong class="font-['Manrope'] text-3xl text-[#dec38f]">{{ dh.get('total_progress_rows', 0) }}</strong>
                 </div>
             </div>
             {% if dh_missing_tables %}
             <p class="mt-4 mb-0 text-sm text-[#ffb4ab]">Missing tables: {{ dh_missing_tables|join(', ') }}. Run the Alembic migrations before using this database.</p>
-            {% endif %}
-            {% if dh_warnings %}
-            <p class="mt-4 mb-0 text-sm text-[#dec38f]">{{ dh_warnings|join(' ') }}</p>
             {% endif %}
         </section>
 

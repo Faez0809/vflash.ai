@@ -1,9 +1,14 @@
-from flask import flash, redirect, request, url_for
+from flask import flash, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 
 from app.models import db
 from app.services.stats import pluralize
-from app.services.vocabulary_platform import create_flashcard_session, normalize_level, normalize_order_mode
+from app.services.vocabulary_platform import (
+    create_flashcard_session,
+    normalize_level,
+    normalize_order_mode,
+    start_background_enrichment,
+)
 
 
 def register(app):
@@ -33,6 +38,12 @@ def register(app):
                 return redirect(f"{url_for('dashboard')}#generate-section")
 
             db.session.commit()
+
+            # Start background async generation for remaining cards
+            if session.generated_count > 1:
+                vocabulary_ids = [sw.vocabulary_id for sw in session.session_words[1:]]
+                start_background_enrichment(current_app._get_current_object(), vocabulary_ids)
+
             flash(f"{pluralize(session.generated_count, 'curated word')} prepared for this session.", "success")
             return redirect(url_for("flashcards_session", session_id=session.id))
         except Exception:

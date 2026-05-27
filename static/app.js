@@ -1091,7 +1091,7 @@ function initFlashcards() {
     let flashcardPressReleaseTimer = null;
     
     // Stable counters for tracking session progress easily
-    const initialTotalCards = cards.length;
+    let initialTotalCards = parseInt(flashcardApp.dataset.totalCount || cards.length, 10);
     let numCompletedThisSession = 0;
     const progressEl = document.querySelector("#flashcard-progress");
     const hiddenValuePatterns = [
@@ -1626,6 +1626,45 @@ function initFlashcards() {
     window.addEventListener("resize", syncFlashcardInteractionMode);
 
     renderCard();
+
+    const sessionId = flashcardApp.dataset.sessionId;
+    if (sessionId) {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/flashcards/session/${sessionId}/poll`);
+                if (!response.ok) return;
+                const data = await response.json();
+
+                let newCardsAdded = false;
+                if (data.cards && data.cards.length > 0) {
+                    data.cards.forEach((newCard) => {
+                        const exists = originalCards.some((c) => c.id === newCard.id);
+                        if (!exists) {
+                            originalCards.push({ ...newCard });
+                            cards.push({ ...newCard });
+                            newCardsAdded = true;
+                        }
+                    });
+                }
+
+                if (newCardsAdded) {
+                    initialTotalCards = Math.max(initialTotalCards, originalCards.length);
+                    const hadNoActiveCard = !hasActiveCard();
+                    if (hadNoActiveCard && cards.length > 0) {
+                        currentIndex = 0;
+                        setButtonsDisabled(false);
+                    }
+                    renderCard();
+                }
+
+                if (data.completed) {
+                    clearInterval(pollInterval);
+                }
+            } catch (err) {
+                console.error("Error polling session status:", err);
+            }
+        }, 2500);
+    }
 }
 
 function initUsageTracking() {

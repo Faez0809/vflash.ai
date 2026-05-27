@@ -92,12 +92,7 @@
 
         <section class="dashboard-main learning-home-main">
             <div class="learning-home-stack">
-                {% if db_fallback_active %}
-                <section class="learning-empty-state" style="border-color: rgba(255,180,171,0.35);">
-                    <span class="material-symbols-outlined">database_off</span>
-                    <p>Fallback database is active. Production users and progress may be unavailable until PostgreSQL reconnects.</p>
-                </section>
-                {% endif %}
+
                 <section class="learning-primary-actions" aria-label="Learning actions">
                     <a class="learning-action-card learning-action-primary" href="{{ url_for('flashcards_session', session_id=last_session.id) if last_session else '#generate-section' }}">
                         <span class="material-symbols-outlined">play_arrow</span>
