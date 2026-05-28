@@ -1025,30 +1025,43 @@ class ContinuousEnrichmentWorker:
     _lock = threading.Lock()
     _started = False
     _stop_event = threading.Event()
+    _thread = None  # strong reference so we can check is_alive()
 
     @classmethod
     def start(cls, app):
         with cls._lock:
+            # If thread is healthy, nothing to do
+            if cls._started and cls._thread is not None and cls._thread.is_alive():
+                return
+
+            # Thread died unexpectedly — allow a clean restart
+            if cls._started and (cls._thread is None or not cls._thread.is_alive()):
+                try:
+                    app.logger.warning(
+                        "[Worker] Background enrichment thread was dead — restarting."
+                    )
+                except Exception:
+                    pass
+                cls._started = False
+
             if cls._started:
                 return
-            
-            # Avoid starting in the Werkzeug reloader master process
-            if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-                return
-            
+
             cls._started = True
             cls._stop_event.clear()
-            
+
             raw_app = app._get_current_object() if hasattr(app, "_get_current_object") else app
-            
-            thread = threading.Thread(
+
+            cls._thread = threading.Thread(
                 target=cls._run,
                 args=(raw_app,),
                 daemon=True,
-                name="ContinuousEnrichmentWorker"
+                name="ContinuousEnrichmentWorker",
             )
-            thread.start()
-            raw_app.logger.info("[ContinuousEnrichmentWorker] Singleton background worker thread successfully spawned.")
+            cls._thread.start()
+            raw_app.logger.info(
+                "[Worker] Singleton background enrichment thread spawned."
+            )
 
     @classmethod
     def stop(cls):
@@ -1057,78 +1070,184 @@ class ContinuousEnrichmentWorker:
             cls._started = False
 
     @classmethod
+    def _log_progress_stats(cls, app):
+        """Log a one-line cache saturation summary. Safe to call from inside
+        an existing app context."""
+        try:
+            total = VocabularyMaster.query.filter_by(needs_admin_review=False).count()
+            approved = (
+                VocabularyMaster.query
+                .join(VocabularyEnrichment, VocabularyEnrichment.vocabulary_id == VocabularyMaster.id)
+                .filter(
+                    VocabularyMaster.needs_admin_review == False,
+                    VocabularyEnrichment.validation_status == "approved",
+                    VocabularyEnrichment.enrichment_quality_score >= HIGH_QUALITY_SCORE,
+                )
+                .count()
+            )
+            remaining = total - approved
+            pct = round(approved / total * 100, 1) if total else 0
+            app.logger.info(
+                f"[Worker] Cache saturation: {approved}/{total} approved "
+                f"({pct}%) — {remaining} remaining"
+            )
+        except Exception as stat_e:
+            try:
+                app.logger.warning(f"[Worker] Could not log progress stats: {stat_e}")
+            except Exception:
+                pass
+
+    @classmethod
     def _run(cls, app):
-        import time
-        from sqlalchemy import or_
-        
+        from datetime import timedelta
+        from sqlalchemy import or_, text as sa_text
+
         levels = ["intermediate", "upper_intermediate", "advanced"]
         level_idx = 0
-        
+        processed_count = 0
+
         throttle_interval = float(os.environ.get("CONTINUOUS_WORKER_THROTTLE", "6.0"))
-        idle_interval = 45.0
-        
+        idle_interval = float(os.environ.get("CONTINUOUS_WORKER_IDLE", "45.0"))
+        # Cooldown: how long (hours) before a failed word is retried.
+        # Prevents infinite hammering of words the AI consistently rejects.
+        cooldown_hours = float(os.environ.get("ENRICHMENT_RETRY_COOLDOWN_HOURS", "2.0"))
+        # Log cache progress every N processed words
+        log_every_n = int(os.environ.get("ENRICHMENT_LOG_EVERY_N", "20"))
+
+        # Brief startup pause then log initial stats
+        cls._stop_event.wait(3.0)
+        try:
+            with app.app_context():
+                cls._log_progress_stats(app)
+        except Exception:
+            pass
+
         while not cls._stop_event.is_set():
             try:
                 with app.app_context():
                     level = levels[level_idx]
-                    
-                    query = VocabularyMaster.query.outerjoin(VocabularyEnrichment).filter(
-                        VocabularyMaster.needs_admin_review == False,
-                        VocabularyMaster.level == level
-                    ).filter(
-                        or_(
-                            VocabularyEnrichment.id.is_(None),
-                            VocabularyEnrichment.validation_status != "approved",
-                            VocabularyEnrichment.enrichment_quality_score < 80
+                    cooldown_cutoff = datetime.utcnow() - timedelta(hours=cooldown_hours)
+
+                    # Find the next unenriched word for this level that is not
+                    # currently in its cooldown window (i.e. last_audited_at is
+                    # old enough or never set).
+                    vocab = (
+                        VocabularyMaster.query
+                        .outerjoin(VocabularyEnrichment)
+                        .filter(
+                            VocabularyMaster.needs_admin_review == False,
+                            VocabularyMaster.level == level,
+                            (
+                                VocabularyMaster.last_audited_at.is_(None)
+                                | (VocabularyMaster.last_audited_at < cooldown_cutoff)
+                            ),
                         )
-                    ).order_by(
-                        VocabularyMaster.word.asc(),
-                        VocabularyMaster.id.asc()
+                        .filter(
+                            or_(
+                                VocabularyEnrichment.id.is_(None),
+                                VocabularyEnrichment.validation_status != "approved",
+                                VocabularyEnrichment.enrichment_quality_score < 80,
+                            )
+                        )
+                        # Prioritise words never audited, then oldest audit first
+                        .order_by(
+                            VocabularyMaster.last_audited_at.asc().nullsfirst(),
+                            VocabularyMaster.word.asc(),
+                        )
+                        .first()
                     )
-                    
-                    vocab = query.first()
-                    
+
                     if vocab:
-                        app.logger.info(f"[ContinuousEnrichmentWorker] Saturation hit: enriching '{vocab.word}' (level: {level})")
+                        app.logger.info(
+                            f"[Worker] Enriching '{vocab.word}' (level={level})"
+                        )
                         try:
                             get_or_create_enrichment(vocab, allow_ai=True)
+                            processed_count += 1
                         except Exception as inner_e:
-                            app.logger.error(f"[ContinuousEnrichmentWorker] Error enriching '{vocab.word}': {inner_e}")
-                        
+                            app.logger.error(
+                                f"[Worker] Error enriching '{vocab.word}': {inner_e}"
+                            )
+                        finally:
+                            # Always stamp last_audited_at — success OR failure —
+                            # so the cooldown filter keeps this word out of the
+                            # queue for ENRICHMENT_RETRY_COOLDOWN_HOURS.
+                            try:
+                                db.session.execute(
+                                    sa_text(
+                                        "UPDATE vocabulary_master "
+                                        "SET last_audited_at = :now WHERE id = :vid"
+                                    ),
+                                    {"now": datetime.utcnow(), "vid": vocab.id},
+                                )
+                                db.session.commit()
+                            except Exception:
+                                db.session.rollback()
+
+                        # Periodic progress report
+                        if log_every_n > 0 and processed_count % log_every_n == 0:
+                            cls._log_progress_stats(app)
+
                         level_idx = (level_idx + 1) % len(levels)
                         cls._stop_event.wait(throttle_interval)
+
                     else:
-                        has_work = False
-                        for other_lvl in levels:
-                            other_q = VocabularyMaster.query.outerjoin(VocabularyEnrichment).filter(
+                        # No actionable work at this level — check other levels
+                        has_work = any(
+                            VocabularyMaster.query
+                            .outerjoin(VocabularyEnrichment)
+                            .filter(
                                 VocabularyMaster.needs_admin_review == False,
-                                VocabularyMaster.level == other_lvl
-                            ).filter(
+                                VocabularyMaster.level == other_lvl,
+                                (
+                                    VocabularyMaster.last_audited_at.is_(None)
+                                    | (VocabularyMaster.last_audited_at < cooldown_cutoff)
+                                ),
+                            )
+                            .filter(
                                 or_(
                                     VocabularyEnrichment.id.is_(None),
                                     VocabularyEnrichment.validation_status != "approved",
-                                    VocabularyEnrichment.enrichment_quality_score < 80
+                                    VocabularyEnrichment.enrichment_quality_score < 80,
                                 )
                             )
-                            if other_q.first():
-                                has_work = True
-                                break
-                        
+                            .first() is not None
+                            for other_lvl in levels
+                        )
+
                         if has_work:
                             level_idx = (level_idx + 1) % len(levels)
                             cls._stop_event.wait(2.0)
                         else:
-                            app.logger.info("[ContinuousEnrichmentWorker] All levels fully saturated. Going to idle.")
+                            app.logger.info(
+                                "[Worker] All pending vocabulary processed or in cooldown. "
+                                f"Sleeping {idle_interval:.0f}s."
+                            )
+                            cls._log_progress_stats(app)
                             cls._stop_event.wait(idle_interval)
+
             except Exception as e:
                 try:
-                    app.logger.error(f"[ContinuousEnrichmentWorker] Exception in loop: {e}")
+                    app.logger.error(f"[Worker] Exception in main loop: {e}")
                 except Exception:
                     pass
                 time.sleep(10.0)
 
 
 def start_continuous_enrichment_worker(app):
+    """Start the singleton enrichment worker.
+
+    Safe to call multiple times: duplicate starts are ignored via the class
+    lock + thread health check. No Werkzeug reloader guard — the worker
+    starts unconditionally so it runs in all environments:
+
+    - python app.py local dev (use_reloader=False)
+    - Production Gunicorn/Render single-worker deployment
+    - After Render service restart (class state resets with the process)
+
+    Dead thread detection: if the worker thread crashes, the next call to
+    start() will detect the dead thread and restart it automatically.
+    """
     ContinuousEnrichmentWorker.start(app)
 
 
