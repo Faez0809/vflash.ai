@@ -1629,6 +1629,9 @@ function initFlashcards() {
 
     const sessionId = flashcardApp.dataset.sessionId;
     if (sessionId) {
+        // Build a fast lookup set so duplicate detection is O(1)
+        const seenCardIds = new Set(originalCards.map((c) => c.id));
+
         const pollInterval = setInterval(async () => {
             try {
                 const response = await fetch(`/flashcards/session/${sessionId}/poll`);
@@ -1638,8 +1641,8 @@ function initFlashcards() {
                 let newCardsAdded = false;
                 if (data.cards && data.cards.length > 0) {
                     data.cards.forEach((newCard) => {
-                        const exists = originalCards.some((c) => c.id === newCard.id);
-                        if (!exists) {
+                        if (!seenCardIds.has(newCard.id)) {
+                            seenCardIds.add(newCard.id);
                             originalCards.push({ ...newCard });
                             cards.push({ ...newCard });
                             newCardsAdded = true;
@@ -1658,6 +1661,17 @@ function initFlashcards() {
                 }
 
                 if (data.completed) {
+                    // Some words may have permanently failed enrichment (flagged for
+                    // admin review). If we received fewer cards than the original
+                    // target, reconcile initialTotalCards so the progress counter
+                    // shows the correct total instead of being stuck at e.g. "1/10".
+                    if (originalCards.length > 0 && originalCards.length < initialTotalCards) {
+                        initialTotalCards = originalCards.length;
+                        if (!newCardsAdded) {
+                            // Re-render so the count label updates immediately
+                            renderCard();
+                        }
+                    }
                     clearInterval(pollInterval);
                 }
             } catch (err) {

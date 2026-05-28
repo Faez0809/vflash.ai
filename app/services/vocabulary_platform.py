@@ -4,6 +4,7 @@ import os
 import random
 import re
 import threading
+import time
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import selectinload
@@ -610,6 +611,31 @@ def _base_unseen_query(user_id, level):
     )
 
 
+def _get_approved_unseen_words(user_id, level, count):
+    """Return unseen vocabulary that already have high-quality approved enrichments.
+    Used for cache-first flashcard delivery so ready cards appear instantly.
+    """
+    level = normalize_level(level)
+    return (
+        VocabularyMaster.query
+        .options(selectinload(VocabularyMaster.enrichment))
+        .join(VocabularyEnrichment, VocabularyEnrichment.vocabulary_id == VocabularyMaster.id)
+        .filter(
+            VocabularyMaster.level == level,
+            VocabularyMaster.needs_admin_review.is_(False),
+            VocabularyEnrichment.validation_status == "approved",
+            VocabularyEnrichment.enrichment_quality_score >= HIGH_QUALITY_SCORE,
+            ~VocabularyMaster.id.in_(_excluded_generated_or_learned_subquery(user_id)),
+        )
+        .order_by(
+            VocabularyEnrichment.enrichment_quality_score.desc(),
+            VocabularyMaster.word.asc(),
+        )
+        .limit(count)
+        .all()
+    )
+
+
 def _update_level_completion(user_id, level, last_word_id=None):
     level = normalize_level(level)
     state = get_or_create_level_progress(user_id, level)
@@ -743,8 +769,16 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
         vocabularies = get_unseen_words(user_id, level, requested_count, order_mode)
 
 def is_session_generation_complete(session):
+    """Return True when every session word either has an enrichment or is
+    permanently blocked (needs_admin_review). The background worker will have
+    already attempted replacements for blocked words.
+    """
     for sw in session.session_words:
         vocab = sw.vocabulary
+        if vocab is None:
+            continue
+        # Only block completion if there is no enrichment AND the word is not
+        # yet flagged as permanently unresolvable.
         if vocab.enrichment is None and not vocab.needs_admin_review:
             return False
     return True
@@ -877,7 +911,22 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
                 if item.id not in seen_ids
             ]
     else:
-        vocabularies = get_unseen_words(user_id, level, requested_count, order_mode)
+        # CACHE-FIRST: pull words that already have approved enrichments so
+        # they are delivered instantly, then fill remaining slots with raw
+        # unseen words that will be enriched progressively in the background.
+        ready = _get_approved_unseen_words(user_id, level, requested_count)
+        if len(ready) >= requested_count:
+            vocabularies = ready[:requested_count]
+        else:
+            ready_ids = {v.id for v in ready}
+            remaining_count = requested_count - len(ready)
+            # Fetch slightly more than needed to account for id overlap
+            raw_candidates = get_unseen_words(
+                user_id, level, remaining_count + len(ready_ids), order_mode
+            )
+            raw = [v for v in raw_candidates if v.id not in ready_ids][:remaining_count]
+            # Ready (already-enriched) cards go first so they render instantly
+            vocabularies = ready + raw
 
     session = FlashcardSession(
         user_id=user_id,

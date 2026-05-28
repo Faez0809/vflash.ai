@@ -9,6 +9,8 @@ from app.services.vocabulary_platform import (
     normalize_order_mode,
     start_background_enrichment,
 )
+import logging
+_log = logging.getLogger(__name__)
 
 
 def register(app):
@@ -41,8 +43,10 @@ def register(app):
 
             # Start background async generation for remaining cards
             if session.generated_count > 1:
-                vocabulary_ids = [sw.vocabulary_id for sw in session.session_words[1:]]
-                start_background_enrichment(current_app._get_current_object(), vocabulary_ids)
+                try:
+                    start_background_enrichment(current_app._get_current_object(), session.id)
+                except Exception as bg_err:
+                    _log.warning(f"[generate] Could not start background enrichment: {bg_err}")
 
             flash(f"{pluralize(session.generated_count, 'curated word')} prepared for this session.", "success")
             return redirect(url_for("flashcards_session", session_id=session.id))

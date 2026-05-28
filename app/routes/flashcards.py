@@ -91,23 +91,29 @@ def register(app):
 
         ready_cards = []
         for item in user_words:
-            if item.vocabulary.enrichment is not None:
+            enrich = item.vocabulary.enrichment if item.vocabulary else None
+            if enrich is not None and enrich.definition:
                 ready_cards.append({
                     "id": item.id,
                     "word": item.vocabulary.word,
                     "is_difficult": item.is_difficult,
                     "already_known": item.already_known,
-                    "part_of_speech": item.vocabulary.enrichment.part_of_speech or "",
-                    "meaning": item.vocabulary.enrichment.definition,
-                    "bangla_meaning": item.vocabulary.enrichment.bangla_meaning or "",
-                    "sentence": item.vocabulary.enrichment.example_sentence or "",
-                    "phonetic": item.vocabulary.enrichment.pronunciation or "",
-                    "synonym": item.vocabulary.enrichment.synonyms or "",
-                    "antonym": item.vocabulary.enrichment.antonyms or "",
+                    "part_of_speech": enrich.part_of_speech or "",
+                    "meaning": enrich.definition,
+                    "bangla_meaning": enrich.bangla_meaning or "",
+                    "sentence": enrich.example_sentence or "",
+                    "phonetic": enrich.pronunciation or "",
+                    "synonym": enrich.synonyms or "",
+                    "antonym": enrich.antonyms or "",
                 })
 
         completed = is_session_generation_complete(study_session)
         return jsonify({
             "completed": completed,
-            "cards": ready_cards
+            "cards": ready_cards,
+            # Let the frontend know the original target and how many are ready.
+            # Used to correctly adjust the progress counter when some words
+            # permanently fail enrichment (needs_admin_review).
+            "requested_count": study_session.requested_count,
+            "ready_count": len(ready_cards),
         })
