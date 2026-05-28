@@ -7,7 +7,7 @@ import threading
 import time
 
 from sqlalchemy import and_, case, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import contains_eager, selectinload
 
 from app.models import (
     FlashcardSession,
@@ -614,12 +614,13 @@ def _base_unseen_query(user_id, level):
 def _get_approved_unseen_words(user_id, level, count):
     """Return unseen vocabulary that already have high-quality approved enrichments.
     Used for cache-first flashcard delivery so ready cards appear instantly.
+    Uses contains_eager to load enrichment from the JOIN in a single query.
     """
     level = normalize_level(level)
     return (
         VocabularyMaster.query
-        .options(selectinload(VocabularyMaster.enrichment))
         .join(VocabularyEnrichment, VocabularyEnrichment.vocabulary_id == VocabularyMaster.id)
+        .options(contains_eager(VocabularyMaster.enrichment))
         .filter(
             VocabularyMaster.level == level,
             VocabularyMaster.needs_admin_review.is_(False),
@@ -938,30 +939,65 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
     db.session.add(session)
     db.session.flush()
 
-    now = datetime.utcnow()
-    # Section 4: FIRST CARD EXACT COUNT PRIORITY (Synchronous Retry / Substitution)
+    # FIRST CARD FAST PATH
+    # With cache-first selection, vocabularies[0] is already an approved
+    # high-quality enrichment. Detect this upfront and skip the expensive
+    # synchronous get_or_create_enrichment call so the session page (and the
+    # first flashcard) loads almost instantly.
     if vocabularies:
-        retries = 0
-        while retries < 5:
-            first_vocab = vocabularies[0]
-            enrichment = get_or_create_enrichment(first_vocab, allow_ai=True)
-            if enrichment and not first_vocab.needs_admin_review:
-                break
-            
-            # Substitute synchronous first card
-            excluded_ids = {v.id for v in vocabularies}
-            replacement = get_replacement_vocabulary(user_id, level, order_mode, excluded_ids)
-            if not replacement:
-                break
-            
-            vocabularies[0] = replacement
-            retries += 1
+        first_vocab = vocabularies[0]
+        _fe = first_vocab.enrichment
+        _first_ready = (
+            _fe is not None
+            and bool(_fe.definition)
+            and _fe.validation_status == "approved"
+            and (_fe.enrichment_quality_score or 0) >= HIGH_QUALITY_SCORE
+            and not first_vocab.needs_admin_review
+        )
+        if not _first_ready:
+            # First card is not yet enriched — attempt synchronous enrichment
+            # or substitute with a word that already has one.
+            retries = 0
+            while retries < 5:
+                first_vocab = vocabularies[0]
+                # Re-check in case a previous iteration swapped the vocab
+                _fe2 = first_vocab.enrichment
+                if (
+                    _fe2 is not None
+                    and bool(_fe2.definition)
+                    and _fe2.validation_status == "approved"
+                    and (_fe2.enrichment_quality_score or 0) >= HIGH_QUALITY_SCORE
+                    and not first_vocab.needs_admin_review
+                ):
+                    break
+                enrichment = get_or_create_enrichment(first_vocab, allow_ai=True)
+                if enrichment and not first_vocab.needs_admin_review:
+                    break
+                # Substitute with any available word that has a ready enrichment
+                excluded_ids = {v.id for v in vocabularies}
+                replacement = get_replacement_vocabulary(user_id, level, order_mode, excluded_ids)
+                if not replacement:
+                    break
+                vocabularies[0] = replacement
+                retries += 1
+
+    now = datetime.utcnow()
+    # Batch-fetch all existing UserWordProgress records in ONE query instead of
+    # N individual queries. On Supabase each roundtrip is ~200-400ms, so for a
+    # 10-card session this cuts ~2-4s off session creation time.
+    vocab_ids = [v.id for v in vocabularies]
+    existing_progress_map = {}
+    if vocab_ids:
+        existing_progress_map = {
+            p.vocabulary_id: p
+            for p in UserWordProgress.query.filter(
+                UserWordProgress.user_id == user_id,
+                UserWordProgress.vocabulary_id.in_(vocab_ids),
+            ).all()
+        }
 
     for position, vocabulary in enumerate(vocabularies, start=1):
-        progress = UserWordProgress.query.filter_by(
-            user_id=user_id,
-            vocabulary_id=vocabulary.id,
-        ).first()
+        progress = existing_progress_map.get(vocabulary.id)
         if progress is None:
             progress = UserWordProgress(user_id=user_id, vocabulary_id=vocabulary.id)
             db.session.add(progress)
