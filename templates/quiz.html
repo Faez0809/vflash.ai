@@ -5,6 +5,9 @@
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
+    /* Guaranteed hidden state — independent of Tailwind compilation */
+    .quiz-modal-overlay { display: none !important; }
+    .quiz-modal-overlay.is-open { display: flex !important; }
     body.tw-dark-page {
         background-color: #121414 !important;
         color: #e2e2e2 !important;
@@ -68,7 +71,87 @@
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }
+    /* Quiz answer feedback states — driven by initQuizUX() */
+    .quiz-option.quiz-option-correct {
+        border-color: #4ADE80 !important;
+        background: rgba(74, 222, 128, 0.10) !important;
+        box-shadow: 0 0 0 1px rgba(74,222,128,0.35),
+                    0 0 24px rgba(74,222,128,0.12) !important;
+    }
+    .quiz-option.quiz-option-correct span.option-text {
+        color: #86EFAC !important;
+    }
+    .quiz-option.quiz-option-correct input + div {
+        border-color: #4ADE80 !important;
+        background-color: #4ADE80 !important;
+    }
+    .quiz-option.quiz-option-correct input + div > div {
+        opacity: 1 !important;
+    }
+
+    .quiz-option.quiz-option-wrong {
+        border-color: #EF4444 !important;
+        background: rgba(239, 68, 68, 0.10) !important;
+        box-shadow: 0 0 0 1px rgba(239,68,68,0.35),
+                    0 0 24px rgba(239,68,68,0.10) !important;
+    }
+    .quiz-option.quiz-option-wrong span.option-text {
+        color: #FCA5A5 !important;
+    }
+    .quiz-option.quiz-option-wrong input + div {
+        border-color: #EF4444 !important;
+        background-color: #EF4444 !important;
+    }
+    .quiz-option.quiz-option-wrong input + div > div {
+        opacity: 1 !important;
+        background-color: #0d0f0f !important;
+    }
+
+    .quiz-option.is-locked {
+        pointer-events: none;
+    }
+    /* Setup form loading overlay */
+    #quiz-loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(18,20,20,0.85);
+        backdrop-filter: blur(6px);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+    #quiz-loading-overlay.visible {
+        display: flex;
+    }
+    .quiz-spinner {
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 3px solid rgba(157,208,205,0.2);
+        border-top-color: #9dd0cd;
+        border-radius: 50%;
+        animation: quiz-spin 0.8s linear infinite;
+    }
+    @keyframes quiz-spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
+
+
+<!-- Immediately kill global loading overlay before app.js runs -->
+<script>
+(function () {
+    var ov = document.querySelector('[data-loading-overlay]');
+    if (ov) {
+        ov.classList.remove('is-visible');
+        ov.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('is-busy');
+})();
+</script>
+
 <div class="tw-scope quiz-local-shell font-body antialiased bg-[#121414] min-h-screen text-[#e2e2e2] flex flex-col items-center">
 
     <!-- Top Navigation Anchor (Shared) -->
@@ -191,10 +274,10 @@
                         {% endif %}
 
                         <div class="flex flex-col w-full gap-3 shrink-0 mt-auto">
-                            <a href="{{ url_for('quiz', reset=1) }}" class="btn-stitch-glow w-full py-4 px-8 rounded-lg font-headline font-bold text-[13px] tracking-widest uppercase no-underline text-center">
+                            <a href="{{ url_for('quiz', reset=1) }}" data-no-spa="true" class="btn-stitch-glow w-full py-4 px-8 rounded-lg font-headline font-bold text-[13px] tracking-widest uppercase no-underline text-center">
                                 Start New Quiz
                             </a>
-                            <a href="{{ url_for('dashboard') }}" class="mt-4 text-xs font-bold text-on-surface-variant opacity-70 hover:opacity-100 hover:text-primary transition-colors flex items-center justify-center gap-2 no-underline uppercase tracking-wider">
+                            <a href="{{ url_for('dashboard') }}" data-no-spa="true" class="mt-4 text-xs font-bold text-on-surface-variant opacity-70 hover:opacity-100 hover:text-primary transition-colors flex items-center justify-center gap-2 no-underline uppercase tracking-wider">
                                 <span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
                                 Back to Dashboard
                             </a>
@@ -224,8 +307,8 @@
                             <p class="text-xs text-primary/80 mt-1 font-medium">Progress: {{ quiz_setup.resume_progress.current_index + 1 }} / {{ quiz_setup.resume_progress.total_questions }} • Score: {{ quiz_setup.resume_progress.score }}</p>
                         </div>
                         <div class="flex gap-3 w-full sm:w-auto shrink-0">
-                            <a href="{{ url_for('quiz_start') }}" class="btn-stitch-glow flex-1 sm:flex-none py-3 px-5 rounded font-bold text-xs shadow-lg text-center no-underline uppercase tracking-wider block leading-relaxed">Resume</a>
-                            <a href="{{ url_for('quiz', reset=1) }}" class="btn-ghost-neutral flex-1 sm:flex-none py-3 px-5 rounded font-bold text-xs text-center no-underline uppercase tracking-wider block leading-relaxed">Restart</a>
+                            <a href="{{ url_for('quiz_start') }}" data-no-spa="true" class="btn-stitch-glow flex-1 sm:flex-none py-3 px-5 rounded font-bold text-xs shadow-lg text-center no-underline uppercase tracking-wider block leading-relaxed">Resume</a>
+                            <a href="{{ url_for('quiz', reset=1) }}" data-no-spa="true" class="btn-ghost-neutral flex-1 sm:flex-none py-3 px-5 rounded font-bold text-xs text-center no-underline uppercase tracking-wider block leading-relaxed">Restart</a>
                         </div>
                     </div>
                     {% endif %}
@@ -236,7 +319,7 @@
                         <p class="text-outline text-sm md:text-base max-w-md">Choose database vocabulary by source, level, and focus.</p>
                     </header>
 
-                    <form method="post" action="{{ url_for('quiz_start') }}" class="space-y-8" data-async-page="true" data-loading-messages='["Preparing quiz...","Selecting questions...","Almost ready..."]'>
+                    <form method="post" action="{{ url_for('quiz_start') }}" class="space-y-8" id="quiz-setup-form" data-loading-messages='["Preparing quiz...","Selecting questions...","Almost ready..."]'>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Quiz Type -->
                             <div class="space-y-2">
@@ -291,94 +374,168 @@
                             </div>
                         </div>
 
-                        <!-- Optional Focus Removed -->
-
                         <button type="submit" class="btn-stitch-glow w-full py-4 rounded-lg font-headline font-extrabold text-sm uppercase tracking-[0.2em] mt-6 flex items-center justify-center gap-2 cursor-pointer">
                             Start Quiz
                             <span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
-                    <div class="flex gap-4">
-                        <button onclick="hideQuitModal()" type="button" class="btn-ghost-neutral flex-1 py-3 px-4 text-xs font-bold rounded-lg cursor-pointer text-center">Resume</button>
-                        <form method="post" action="{{ url_for('quiz_start') }}" class="flex-1 m-0 block">
-                            <input type="hidden" name="action" value="quit">
-                            <button type="submit" class="btn-danger-solid w-full py-3 px-4 text-xs font-bold rounded-lg cursor-pointer transition-all">End Quiz</button>
-                        </form>
+                        </button>
+                    </form>
+
+                    <!-- Loading overlay triggered on setup form submit -->
+                    <div id="quiz-loading-overlay" role="status" aria-live="polite">
+                        <div class="quiz-spinner"></div>
+                        <p id="quiz-loading-msg" class="text-primary text-sm font-bold tracking-wide">Preparing quiz...</p>
                     </div>
+                    <script>
+                    (function () {
+                        var form = document.getElementById('quiz-setup-form');
+                        var overlay = document.getElementById('quiz-loading-overlay');
+                        var msgEl = document.getElementById('quiz-loading-msg');
+                        var messages = ['Preparing quiz…', 'Selecting questions…', 'Almost ready…'];
+                        if (!form || !overlay) return;
+                        form.addEventListener('submit', function () {
+                            overlay.classList.add('visible');
+                            var idx = 0;
+                            var interval = setInterval(function () {
+                                idx = (idx + 1) % messages.length;
+                                if (msgEl) msgEl.textContent = messages[idx];
+                            }, 1200);
+                            // Clean up interval if page navigates away
+                            window.addEventListener('pagehide', function () { clearInterval(interval); });
+                        });
+                    })();
+                    </script>
                 </div>
             </div>
+        </main>
 
-            <!-- Single Page Quiz Canvas -->
-            <main class="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center bg-quiz-gradient px-4 pt-4 sm:pt-8 overflow-y-auto relative">
-                <div class="w-full max-w-2xl relative z-10 flex flex-col justify-center py-2 sm:py-4">
-                    <div class="flex justify-between items-end mb-2 sm:mb-3 px-1 shrink-0">
-                        <div>
-                            <p class="text-primary text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 font-headline">Session Progress</p>
-                            <h2 class="text-on-surface font-headline text-xl sm:text-2xl font-light">Question <span class="font-bold">{{ question_number }}</span> / {{ total_questions }}</h2>
-                        </div>
-                        <button type="button" onclick="showQuitModal()" class="btn-ghost-dark group flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg outline-none cursor-pointer">
-                            <span class="material-symbols-outlined text-[14px] sm:text-[16px]">close</span>
-                            Quit
-                        </button>
+    {% elif question %}
+        <!-- Active Quiz Canvas — only rendered when a real question object exists -->
+        <main class="min-h-[calc(100vh-4rem)] w-full flex items-center justify-center bg-quiz-gradient px-4 pt-20 sm:pt-24 overflow-y-auto relative mt-16">
+            <div class="w-full max-w-2xl relative z-10 flex flex-col justify-center py-2 sm:py-4">
+                <div class="flex justify-between items-end mb-2 sm:mb-3 px-1 shrink-0">
+                    <div>
+                        <p class="text-primary text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 font-headline">Session Progress</p>
+                        <h2 class="text-on-surface font-headline text-xl sm:text-2xl font-light">Question <span class="font-bold">{{ question_number }}</span> / {{ total_questions }}</h2>
                     </div>
+                    <button type="button" id="quit-quiz-btn" style="display: none;" onclick="showQuitModal()" class="btn-ghost-dark group flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg outline-none cursor-pointer">
+                        <span class="material-symbols-outlined text-[14px] sm:text-[16px]">close</span>
+                        Quit
+                    </button>
+                </div>
 
-                    <div class="quiz-shell-focus bg-surface-container-low rounded-xl overflow-hidden shadow-2xl relative border border-white/5 flex flex-col max-h-[min(78vh,720px)] transition-opacity duration-200">
-                        <!-- Progress Bar -->
-                        <div class="absolute top-0 left-0 w-full h-1 bg-surface-container-highest shrink-0">
-                            {% set progress_pct = ((question_number - 1) / total_questions * 100) %}
-                            {% if progress_pct == 0 %}{% set progress_pct = 2 %}{% endif %}
-                            <div class="h-full bg-primary shadow-[0_0_8px_rgba(157,208,205,0.4)] transition-all duration-700 ease-out" style="width: {{ progress_pct }}%"></div>
+                <div class="quiz-shell-focus bg-surface-container-low rounded-xl overflow-hidden shadow-2xl relative border border-white/5 flex flex-col max-h-[min(78vh,720px)] transition-opacity duration-200">
+                    <!-- Progress Bar -->
+                    <div class="absolute top-0 left-0 w-full h-1 bg-surface-container-highest shrink-0">
+                        {% set progress_pct = ((question_number - 1) / total_questions * 100) %}
+                        {% if progress_pct == 0 %}{% set progress_pct = 2 %}{% endif %}
+                        <div class="h-full bg-primary shadow-[0_0_8px_rgba(157,208,205,0.4)] transition-all duration-700 ease-out" style="width: {{ progress_pct }}%"></div>
+                    </div>
+                    
+                    <form method="post" action="{{ url_for('quiz_start') }}" class="flex flex-col flex-1 overflow-hidden p-5 sm:p-8 m-0 pt-6 sm:pt-8" id="quiz-question-form"
+                          data-quiz-form
+                          data-correct-answer="{{ question.answer }}"
+                          data-quiz-prefetch-url="{{ url_for('quiz_prefetch') }}">
+                        <!-- Instruction -->
+                        <div class="flex items-center gap-2 mb-3 sm:mb-4 shrink-0">
+                            <span class="h-[1px] w-6 bg-primary opacity-40"></span>
+                            <p class="text-primary text-[8px] sm:text-[9px] font-bold tracking-[0.2em] uppercase">{{ question.subtitle or 'Select the correct answer' }}</p>
                         </div>
                         
-                        <form method="post" action="{{ url_for('quiz_start') }}" class="flex flex-col flex-1 overflow-hidden p-5 sm:p-8 m-0 pt-6 sm:pt-8" id="quiz-question-form">
-                            <!-- Instruction -->
-                            <div class="flex items-center gap-2 mb-3 sm:mb-4 shrink-0">
-                                <span class="h-[1px] w-6 bg-primary opacity-40"></span>
-                                <p class="text-primary text-[8px] sm:text-[9px] font-bold tracking-[0.2em] uppercase">{{ question.subtitle or 'Select the correct answer' }}</p>
+                        <!-- Target Word / Prompt -->
+                        <div class="mb-4 sm:mb-5 min-h-0 overflow-y-auto no-scrollbar pr-1">
+                            <h1 class="font-headline text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-on-surface leading-snug mb-1 break-words">
+                                {{ question.prompt }}
+                            </h1>
+                        </div>
+                        
+                        <!-- Options Content Space -->
+                        <div class="w-full flex-1 min-h-0 mb-4 sm:mb-5 flex flex-col justify-center">
+                            <div class="space-y-2">
+                                {% if question.question_type == "fill_blank" %}
+                                    <div class="bg-[#0d0f0f] border border-white/10 rounded-lg p-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/40 transition-all flex items-center mt-2">
+                                        <input id="answer" name="answer" type="text" required autocomplete="off" class="w-full bg-transparent border-none text-on-surface text-base md:text-lg font-medium outline-none p-3 placeholder:text-outline/30 box-border break-words" placeholder="Type your answer here..." autofocus>
+                                    </div>
+                                {% else %}
+                                    {% for option in question.options %}
+                                        <label class="quiz-option group relative flex items-center p-2.5 sm:p-3 rounded-lg bg-[#0d0f0f] hover:bg-surface-bright cursor-pointer transition-all duration-200 border border-transparent hover:border-primary/20 m-0 w-full box-border"
+                                               data-quiz-option
+                                               data-option-value="{{ option }}">
+                                            <input type="radio" name="answer" value="{{ option }}" required class="peer hidden" />
+                                            <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 min-w-[0.875rem] sm:min-w-[1rem] rounded-full border border-outline-variant flex items-center justify-center group-hover:border-primary peer-checked:border-primary peer-checked:bg-primary transition-all mr-3">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-[#00201f] opacity-0 peer-checked:opacity-100"></div>
+                                            </div>
+                                            <span class="option-text text-on-surface group-hover:text-primary transition-colors text-[13px] sm:text-sm font-medium leading-normal flex-1">{{ option }}</span>
+                                        </label>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
-                            
-                            <!-- Target Word / Prompt -->
-                            <div class="mb-4 sm:mb-5 min-h-0 overflow-y-auto no-scrollbar pr-1">
-                                <h1 class="font-headline text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-on-surface leading-snug mb-1 break-words">
-                                    {{ question.prompt }}
-                                </h1>
-                            </div>
-                            
-                            <!-- Options Content Space -->
-                            <div class="w-full flex-1 min-h-0 mb-4 sm:mb-5 flex flex-col justify-center">
-                                <div class="space-y-2">
-                                    {% if question.question_type == "fill_blank" %}
-                                        <div class="bg-[#0d0f0f] border border-white/10 rounded-lg p-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/40 transition-all flex items-center mt-2">
-                                            <input id="answer" name="answer" type="text" required autocomplete="off" class="w-full bg-transparent border-none text-on-surface text-base md:text-lg font-medium outline-none p-3 placeholder:text-outline/30 box-border break-words" placeholder="Type your answer here..." autofocus>
-                                        </div>
-                                    {% else %}
-                                        {% for option in question.options %}
-                                            <label class="group relative flex items-center p-2.5 sm:p-3 rounded-lg bg-[#0d0f0f] hover:bg-surface-bright cursor-pointer transition-all duration-200 border border-transparent hover:border-primary/20 m-0 w-full box-border">
-                                                <input type="radio" name="answer" value="{{ option }}" required class="peer hidden" />
-                                                <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 min-w-[0.875rem] sm:min-w-[1rem] rounded-full border border-outline-variant flex items-center justify-center group-hover:border-primary peer-checked:border-primary peer-checked:bg-primary transition-all mr-3">
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-[#00201f] opacity-0 peer-checked:opacity-100"></div>
-                                                </div>
-                                                <span class="text-on-surface group-hover:text-primary transition-colors text-[13px] sm:text-sm font-medium leading-normal flex-1">{{ option }}</span>
-                                            </label>
-                                        {% endfor %}
-                                    {% endif %}
-                                </div>
-                            </div>
+                        </div>
 
-                            <!-- Action Footer -->
-                            <div class="flex items-center justify-between pt-4 sm:pt-5 border-t border-white/5 shrink-0 mt-auto">
-                                <div class="flex gap-1.5">
-                                    {% for i in range(1, 6) %}
-                                        <div class="w-1.5 h-1.5 rounded-full {{ 'bg-primary' if i <= question_number else 'bg-surface-container-highest' }} transition-colors"></div>
+
+                        <!-- Action Footer -->
+                        <div class="flex items-center justify-between pt-4 sm:pt-5 border-t border-white/5 shrink-0 mt-auto">
+                            <div class="flex items-center gap-3">
+                                <div class="flex gap-1.5 max-w-[100px] sm:max-w-[200px] overflow-x-auto no-scrollbar py-1">
+                                    {% for i in range(1, total_questions + 1) %}
+                                        <div class="w-1.5 h-1.5 rounded-full {{ 'bg-primary' if i <= question_number else 'bg-surface-container-highest' }} transition-colors shrink-0"></div>
                                     {% endfor %}
                                 </div>
-                                <button type="submit" class="btn-stitch-glow px-5 sm:px-6 py-3 rounded-lg font-headline font-bold text-[10px] sm:text-[11px] tracking-[0.15em] uppercase cursor-pointer">
-                                    Submit Answer
-                                </button>
+                                <span id="quiz-prefetch-status" class="text-[9px] text-outline/40 hidden sm:block"></span>
                             </div>
-                        </form>
-                    </div>
+                            <button type="submit" class="btn-stitch-glow px-5 sm:px-6 py-3 rounded-lg font-headline font-bold text-[10px] sm:text-[11px] tracking-[0.15em] uppercase cursor-pointer">
+                                Submit Answer
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </main>
+            </div>
+        </main>
+
+        <!-- Quit Modal — hidden by default via inline style + CSS class (double-safe) -->
+        <div id="quit-modal"
+             class="quiz-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+             style="display:none;"
+             aria-hidden="true"
+             role="dialog"
+             aria-labelledby="quit-modal-title">
+            <div class="bg-surface-container-low border border-white/10 rounded-xl p-6 sm:p-8 max-w-sm w-full shadow-2xl">
+                <h3 id="quit-modal-title" class="text-lg font-headline font-bold text-on-surface mb-2">End Quiz Session?</h3>
+                <p class="text-xs sm:text-sm text-outline mb-6 leading-relaxed">Are you sure you want to quit this quiz session? Your progress will not be fully saved.</p>
+                <div class="flex gap-4">
+                    <button id="continue-quiz-btn" onclick="hideQuitModal()" type="button" class="btn-ghost-neutral flex-1 py-3 px-4 text-xs font-bold rounded-lg cursor-pointer text-center">Resume</button>
+                    <form method="post" action="{{ url_for('quiz_start') }}" class="flex-1 m-0 block">
+                        <input type="hidden" name="action" value="quit">
+                        <button type="submit" class="btn-danger-solid w-full py-3 px-4 text-xs font-bold rounded-lg cursor-pointer transition-all">End Quiz</button>
+                    </form>
+                </div>
+            </div>
         </div>
+
+        <script>
+            // showQuitModal / hideQuitModal use inline style.display so they work
+            // regardless of whether any CSS utility class is compiled into the bundle.
+            function showQuitModal() {
+                var modal = document.getElementById("quit-modal");
+                if (!modal) return;
+                modal.style.display = "flex";
+                modal.setAttribute("aria-hidden", "false");
+            }
+            function hideQuitModal() {
+                var modal = document.getElementById("quit-modal");
+                if (!modal) return;
+                modal.style.display = "none";
+                modal.setAttribute("aria-hidden", "true");
+            }
+            // Safety-net: ensure the modal is hidden immediately on script parse
+            // (runs before DOMContentLoaded, before any framework can touch the DOM).
+            (function() {
+                var modal = document.getElementById("quit-modal");
+                if (modal) {
+                    modal.style.display = "none";
+                    modal.setAttribute("aria-hidden", "true");
+                }
+            })();
+        </script>
     {% endif %}
 
 </div>

@@ -1875,21 +1875,38 @@ function initDashboardWarmups() {
 
 function initQuizUX() {
     const quizForm = document.querySelector("[data-quiz-form]");
-    const quitButton = document.querySelector("#quit-quiz-btn");
-    const continueQuizButton = document.querySelector("#continue-quiz-btn");
-    const quitModal = document.querySelector("#quit-quiz-modal");
+    // Define global modal helpers on window to prevent ReferenceErrors from inline onclick handlers
+    window.showQuitModal = function() {
+        const modal = document.getElementById("quit-modal") || document.querySelector("#quit-quiz-modal");
+        if (modal) {
+            modal.style.display = "flex";
+            modal.setAttribute("aria-hidden", "false");
+        }
+    };
+    window.hideQuitModal = function() {
+        const modal = document.getElementById("quit-modal") || document.querySelector("#quit-quiz-modal");
+        if (modal) {
+            modal.style.display = "none";
+            modal.setAttribute("aria-hidden", "true");
+        }
+    };
 
-    if (quitButton && quitModal) {
-        quitButton.addEventListener("click", () => {
-            quitModal.classList.remove("is-hidden");
-            quitModal.setAttribute("aria-hidden", "false");
-        });
-    }
+    // Use stable document-level event delegation to ensure listeners survive any dynamic DOM updates or rerenders
+    if (!window.__quizQuitHandlersBound) {
+        window.__quizQuitHandlersBound = true;
+        document.addEventListener("click", (event) => {
+            const quitBtn = event.target.closest("[data-quiz-quit]") || event.target.closest("#quit-quiz-btn") || event.target.closest("button[onclick='showQuitModal()']");
+            const resumeBtn = event.target.closest("[data-quiz-resume]") || event.target.closest("#continue-quiz-btn") || event.target.closest("button[onclick='hideQuitModal()']");
 
-    if (continueQuizButton && quitModal) {
-        continueQuizButton.addEventListener("click", () => {
-            quitModal.classList.add("is-hidden");
-            quitModal.setAttribute("aria-hidden", "true");
+            if (quitBtn) {
+                event.preventDefault();
+                window.showQuitModal();
+            }
+
+            if (resumeBtn) {
+                event.preventDefault();
+                window.hideQuitModal();
+            }
         });
     }
 
@@ -1899,9 +1916,8 @@ function initQuizUX() {
 
     let isSubmitting = false;
     let prefetchStarted = false;
-    const correctAnswer = JSON.parse(quizForm.dataset.correctAnswer || '""').toLowerCase();
+    const correctAnswer = (quizForm.dataset.correctAnswer || "").trim().toLowerCase();
     const prefetchUrl = quizForm.dataset.quizPrefetchUrl || "";
-    const feedbackEl = document.querySelector("#quiz-feedback");
     const prefetchStatusEl = document.querySelector("#quiz-prefetch-status");
     const optionEls = Array.from(document.querySelectorAll("[data-quiz-option]"));
     const answerInput = quizForm.querySelector("#answer");
@@ -1947,17 +1963,20 @@ function initQuizUX() {
         isSubmitting = true;
         const isCorrect = submittedAnswer === correctAnswer;
 
-        if (feedbackEl) {
-            feedbackEl.textContent = isCorrect ? "Correct answer" : `Correct answer: ${correctAnswer}`;
-            feedbackEl.classList.toggle("is-correct", isCorrect);
-            feedbackEl.classList.toggle("is-wrong", !isCorrect);
-        }
-
         if (optionEls.length) {
             optionEls.forEach((optionEl) => {
-                const optionValue = JSON.parse(optionEl.dataset.optionValue || '""').toLowerCase();
-                optionEl.classList.toggle("is-correct", optionValue === correctAnswer);
-                optionEl.classList.toggle("is-wrong", optionValue === submittedAnswer && optionValue !== correctAnswer);
+                const optionValue = (optionEl.dataset.optionValue || "").trim().toLowerCase();
+                if (isCorrect) {
+                    if (optionValue === correctAnswer) {
+                        optionEl.classList.add("quiz-option-correct");
+                    }
+                } else {
+                    if (optionValue === correctAnswer) {
+                        optionEl.classList.add("quiz-option-correct");
+                    } else if (optionValue === submittedAnswer) {
+                        optionEl.classList.add("quiz-option-wrong");
+                    }
+                }
                 optionEl.classList.add("is-locked");
             });
         }

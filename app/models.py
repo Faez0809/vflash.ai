@@ -544,3 +544,26 @@ class UserAppSession(db.Model):
     last_path = db.Column(db.String(255), nullable=True)
 
     user = db.relationship("User")
+
+
+class QuizQuestionCache(db.Model):
+    __tablename__ = "quiz_question_cache"
+    __table_args__ = (
+        Index("ix_quiz_question_cache_vocab_type", "vocabulary_id", "quiz_type"),
+        Index("ix_quiz_question_cache_difficulty", "difficulty"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    vocabulary_id = db.Column(db.Integer, db.ForeignKey("vocabulary_master.id"), nullable=False)
+    quiz_type = db.Column(db.String(100), nullable=False)
+    question_text = db.Column(db.Text, nullable=False)
+    correct_answer = db.Column(db.Text, nullable=False)
+    distractor_options = db.Column(db.Text, nullable=False)  # Serialized JSON list
+    explanation = db.Column(db.Text, nullable=True)
+    difficulty = db.Column(db.String(50), nullable=True)
+    generation_quality_score = db.Column(db.Float, nullable=True)
+    validation_status = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    vocabulary = db.relationship("VocabularyMaster")

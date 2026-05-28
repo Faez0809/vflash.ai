@@ -1390,6 +1390,35 @@ def cache_search_vocabulary(user_id, word, payload=None):
     search_word = create_search_vocabulary_from_payload(user_id, normalized_word, payload)
     db.session.add(search_word)
     db.session.flush()
+
+    # If payload is successfully enriched, preserve in VocabularyMaster/VocabularyEnrichment and generate quiz cache!
+    if payload and payload.get("meaning"):
+        try:
+            vocab = VocabularyMaster.query.filter_by(normalized_word=normalized_word).first()
+            if not vocab:
+                vocab = VocabularyMaster(
+                    word=clean_text(payload.get("word")) or normalized_word,
+                    normalized_word=normalized_word,
+                    level=normalize_level(payload.get("difficulty") or payload.get("difficulty_estimate") or "intermediate"),
+                    is_phrase=is_phrase(normalized_word),
+                )
+                db.session.add(vocab)
+                db.session.flush()
+            
+            # Create or update VocabularyEnrichment
+            if vocab and not vocab.enrichment:
+                get_or_create_enrichment(vocab, allow_ai=True)
+
+            # Generate and save cached quiz content for this vocabulary
+            if vocab:
+                from app.services.quiz_engine import _question_for
+                # Pre-generate quiz types to warm up the cache
+                pool = VocabularyMaster.query.order_by(func.random()).limit(10).all()
+                for q_type in ["multiple_choice", "meaning_match"]:
+                    _question_for(vocab, q_type, pool)
+        except Exception:
+            pass
+
     return search_word
 
 
