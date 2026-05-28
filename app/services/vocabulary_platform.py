@@ -23,6 +23,7 @@ from app.models import (
 from app.services.ai_generator import generate_word_content, suggest_word_corrections
 from app.services.stats import clean_text
 from app.services.enrichment_engine import generate_enrichment_payload, validate_enrichment, calculate_quality_score
+from app.services.groq_provider import groq_pool, GroqRateLimitError, AllWorkerKeysCoolingDown
 
 
 LEVEL_ALIASES = {
@@ -418,16 +419,25 @@ def apply_enrichment_audit(vocabulary, enrichment):
     return result
 
 
-def get_or_create_enrichment(vocabulary, allow_ai=True):
+def get_or_create_enrichment(vocabulary, allow_ai=True, api_key=None):
+    """Create or return cached enrichment for a vocabulary entry.
+
+    api_key: optional Groq key to use. When None the function resolves
+             the search key (GROQ_API_KEY_SEARCH / GROQ_API_KEY).
+             The enrichment worker passes a dedicated worker-pool key.
+
+    GroqRateLimitError is intentionally NOT caught here — it is allowed
+    to bubble up so the worker loop can rotate to the next pool key.
+    """
     preprocessing = preprocess_vocabulary_entry(vocabulary)
-    
+
     existing = vocabulary.enrichment
-    
+
     # Priority 1 & 2: verified cached or high-score generated enrichments
     if existing is not None:
         if existing.corrected_manually:
             return existing
-        
+
         audit = audit_enrichment(vocabulary, existing)
         if audit["passed"] and audit["score"] >= 80:
             # High-score enrichment; promote to "approved" if it is not already
@@ -445,7 +455,12 @@ def get_or_create_enrichment(vocabulary, allow_ai=True):
 
     from flask import current_app
     try:
-        payload = generate_enrichment_payload(vocabulary.word, level=vocabulary.level)
+        payload = generate_enrichment_payload(
+            vocabulary.word, level=vocabulary.level, api_key=api_key
+        )
+    except GroqRateLimitError:
+        # Bubble up so the caller (worker or route) can rotate keys
+        raise
     except Exception as e:
         if current_app:
             current_app.logger.error(f"Groq API generation failed for '{vocabulary.word}': {e}")
@@ -537,7 +552,8 @@ def build_shared_enrichment_payload(word, allow_ai=True):
     if not normalized_word or not allow_ai:
         return {}
     try:
-        res = generate_enrichment_payload(normalized_word)
+        # Search path → use KEY1 (GROQ_API_KEY_SEARCH) with worker-key fallback
+        res = generate_enrichment_payload(normalized_word, api_key=groq_pool.get_search_key())
         return {
             "word": res["word"],
             "part_of_speech": res["part_of_speech"],
@@ -607,6 +623,7 @@ def _base_unseen_query(user_id, level):
     return (
         VocabularyMaster.query.options(selectinload(VocabularyMaster.enrichment))
         .filter(VocabularyMaster.level == normalize_level(level))
+        .filter(VocabularyMaster.needs_admin_review.is_(False))
         .filter(~VocabularyMaster.id.in_(_excluded_generated_or_learned_subquery(user_id)))
     )
 
@@ -970,8 +987,16 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
                     and not first_vocab.needs_admin_review
                 ):
                     break
-                enrichment = get_or_create_enrichment(first_vocab, allow_ai=True)
-                if enrichment and not first_vocab.needs_admin_review:
+                try:
+                    enrichment = get_or_create_enrichment(first_vocab, allow_ai=True)
+                    if enrichment and not first_vocab.needs_admin_review:
+                        break
+                except Exception as e:
+                    from flask import current_app
+                    if current_app:
+                        current_app.logger.warning(
+                            f"First-card sync enrichment failed for '{first_vocab.word}': {e}"
+                        )
                     break
                 # Substitute with any available word that has a ready enrichment
                 excluded_ids = {v.id for v in vocabularies}
@@ -1158,38 +1183,79 @@ class ContinuousEnrichmentWorker:
                     )
 
                     if vocab:
+                        healthy_count = len([k for k in groq_pool._worker_keys() if not groq_pool._is_cooling(k)])
                         app.logger.info(
-                            f"[Worker] Enriching '{vocab.word}' (level={level})"
+                            f"[Worker] Starting enrichment for '{vocab.word}' (level={level}). "
+                            f"Healthy keys available: {healthy_count}."
                         )
-                        try:
-                            get_or_create_enrichment(vocab, allow_ai=True)
-                            processed_count += 1
-                        except Exception as inner_e:
-                            app.logger.error(
-                                f"[Worker] Error enriching '{vocab.word}': {inner_e}"
-                            )
-                        finally:
-                            # Always stamp last_audited_at — success OR failure —
-                            # so the cooldown filter keeps this word out of the
-                            # queue for ENRICHMENT_RETRY_COOLDOWN_HOURS.
+                        # Key-rotating enrichment: try each worker key in turn.
+                        # On 429 → mark that key as cooling and rotate to the next.
+                        # If all keys are cooling → sleep and continue outer loop.
+                        _pool_size = max(1, len(groq_pool._worker_keys()))
+                        _enriched = False
+                        _wkey = None
+                        for _attempt in range(_pool_size):
                             try:
-                                db.session.execute(
-                                    sa_text(
-                                        "UPDATE vocabulary_master "
-                                        "SET last_audited_at = :now WHERE id = :vid"
-                                    ),
-                                    {"now": datetime.utcnow(), "vid": vocab.id},
+                                _wkey = groq_pool.get_worker_key()
+                            except AllWorkerKeysCoolingDown:
+                                _status = groq_pool.worker_pool_status()
+                                app.logger.warning(
+                                    f"[Worker] All enrichment keys cooling — "
+                                    f"sleeping 60s. Status: {_status}"
                                 )
-                                db.session.commit()
-                            except Exception:
-                                db.session.rollback()
+                                cls._stop_event.wait(60.0)
+                                break
+                            try:
+                                get_or_create_enrichment(vocab, allow_ai=True, api_key=_wkey)
+                                processed_count += 1
+                                _enriched = True
+                                break  # success — exit retry loop
+                            except GroqRateLimitError as _rle:
+                                groq_pool.mark_rate_limited(_rle.key)
+                                app.logger.warning(
+                                    f"[Worker] Key ...{str(_rle.key or '')[-4:]} "
+                                    f"rate-limited (429). Terminating current cycle to prevent cascading key exhaustion."
+                                )
+                                break
+                            except Exception as _inner_e:
+                                app.logger.error(
+                                    f"[Worker] Error enriching '{vocab.word}': {_inner_e}"
+                                )
+                                break
+                        # Always stamp last_audited_at — success OR failure —
+                        # so the cooldown filter keeps this word out of the
+                        # queue for ENRICHMENT_RETRY_COOLDOWN_HOURS.
+                        try:
+                            db.session.execute(
+                                sa_text(
+                                    "UPDATE vocabulary_master "
+                                    "SET last_audited_at = :now WHERE id = :vid"
+                                    ),
+                                {"now": datetime.utcnow(), "vid": vocab.id},
+                            )
+                            db.session.commit()
+                        except Exception:
+                            db.session.rollback()
 
                         # Periodic progress report
                         if log_every_n > 0 and processed_count % log_every_n == 0:
                             cls._log_progress_stats(app)
 
                         level_idx = (level_idx + 1) % len(levels)
-                        cls._stop_event.wait(throttle_interval)
+                        if _enriched:
+                            import random
+                            delay = random.uniform(45.0, 90.0)
+                            active_key_suffix = f"...{_wkey[-4:]}" if _wkey else "Unknown"
+                            rem_healthy = len([k for k in groq_pool._worker_keys() if not groq_pool._is_cooling(k)])
+                            app.logger.info(
+                                f"[Worker] Successful enrichment of '{vocab.word}'. "
+                                f"Active Key: {active_key_suffix}. "
+                                f"Waiting for randomized pacing delay: {delay:.1f}s. "
+                                f"Remaining healthy keys in reserve: {rem_healthy}."
+                            )
+                            cls._stop_event.wait(delay)
+                        else:
+                            cls._stop_event.wait(throttle_interval)
 
                     else:
                         # No actionable work at this level — check other levels

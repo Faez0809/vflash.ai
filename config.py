@@ -73,13 +73,22 @@ def _validate_database_url(database_url: str) -> DatabaseConfig:
     except ArgumentError as exc:
         raise RuntimeError(f"CRITICAL: DATABASE_URL is malformed: {exc}")
 
-    if parsed.drivername not in POSTGRES_SCHEMES:
+    is_testing = os.getenv("TESTING") == "1" or os.getenv("TESTING") == "True"
+
+    allowed_schemes = POSTGRES_SCHEMES.union({"sqlite"}) if is_testing else POSTGRES_SCHEMES
+    if parsed.drivername not in allowed_schemes:
         raise RuntimeError(f"CRITICAL: DATABASE_URL uses unsupported scheme '{parsed.drivername}'!")
 
-    if not parsed.host:
+    if not is_testing and not parsed.host:
         raise RuntimeError("CRITICAL: DATABASE_URL does not include a hostname!")
 
-
+    if is_testing and parsed.drivername == "sqlite":
+        return DatabaseConfig(
+            uri=raw_url,
+            db_type="sqlite",
+            hostname="memory" if "memory" in raw_url else "file",
+            provider="sqlite",
+        )
 
     normalized_uri = _normalize_postgres_uri(raw_url)
     normalized = make_url(normalized_uri)

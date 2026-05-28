@@ -603,9 +603,49 @@ def _fallback_vocabulary_words(difficulty, word_count, avoid_words=None, user_cu
             break
     return selected
 
+def _post_to_groq(api_key, model, prompt, system_prompt, temperature, timeout=30):
+    try:
+        response = requests.post(
+            GROQ_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "temperature": temperature,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            timeout=timeout,
+        )
+        if response.status_code == 429:
+            try:
+                from app.services.groq_provider import groq_pool
+                groq_pool.mark_rate_limited(api_key)
+            except ImportError:
+                pass
+        response.raise_for_status()
+        return response
+    except Exception as e:
+        if isinstance(e, requests.RequestException) and getattr(e, "response", None) is not None:
+            if e.response.status_code == 429:
+                try:
+                    from app.services.groq_provider import groq_pool
+                    groq_pool.mark_rate_limited(api_key)
+                except ImportError:
+                    pass
+        raise
+
 
 def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prompt="", avoid_words=None):
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_search_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -650,26 +690,14 @@ Return ONLY valid JSON list:
 ]
 """
 
-    response = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": 0,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You generate topic-focused JSON vocabulary flashcards.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-        },
+    response = _post_to_groq(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        system_prompt="You generate topic-focused JSON vocabulary flashcards.",
+        temperature=0,
         timeout=30,
     )
-    response.raise_for_status()
     payload = response.json()
     content = payload["choices"][0]["message"]["content"]
     return json.loads(_extract_json_text(content))
@@ -802,7 +830,11 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
 
 
 def _request_word_content_from_groq(word):
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_search_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -846,26 +878,14 @@ Rules:
 - If a true synonym or antonym does not exist, return an empty string for that field.
 """
 
-    response = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": 0.3,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You generate strict JSON dictionary entries with polished English-Bangla vocabulary content.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-        },
+    response = _post_to_groq(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        system_prompt="You generate strict JSON dictionary entries with polished English-Bangla vocabulary content.",
+        temperature=0.3,
         timeout=30,
     )
-    response.raise_for_status()
     payload = response.json()
     content = payload["choices"][0]["message"]["content"]
     return json.loads(_extract_json_text(content))
@@ -897,7 +917,11 @@ def generate_word_content(word):
 
 
 def _request_dictionary_details_from_groq(word, retry=False):
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_search_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -940,26 +964,14 @@ Rules:
 Provide COMPLETE dictionary data for the word. All fields must be filled. Keep pronunciation readable and accurate.
 """
 
-    response = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": 0.1,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a professional English dictionary API that returns strict JSON only.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-        },
+    response = _post_to_groq(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        system_prompt="You are a professional English dictionary API that returns strict JSON only.",
+        temperature=0.1,
         timeout=30,
     )
-    response.raise_for_status()
     payload = response.json()
     content = payload["choices"][0]["message"]["content"]
     return json.loads(_extract_json_text(content))
@@ -1048,7 +1060,11 @@ def suggest_word_corrections(word, max_suggestions=3):
     if not normalized_word:
         return []
 
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_search_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         return []
@@ -1071,26 +1087,14 @@ Return ONLY valid JSON:
 """
 
     try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "temperature": 0.1,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You return compact JSON spelling suggestions.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-            },
+        response = _post_to_groq(
+            api_key=api_key,
+            model=model,
+            prompt=prompt,
+            system_prompt="You return compact JSON spelling suggestions.",
+            temperature=0.1,
             timeout=20,
         )
-        response.raise_for_status()
         payload = response.json()
         content = payload["choices"][0]["message"]["content"]
         parsed = json.loads(_extract_json_text(content))
@@ -1116,7 +1120,11 @@ Return ONLY valid JSON:
 
 
 def _request_quiz_question_support_from_groq(word, meaning, sentence, difficulty="", custom_instruction="", quiz_type="multiple_choice"):
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_quiz_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -1154,26 +1162,14 @@ Return ONLY JSON:
 }}
 """
 
-    response = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": 0.4,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You generate compact JSON quiz support for vocabulary learning.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-        },
+    response = _post_to_groq(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        system_prompt="You generate compact JSON quiz support for vocabulary learning.",
+        temperature=0.4,
         timeout=30,
     )
-    response.raise_for_status()
     payload = response.json()
     content = payload["choices"][0]["message"]["content"]
     return json.loads(_extract_json_text(content))
@@ -1218,7 +1214,11 @@ def verify_answer_using_ai(prompt, exact_answer, user_answer):
     if normalize_token(user_answer) == normalize_token(exact_answer):
         return True
         
-    api_key = os.environ.get("GROQ_API_KEY")
+    try:
+        from app.services.groq_provider import groq_pool
+        api_key = groq_pool.get_quiz_key()
+    except ImportError:
+        api_key = os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         return False
@@ -1233,23 +1233,14 @@ Reject answers that are close in meaning but do not fit the grammar or tone of t
 Return ONLY 'YES' or 'NO'."""
 
     try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "temperature": 0.1,
-                "messages": [
-                    {"role": "system", "content": "You are an English language evaluator."},
-                    {"role": "user", "content": instruction},
-                ],
-            },
+        response = _post_to_groq(
+            api_key=api_key,
+            model=model,
+            prompt=instruction,
+            system_prompt="You are an English language evaluator.",
+            temperature=0.1,
             timeout=15,
         )
-        response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"].strip().upper()
         return "YES" in content
     except Exception:

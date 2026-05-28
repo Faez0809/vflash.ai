@@ -27,15 +27,31 @@ def _extract_json_text(content):
             return "\n".join(lines[1:-1]).strip()
     return content
 
-def generate_enrichment_payload(word, level=None):
+def generate_enrichment_payload(word, level=None, api_key=None):
     """
     Centralized service for ALL AI vocabulary enrichment generation.
     Used by both global search and flashcards.
+
+    api_key: explicit Groq API key to use. When None, falls back to
+             GROQ_API_KEY_SEARCH → GROQ_API_KEY (legacy) env vars.
+
+    Raises GroqRateLimitError (a subclass of Exception) when the API
+    returns HTTP 429 so callers can rotate keys safely.
     """
-    api_key = os.environ.get("GROQ_API_KEY")
+    from app.services.groq_provider import GroqRateLimitError
+
+    if api_key is None:
+        try:
+            from app.services.groq_provider import groq_pool
+            api_key = groq_pool.get_search_key()
+        except ImportError:
+            api_key = (
+                os.environ.get("GROQ_API_KEY_SEARCH")
+                or os.environ.get("GROQ_API_KEY")
+            )
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
-        raise RuntimeError("GROQ_API_KEY is not configured.")
+        raise RuntimeError("No Groq API key configured (GROQ_API_KEY_SEARCH / GROQ_API_KEY).")
 
     word_clean = str(word).strip()
     level_str = str(level).strip() if level else "general"
@@ -92,6 +108,19 @@ Strict Output Rules:
     }
 
     response = requests.post(GROQ_API_URL, headers=headers, json=json_data, timeout=30)
+
+    # Detect rate-limiting specifically so callers can rotate keys
+    if response.status_code == 429:
+        try:
+            from app.services.groq_provider import groq_pool
+            groq_pool.mark_rate_limited(api_key)
+        except ImportError:
+            pass
+        raise GroqRateLimitError(
+            f"Groq rate limit (429) for key ...{api_key[-4:]}",
+            key=api_key,
+        )
+
     response.raise_for_status()
     payload = response.json()
     content_str = payload["choices"][0]["message"]["content"]

@@ -11,6 +11,7 @@ from app.services.quiz_engine import (
     QUIZ_TYPES,
     WORD_SOURCES,
     build_curriculum_quiz_questions,
+    count_quizable_vocabularies,
     quiz_started_at,
 )
 from app.services.stats import clean_text
@@ -204,6 +205,9 @@ def register(app):
         if request.method == "POST" and not quiz_state:
             quiz_type = clean_text(request.form.get("quiz_type")) or "multiple_choice"
             word_source = clean_text(request.form.get("word_source")) or "mixed_curriculum"
+            # Retire unseen_vocabulary silently — redirect to mixed_curriculum
+            if word_source == "unseen_vocabulary":
+                word_source = "mixed_curriculum"
             difficulty = clean_text(request.form.get("difficulty")) or "Mixed"
             focus = clean_text(request.form.get("focus") or request.form.get("custom_quiz_instruction"))
             try:
@@ -213,31 +217,60 @@ def register(app):
             if question_count not in QUESTION_COUNTS:
                 question_count = 5
 
+            # ── Educational validation: check quizable vocabulary count ───
+            available = count_quizable_vocabularies(
+                user_id=current_user.id,
+                quiz_type=quiz_type,
+                level=difficulty,
+                word_source=word_source,
+            )
+            if available == 0:
+                flash(
+                    "No quiz-ready vocabulary found for this selection. "
+                    "Try Mixed Curriculum or generate flashcards first to build your cache.",
+                    "info",
+                )
+                return redirect(url_for("quiz"))
+            if available < question_count:
+                flash(
+                    f"Only {available} quiz question{'s' if available != 1 else ''} are currently "
+                    f"available for this selection. Starting a shorter quiz for you.",
+                    "info",
+                )
+                question_count = available
+
+            # ── Instant startup: generate first 2 questions immediately ───
             warmup = session.pop("quiz_warmup", None)
             signature = quiz_signature(quiz_type, word_source, difficulty, question_count, focus)
+            initial_count = min(2, question_count)
             if warmup and warmup.get("signature") == signature:
-                resolution = {"questions": warmup.get("questions", []), "word_source": word_source, "difficulty": difficulty, "used_fallback": False}
+                initial_questions = warmup.get("questions", [])[:initial_count]
             else:
-                resolution = build_questions_with_fallback(question_count, quiz_type, difficulty, word_source, focus)
+                initial_resolution = build_questions_with_fallback(
+                    initial_count, quiz_type, difficulty, word_source, focus
+                )
+                initial_questions = initial_resolution["questions"]
+                # Update word_source/difficulty from resolved fallback
+                word_source = initial_resolution.get("word_source", word_source)
+                difficulty = initial_resolution.get("difficulty", difficulty)
+                if initial_resolution.get("used_fallback"):
+                    flash("That source was light, so we used the nearest available curriculum words.", "info")
 
-            questions = resolution["questions"]
-            if not questions:
+            if not initial_questions:
                 flash("No database vocabulary is ready for that quiz yet. Try Mixed Curriculum or generate flashcards first.", "info")
                 return redirect(url_for("quiz"))
-            if resolution["used_fallback"]:
-                flash("That source was light, so we used the nearest available curriculum words.", "info")
 
             session["quiz_state"] = {
-                "questions": questions,
+                "questions": initial_questions,
                 "target_count": question_count,
                 "current_index": 0,
                 "score": 0,
                 "answers": [],
                 "quiz_type": quiz_type,
-                "difficulty": resolution["difficulty"],
-                "word_source": resolution["word_source"],
+                "difficulty": difficulty,
+                "word_source": word_source,
                 "focus": focus,
-                "used_vocabulary_ids": [q["vocabulary_id"] for q in questions if q.get("vocabulary_id")],
+                "used_vocabulary_ids": [q["vocabulary_id"] for q in initial_questions if q.get("vocabulary_id")],
                 "started_at": quiz_started_at(),
             }
             session.pop("quiz_result", None)
