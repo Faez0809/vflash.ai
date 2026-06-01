@@ -14,9 +14,6 @@
                 <input type="search" name="q" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" maxlength="60" autocomplete="off">
             </form>
             <div class="dashboard-topbar-actions">
-                <button type="button" class="dashboard-topbar-icon nav-chat-trigger" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                </button>
                 <a class="dashboard-avatar" href="{{ url_for('profile') }}" aria-label="Profile">
                     {{ display_name[:1]|upper }}
                 </a>
@@ -109,21 +106,21 @@
                         </div>
                     </a>
 
-                    <a class="learning-action-card" href="{{ url_for('review') }}">
-                        <span class="material-symbols-outlined">history</span>
+                    <a class="learning-action-card" href="{{ url_for('words') }}">
+                        <span class="material-symbols-outlined">style</span>
                         <div>
-                            <p>Review Due</p>
-                            <h2>{{ words_to_review_today }} {{ 'word' if words_to_review_today == 1 else 'words' }}</h2>
-                            <small>{{ "Waiting for you" if words_to_review_today else "Nothing urgent today" }}</small>
+                            <p>My Words</p>
+                            <h2>{{ total_words }} {{ 'word' if total_words == 1 else 'words' }}</h2>
+                            <small>Open your vocabulary library</small>
                         </div>
                     </a>
 
-                    <a class="learning-action-card" href="#generate-section">
-                        <span class="material-symbols-outlined">school</span>
+                    <a class="learning-action-card" href="{{ url_for('quiz') }}">
+                        <span class="material-symbols-outlined">quiz</span>
                         <div>
-                            <p>Start Practice</p>
-                            <h2>Choose a level</h2>
-                            <small>Curated words, no prompt needed</small>
+                            <p>Start a Quiz</p>
+                            <h2>Quiz setup</h2>
+                            <small>Choose questions and begin</small>
                         </div>
                     </a>
                 </section>
@@ -131,7 +128,7 @@
                 <section class="learning-practice-panel" id="generate-section">
                     <div class="learning-panel-head">
                         <div>
-                            <p class="learning-eyebrow">Start Practice</p>
+                            <p class="learning-eyebrow">Flashcards</p>
                             <h1>Your next words are ready.</h1>
                         </div>
                         <span class="material-symbols-outlined">auto_stories</span>

@@ -31,6 +31,35 @@
     .font-bengali {
         font-family: 'Hind Siliguri', sans-serif;
     }
+    .words-list-shell {
+        max-width: 92rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .words-summary-row {
+        display: grid;
+        grid-template-columns: minmax(8rem, 12rem) minmax(5.5rem, 7rem) minmax(9rem, 12rem) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1.5rem;
+        min-height: 5.7rem;
+    }
+    .words-summary-row.is-search-row {
+        grid-template-columns: minmax(8rem, 12rem) minmax(5.5rem, 7rem) minmax(9rem, 12rem) minmax(0, 1fr);
+    }
+    .words-summary-row > * {
+        min-width: 0;
+    }
+    @media (max-width: 767px) {
+        .words-summary-row,
+        .words-summary-row.is-search-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 1rem;
+            min-height: 4.5rem;
+        }
+        .words-summary-row.is-search-row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
     
     /* Safely override old global input styles for this tailwind container */
     .tw-scope input, .tw-scope select, .tw-scope textarea {
@@ -79,10 +108,6 @@
         border-color: rgba(255, 180, 171, 0.22) !important;
         background: rgba(255, 180, 171, 0.1) !important;
         color: #ffb4ab !important;
-    }
-    .words-note-button {
-        background: transparent !important;
-        color: #9dd0cd !important;
     }
     .word-lookup-shell {
         margin-bottom: 2rem;
@@ -203,9 +228,6 @@
                 </nav>
             </div>
             <div class="app-topbar-actions flex items-center gap-4">
-                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                </button>
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
                 {% endif %}
@@ -252,16 +274,15 @@
                             <option value="{{ difficulty }}" {{ 'selected' if difficulty_filter == difficulty else '' }}>{{ difficulty }}</option>
                         {% endfor %}
                     </select>
-                    <select name="topic" class="bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg text-sm h-11 text-on-surface-variant px-4 outline-none m-0 box-border">
-                        <option value="All" {{ 'selected' if topic_filter == 'All' else '' }}>Topic: All</option>
-                        {% for topic in available_topics %}
-                            <option value="{{ topic }}" {{ 'selected' if topic_filter == topic else '' }}>{{ topic }}</option>
-                        {% endfor %}
-                    </select>
                     <select name="learned" class="bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg text-sm h-11 text-on-surface-variant px-4 outline-none m-0 box-border">
                         <option value="all" {{ 'selected' if learned_filter == 'all' else '' }}>Learning State: All</option>
                         <option value="learned" {{ 'selected' if learned_filter == 'learned' else '' }}>Learned</option>
                         <option value="learning" {{ 'selected' if learned_filter == 'learning' else '' }}>Learning</option>
+                    </select>
+                    <select name="source" class="bg-[#0d0f0f] border border-white/10 focus:border-primary/40 focus:ring-1 focus:ring-primary/40 rounded-lg text-sm h-11 text-on-surface-variant px-4 outline-none m-0 box-border">
+                        <option value="all" {{ 'selected' if source_filter == 'all' else '' }}>All Words</option>
+                        <option value="searched" {{ 'selected' if source_filter == 'searched' else '' }}>Searched Words</option>
+                        <option value="curriculum" {{ 'selected' if source_filter == 'curriculum' else '' }}>Curriculum Words</option>
                     </select>
                 </div>
                 
@@ -377,21 +398,11 @@
         {% endif %}
 
         <!-- Word List: High-Density Interactive List -->
-        {% if user_words %}
-            <div class="bg-[#0d0f0f]/40 border border-white/[0.05] rounded-xl overflow-hidden mb-8">
-                <!-- Header Row -->
-                <div class="hidden md:grid grid-cols-[160px_100px_160px_1fr_100px_90px] gap-6 px-6 py-4 bg-white/[0.02] border-b border-white/[0.05] text-[0.65rem] font-bold uppercase tracking-widest text-[#8a9291]">
-                    <div>Word</div>
-                    <div class="text-left">Type</div>
-                    <div>Bangla Meaning</div>
-                    <div>Definition</div>
-                    <div class="text-center">Status</div>
-                    <div class="text-right">Actions</div>
-                </div>
-
+        {% if user_words or searched_words %}
+            <div class="words-list-shell bg-[#0d0f0f]/40 border border-white/[0.05] rounded-xl overflow-hidden mb-8">
                 {% for item in user_words %}
                     <details class="group border-b border-white/[0.05] last:border-b-0" {% if loop.index == 1 %}open{% endif %}>
-                        <summary class="word-row grid grid-cols-[1fr_80px_90px] md:grid-cols-[160px_100px_160px_1fr_100px_90px] items-center gap-4 md:gap-6 px-6 py-5 cursor-pointer transition-colors outline-none h-full m-0">
+                        <summary class="word-row words-summary-row px-6 py-5 cursor-pointer transition-colors outline-none h-full m-0">
                             <div class="flex flex-col md:block min-w-0">
                                 <h3 class="text-base font-headline font-bold text-primary tracking-tight truncate m-0">{{ item.word_entry.word }}</h3>
                                 <span class="md:hidden text-[0.65rem] font-medium text-on-surface-variant/60 truncate">{{ item.word_entry.bangla_meaning or 'No translation' }}</span>
@@ -404,14 +415,6 @@
                             <div class="hidden md:flex items-center font-bengali text-[0.95rem] font-semibold text-white truncate h-full mt-1">{{ item.word_entry.bangla_meaning or '--' }}</div>
                             
                             <div class="hidden md:flex items-center text-[0.85rem] text-[#8a9291] truncate pr-4 h-full mt-1">{{ item.word_entry.meaning }}</div>
-                            
-                            <div class="flex justify-center mt-1">
-                                {% if item.learned %}
-                                    <span class="bg-[#2d5f5d]/20 text-[#9dd0cd] text-[0.55rem] px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-[#9dd0cd]/20">Mastered</span>
-                                {% else %}
-                                    <span class="bg-[#93000a]/20 text-[#ffb4ab] text-[0.55rem] px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-[#ffb4ab]/20">Reviewing</span>
-                                {% endif %}
-                            </div>
                             
                             <div class="flex justify-end items-center gap-3">
                                 <form method="post" action="{{ url_for('toggle_favorite_flag', user_word_id=item.id) }}" class="m-0 flex items-center">
@@ -456,14 +459,52 @@
                                             <p class="text-[0.85rem] text-[#ffb4ab] m-0">{{ item.word_entry.antonym_hint }}</p>
                                         </div>
                                     {% endif %}
-                                    <div style="margin-top: 1.5rem;">
-                                        <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Personal Note</span>
-                                        <form method="post" action="{{ url_for('save_word_note', user_word_id=item.id) }}" class="bg-[#121414] rounded-lg p-3 flex flex-col gap-2 border border-white/[0.05] shadow-inner mb-0">
-                                            <input type="hidden" name="next" value="{{ request.full_path }}">
-                                            <textarea name="note" class="w-full bg-transparent border-none outline-none focus:ring-0 text-[0.85rem] text-[#e2e2e2] p-0 placeholder:text-[#404848] no-scrollbar m-0 min-h-[2.5rem] resize-y" placeholder="Add a personal note..." rows="2">{{ item.note or '' }}</textarea>
-                                            <button type="submit" class="words-note-button self-end text-[0.65rem] font-bold uppercase tracking-widest hover:brightness-125 transition-colors border-none p-0 cursor-pointer m-0 mt-1">Save Note</button>
-                                        </form>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                {% endfor %}
+                {% for item in searched_words %}
+                    <details class="group border-b border-white/[0.05] last:border-b-0" {% if not user_words and loop.index == 1 %}open{% endif %}>
+                        <summary class="word-row words-summary-row is-search-row px-6 py-5 cursor-pointer transition-colors outline-none h-full m-0">
+                            <div class="flex flex-col md:block min-w-0">
+                                <h3 class="text-base font-headline font-bold text-primary tracking-tight truncate m-0">{{ item.word }}</h3>
+                                <span class="md:hidden text-[0.65rem] font-medium text-on-surface-variant/60 truncate">{{ item.bangla_meaning or 'No translation' }}</span>
+                            </div>
+                            <div class="hidden md:flex items-center">
+                                <span class="text-[0.6rem] font-bold text-[#dec38f] uppercase tracking-widest opacity-80 mt-1">{{ item.part_of_speech or 'Word' }}</span>
+                            </div>
+                            <div class="hidden md:flex items-center font-bengali text-[0.95rem] font-semibold text-white truncate h-full mt-1">{{ item.bangla_meaning or '--' }}</div>
+                            <div class="hidden md:flex items-center text-[0.85rem] text-[#8a9291] truncate pr-4 h-full mt-1">{{ item.definition }}</div>
+                        </summary>
+
+                        <div class="px-6 pb-6 pt-2 bg-white/[0.01]">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-white/[0.03]">
+                                <div class="space-y-4">
+                                    <div class="m-0">
+                                        <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Meaning</span>
+                                        <p class="text-[0.9rem] text-white leading-relaxed m-0 font-medium">{{ item.definition }}</p>
                                     </div>
+                                    {% if item.example_sentence %}
+                                    <div style="margin-top: 1.5rem;">
+                                        <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Example</span>
+                                        <p class="text-[0.9rem] italic text-[#8a9291] m-0">"{{ item.example_sentence }}"</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="space-y-4">
+                                    {% if item.synonyms %}
+                                    <div class="m-0">
+                                        <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Synonyms</span>
+                                        <p class="text-[0.85rem] text-[#dec38f] m-0">{{ item.synonyms }}</p>
+                                    </div>
+                                    {% endif %}
+                                    {% if item.antonyms %}
+                                        <div style="margin-top: 1.5rem;">
+                                            <span class="text-[0.65rem] font-bold text-[#404848] uppercase tracking-widest block mb-2">Antonym</span>
+                                            <p class="text-[0.85rem] text-[#ffb4ab] m-0">{{ item.antonyms }}</p>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -472,9 +513,17 @@
             </div>
         {% else %}
             {% if not lookup_word %}
-                <div class="text-center py-16 bg-[#0d0f0f] rounded-xl border border-white/[0.05]">
+                <div class="words-list-shell text-center py-16 bg-[#0d0f0f] rounded-xl border border-white/[0.05]">
                     <span class="material-symbols-outlined text-4xl text-[#404848] mb-3 opacity-50">style</span>
-                    <p class="text-[#8a9291]">{{ 'No saved words matched your search.' if search_query else 'You do not have saved words yet.' }}</p>
+                    <p class="text-[#8a9291]">
+                        {% if source_filter == 'searched' %}
+                            {{ 'No searched words matched your search.' if search_query else 'Still no word searched.' }}
+                        {% elif source_filter == 'curriculum' %}
+                            {{ 'No curriculum words matched your search.' if search_query else 'You do not have saved curriculum words yet.' }}
+                        {% else %}
+                            {{ 'No saved words matched your search.' if search_query else 'You do not have saved words yet.' }}
+                        {% endif %}
+                    </p>
                 </div>
             {% endif %}
         {% endif %}

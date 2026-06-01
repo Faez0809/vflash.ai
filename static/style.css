@@ -1111,57 +1111,6 @@ form.is-pending input[type="submit"] {
     animation: onboarding-drop-in 1.05s cubic-bezier(0.2, 0.9, 0.24, 1) both;
 }
 
-.nav-chat-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    color: #eef6f5;
-    cursor: pointer;
-    user-select: none;
-    backdrop-filter: none;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
-}
-
-.nav-chat-trigger::after {
-    content: none;
-}
-
-.feedback-fab-icon {
-    display: inline-grid;
-    place-items: center;
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    background: transparent;
-    color: #cfeef8;
-    box-shadow: none;
-    flex: 0 0 auto;
-}
-
-.feedback-fab-icon .material-symbols-outlined {
-    font-size: 1.35rem;
-    line-height: 1;
-    font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
-}
-
-.nav-chat-trigger:hover,
-.nav-chat-trigger:focus-visible {
-    box-shadow: none;
-    transform: none;
-    outline: none;
-}
-
 .onboarding-float summary {
     list-style: none;
 }
@@ -7199,8 +7148,7 @@ body.dashboard-page .dashboard-topbar .nav-menu {
         border-radius: 12px;
     }
 
-    .nav-header-icon,
-    .nav-chat-trigger {
+    .nav-header-icon {
         width: 40px;
         height: 40px;
         min-height: 40px;

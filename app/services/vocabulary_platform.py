@@ -667,6 +667,60 @@ def _get_approved_unseen_words(user_id, level, count):
     )
 
 
+def _mix_vocabulary_groups(vocabularies, count):
+    if len(vocabularies) <= count and len({(item.word or "")[:1].lower() for item in vocabularies}) <= 1:
+        return vocabularies[:count]
+
+    groups = defaultdict(list)
+    for vocabulary in vocabularies:
+        first_letter = (vocabulary.word or "").strip()[:1].lower()
+        groups[first_letter or "#"].append(vocabulary)
+
+    letters = list(groups.keys())
+    random.shuffle(letters)
+    for group in groups.values():
+        random.shuffle(group)
+
+    selected = []
+    while letters and len(selected) < count:
+        next_letters = letters[:]
+        random.shuffle(next_letters)
+        for letter in next_letters:
+            if len(selected) >= count:
+                break
+            batch_size = random.choice((1, 1, 2))
+            for _ in range(batch_size):
+                if groups[letter] and len(selected) < count:
+                    selected.append(groups[letter].pop())
+            if not groups[letter]:
+                letters.remove(letter)
+
+    random.shuffle(selected)
+    return selected[:count]
+
+
+def _get_mixed_approved_unseen_words(user_id, level, count):
+    pool_size = max(count * 8, 40)
+    pool = (
+        VocabularyMaster.query
+        .join(VocabularyEnrichment, VocabularyEnrichment.vocabulary_id == VocabularyMaster.id)
+        .options(contains_eager(VocabularyMaster.enrichment))
+        .filter(
+            VocabularyMaster.level == normalize_level(level),
+            VocabularyMaster.needs_admin_review.is_(False),
+            VocabularyEnrichment.validation_status == "approved",
+            VocabularyEnrichment.enrichment_quality_score >= HIGH_QUALITY_SCORE,
+            ~VocabularyMaster.id.in_(_excluded_generated_or_learned_subquery(user_id)),
+        )
+        .order_by(VocabularyMaster.word.asc(), VocabularyMaster.id.asc())
+        .limit(pool_size)
+        .all()
+    )
+    if len(pool) < count:
+        return pool
+    return _mix_vocabulary_groups(pool, count)
+
+
 def _update_level_completion(user_id, level, last_word_id=None):
     level = normalize_level(level)
     state = get_or_create_level_progress(user_id, level)
@@ -708,6 +762,11 @@ def get_unseen_words(user_id, level, count=5, order_mode="alphabetical"):
             candidates += fallback_query.order_by(VocabularyMaster.word.asc(), VocabularyMaster.id.asc()).limit(count - len(candidates)).all()
         return candidates[:count]
 
+    if order_mode == "mixed":
+        pool = query.order_by(VocabularyMaster.word.asc(), VocabularyMaster.id.asc()).limit(max(count * 8, 40)).all()
+        if len(pool) >= count:
+            return _mix_vocabulary_groups(pool, count)
+
     recent_seen = (
         db.session.query(UserWordProgress.vocabulary_id)
         .filter(UserWordProgress.user_id == user_id, UserWordProgress.last_seen_at.isnot(None))
@@ -719,7 +778,7 @@ def get_unseen_words(user_id, level, count=5, order_mode="alphabetical"):
     if len(candidates) < count:
         candidates += query.order_by(func.random()).limit(count - len(candidates)).all()
     if order_mode == "mixed":
-        random.shuffle(candidates)
+        candidates = _mix_vocabulary_groups(candidates, count)
     return candidates[:count]
 
 
@@ -945,7 +1004,11 @@ def create_flashcard_session(user_id, level, requested_count, order_mode, includ
         # CACHE-FIRST: pull words that already have approved enrichments so
         # they are delivered instantly, then fill remaining slots with raw
         # unseen words that will be enriched progressively in the background.
-        ready = _get_approved_unseen_words(user_id, level, requested_count)
+        ready = (
+            _get_mixed_approved_unseen_words(user_id, level, requested_count)
+            if order_mode == "mixed"
+            else _get_approved_unseen_words(user_id, level, requested_count)
+        )
         if len(ready) >= requested_count:
             vocabularies = ready[:requested_count]
         else:

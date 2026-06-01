@@ -51,6 +51,32 @@ def register(app):
         )
         return questions
 
+    def _append_pending_questions(quiz_state, limit=2):
+        pending = list(quiz_state.get("pending_vocab", []))
+        if not pending:
+            return 0
+
+        questions = quiz_state.setdefault("questions", [])
+        used_words = {str(q.get("word", "")).lower() for q in questions}
+        generated = 0
+        while pending and generated < limit:
+            item = pending.pop(0)
+            q = generate_question_for_item(
+                item_id=item["id"],
+                is_search=item["is_search"],
+                quiz_type=quiz_state.get("quiz_type", "multiple_choice"),
+                user_id=current_user.id,
+            )
+            if not q or str(q.get("word", "")).lower() in used_words:
+                continue
+            questions.append(q)
+            used_words.add(str(q.get("word", "")).lower())
+            generated += 1
+
+        quiz_state["pending_vocab"] = pending
+        quiz_state["questions"] = questions
+        return generated
+
     def _log_session_state(quiz_state, label=""):
         """Emit a structured debug log of the current quiz session state."""
         prefix = f"[Quiz SessionState{' ' + label if label else ''}]"
@@ -65,7 +91,7 @@ def register(app):
 
     def finalize_quiz_result(quiz_state, mark_quit=False):
         answered_count = len(quiz_state["answers"])
-        total_questions = len(quiz_state["questions"])
+        total_questions = quiz_state.get("configured_total_questions") or len(quiz_state["questions"])
         wrong_answers = [a for a in quiz_state["answers"] if not a["is_correct"]]
         wrong_vocabulary_ids = sorted({
             a.get("vocabulary_id")
@@ -278,9 +304,24 @@ def register(app):
                 )
                 return redirect(url_for("quiz"))
 
-            # Step 2: Generate ALL questions synchronously before creating session
-            # A session MUST NEVER be created with 0 questions.
-            questions = _generate_all_questions(vocab_list, quiz_type, current_user.id)
+            # Generate the first valid question now; background prefetch appends the rest.
+            first_state = {
+                "state": "active",
+                "questions": [],
+                "pending_vocab": vocab_list,
+                "current_index": 0,
+                "score": 0,
+                "answers": [],
+                "completed": False,
+                "quiz_type": quiz_type,
+                "difficulty": difficulty,
+                "word_source": word_source,
+                "focus": focus,
+                "started_at": quiz_started_at(),
+                "configured_total_questions": question_count,
+            }
+            _append_pending_questions(first_state, limit=1)
+            questions = first_state["questions"]
             app.logger.info(
                 f"[Quiz] Start — generated={len(questions)} questions"
             )
@@ -293,20 +334,8 @@ def register(app):
                 )
                 return redirect(url_for("quiz"))
 
-            # Step 3: Create a complete, stable session with all questions pre-loaded
-            session["quiz_state"] = {
-                "state": "active",
-                "questions": questions,
-                "current_index": 0,
-                "score": 0,
-                "answers": [],
-                "completed": False,
-                "quiz_type": quiz_type,
-                "difficulty": difficulty,
-                "word_source": word_source,
-                "focus": focus,
-                "started_at": quiz_started_at(),
-            }
+            # Create a stable session with queued vocabulary for progressive loading.
+            session["quiz_state"] = first_state
             session.pop("quiz_result", None)
             _log_session_state(session["quiz_state"], label="SessionCreated")
             return redirect(url_for("quiz_start"))
@@ -367,6 +396,9 @@ def register(app):
 
             quiz_state["current_index"] += 1
             new_index = quiz_state["current_index"]
+            if new_index >= len(questions) and quiz_state.get("pending_vocab"):
+                _append_pending_questions(quiz_state, limit=1)
+                questions = quiz_state.get("questions", [])
 
             app.logger.info(
                 f"[Quiz] Answer recorded. correct={is_correct} "
@@ -397,6 +429,12 @@ def register(app):
 
         # Log the state every time the quiz page is loaded
         _log_session_state(quiz_state, label="GET")
+
+        if current_index >= len(questions) and quiz_state.get("pending_vocab"):
+            _append_pending_questions(quiz_state, limit=1)
+            session["quiz_state"] = quiz_state
+            session.modified = True
+            questions = quiz_state.get("questions", [])
 
         # Guard: session exists but has no questions — stale/invalid session
         if not questions:
@@ -444,7 +482,7 @@ def register(app):
 
         # All guards passed — render the active question
         app.logger.info(
-            f"[Quiz] Rendering question {current_index + 1}/{len(questions)}: "
+            f"[Quiz] Rendering question {current_index + 1}/{quiz_state.get('configured_total_questions') or len(questions)}: "
             f"word='{questions[current_index].get('word')}'"
         )
         current_question = questions[current_index]
@@ -453,7 +491,7 @@ def register(app):
             state="active",
             question=current_question,
             question_number=current_index + 1,
-            total_questions=len(questions),
+            total_questions=quiz_state.get("configured_total_questions") or len(questions),
             score=quiz_state["score"],
             quiz_setup=None,
             quiz_result=None,
@@ -484,11 +522,14 @@ def register(app):
         quiz_state = session.get("quiz_state")
         if not quiz_state:
             return jsonify({"status": "ok", "generated": 0, "available_questions": 0, "target_count": 0})
+        generated = _append_pending_questions(quiz_state, limit=3)
+        session["quiz_state"] = quiz_state
+        session.modified = True
         questions = quiz_state.get("questions", [])
         return jsonify({
             "status": "ok",
             "state": quiz_state.get("state", "active"),
-            "generated": 0,
+            "generated": generated,
             "available_questions": len(questions),
-            "target_count": len(questions),
+            "target_count": quiz_state.get("configured_total_questions") or len(questions),
         })

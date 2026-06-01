@@ -9,6 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import SEARCH_CACHE_TTL_SECONDS, cache
 from app.models import (
     FlashcardSession,
+    FlashcardSessionWord,
     QuizHistory,
     SearchHistory,
     SearchVocabulary,
@@ -364,7 +365,12 @@ def register(app):
         if last_session:
             last_session_remaining = (
                 db.session.query(func.count(UserWordProgress.id))
-                .filter(UserWordProgress.user_id == current_user.id, UserWordProgress.is_learned.is_(False))
+                .join(FlashcardSessionWord, FlashcardSessionWord.vocabulary_id == UserWordProgress.vocabulary_id)
+                .filter(
+                    UserWordProgress.user_id == current_user.id,
+                    UserWordProgress.is_learned.is_(False),
+                    FlashcardSessionWord.session_id == last_session.id,
+                )
                 .scalar()
                 or 0
             )

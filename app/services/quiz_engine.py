@@ -292,7 +292,17 @@ def _distractors(vocabulary, pool, getter, count=3, used_options=None):
 
 
 def _options(answer, distractors):
-    choices = [answer] + distractors[:3]
+    clean_answer = _clean(answer)
+    choices = [clean_answer]
+    seen = {clean_answer.lower()}
+    for distractor in distractors:
+        value = _clean(distractor)
+        if not value or value.lower() in seen:
+            continue
+        seen.add(value.lower())
+        choices.append(value)
+        if len(choices) >= 4:
+            break
     random.shuffle(choices)
     return choices
 
@@ -314,13 +324,40 @@ def _subtitle_for_type(quiz_type, is_english=True):
 def _save_to_cache(vocabulary, quiz_type, question, custom_explanation=None):
     """Save successfully generated quiz question to DB cache safely if it is high quality."""
     e = vocabulary.enrichment
+    score = _score_quiz_question(vocabulary, quiz_type, question)
+    if score < 0.82:
+        return
+
     distractors = []
     if question.get("question_type") == "multiple_choice":
-        distractors = [opt for opt in question.get("options", []) if opt != question.get("answer")]
-        if len(distractors) < 1 or len(set(distractors)) != len(distractors):
+        answer_norm = _clean(question.get("answer")).lower()
+        distractors = [
+            _clean(opt)
+            for opt in question.get("options", [])
+            if _clean(opt) and _clean(opt).lower() != answer_norm
+        ]
+        if len(distractors) < 3 or len({d.lower() for d in distractors}) != len(distractors):
             return
 
     try:
+        existing = QuizQuestionCache.query.filter_by(
+            vocabulary_id=vocabulary.id,
+            quiz_type=quiz_type,
+        ).first()
+        if existing:
+            existing_score = existing.generation_quality_score or 0
+            if existing_score >= score:
+                return
+            existing.question_text = question["prompt"]
+            existing.correct_answer = question["answer"]
+            existing.distractor_options = json.dumps(distractors)
+            existing.explanation = custom_explanation or _meaning(vocabulary) or "Definition is being prepared."
+            existing.difficulty = vocabulary.level
+            existing.generation_quality_score = score
+            existing.validation_status = "valid"
+            db.session.commit()
+            return
+
         # Create a new cache entry
         cache_entry = QuizQuestionCache(
             vocabulary_id=vocabulary.id,
@@ -330,7 +367,7 @@ def _save_to_cache(vocabulary, quiz_type, question, custom_explanation=None):
             distractor_options=json.dumps(distractors),
             explanation=custom_explanation or _meaning(vocabulary) or "Definition is being prepared.",
             difficulty=vocabulary.level,
-            generation_quality_score=getattr(e, "enrichment_quality_score", 1.0) if e else 1.0,
+            generation_quality_score=score,
             validation_status="valid"
         )
         db.session.add(cache_entry)
@@ -338,6 +375,48 @@ def _save_to_cache(vocabulary, quiz_type, question, custom_explanation=None):
     except Exception as ex:
         db.session.rollback()
         pass
+
+
+def _score_quiz_question(vocabulary, quiz_type, question):
+    """Heuristic gate for cache storage; gameplay may still use non-cached fallbacks."""
+    prompt = _clean(question.get("prompt"))
+    answer = _clean(question.get("answer"))
+    options = [_clean(opt) for opt in question.get("options", []) if _clean(opt)]
+    word = _clean(getattr(vocabulary, "word", ""))
+    score = 1.0
+
+    if not prompt or not answer:
+        return 0.0
+    if len(prompt) < 3 or len(answer) < 2:
+        score -= 0.35
+    if question.get("question_type") == "multiple_choice":
+        normalized_options = [opt.lower() for opt in options]
+        if len(options) != 4:
+            score -= 0.3
+        if len(set(normalized_options)) != len(normalized_options):
+            score -= 0.35
+        if answer.lower() not in normalized_options:
+            score -= 0.4
+        for option in options:
+            if option.lower() != answer.lower() and (
+                option.lower() in answer.lower() or answer.lower() in option.lower()
+            ):
+                score -= 0.12
+        if len({opt.split()[0].lower() for opt in options if opt.split()}) <= 2:
+            score -= 0.12
+    elif quiz_type == "fill_blank":
+        if "____" not in prompt or word.lower() in prompt.lower():
+            score -= 0.4
+
+    if quiz_type in ("multiple_choice", "meaning_match", "english_to_bangla", "synonym_match") and prompt.lower() != word.lower():
+        score -= 0.05
+    if "definition is being prepared" in prompt.lower() or "vocabulary meaning for" in " ".join(options).lower():
+        score -= 0.45
+
+    enrichment_score = getattr(vocabulary.enrichment, "enrichment_quality_score", None) if vocabulary.enrichment else None
+    if enrichment_score is not None:
+        score = min(score, 0.75 + (float(enrichment_score) * 0.25))
+    return max(0.0, min(1.0, score))
 
 
 def generate_groq_quiz_question(word, quiz_type, enrichment_data=None, level="Mixed"):
@@ -365,13 +444,13 @@ Existing Dictionary Data for Reference:
 - Antonyms: {enrichment_data.get('antonyms', '')}
 """
 
-    prompt = f"""You are an elite educational assessment editor designing quiz questions for students.
+    prompt = f"""You are an elite educational assessment editor designing useful, engaging vocabulary quiz questions for real students.
 Target Word: "{word}"
 Quiz Type: "{quiz_type}"
 Difficulty level: {level}
 {context_str}
 
-Please generate a high-quality educational quiz question matching the Quiz Type.
+Create one polished assessment item. It must test real understanding, not recognition by elimination.
 
 QUIZ TYPE INSTRUCTIONS:
 1. "multiple_choice" or "meaning_match":
@@ -403,6 +482,12 @@ DISTRACTOR QUALITY RULES:
 - Distractors must feel believable, test understanding, and avoid obvious wrong answers.
 - Distractors must remain completely fair to prepared learners.
 - They must be of the same grammatical part of speech and tone as the correct answer.
+- Every distractor must be new, specific, and independently plausible. Do not use generic filler, repeated wording patterns, or near-duplicates.
+- Avoid options that share the same first words, same sentence template, same translation root, or an obvious length/style mismatch.
+- For definition choices, make all four options parallel in style and difficulty, but semantically distinct.
+- For word choices, use same-level vocabulary that could confuse a learner unless they understand the target word.
+- Never reveal the answer inside the prompt or in any distractor.
+- Explanations must be brief and instructional; mention the tested meaning, not just "because it is correct".
 
 OUTPUT FORMAT:
 Return ONLY a strict valid JSON object. Do not include any other markdown, text, or conversational prefix/suffix outside the JSON block.
@@ -559,6 +644,11 @@ def _question_for(vocabulary, quiz_type, pool, used_options=None):
             options = []
             if quiz_type != "fill_blank":
                 options = _options(cached.correct_answer, distractors)
+                if len(options) < 4 or len({opt.lower() for opt in options}) != len(options):
+                    raise ValueError("Cached quiz options failed quality validation")
+                if used_options is not None:
+                    for option in options:
+                        used_options.add(option.lower())
             return {
                 "question_type": cached.quiz_type,
                 "subtitle": _subtitle_for_type(cached.quiz_type, cached.correct_answer == vocabulary.word),

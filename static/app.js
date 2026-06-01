@@ -29,7 +29,6 @@ function bootstrapPage({ initialLoad = false } = {}) {
     initQuizUX();
     initUsageTracking();
     initDashboardWarmups();
-    initFeedbackAssistant();
     initVocabularyInputs();
     initSearchSuggestions();
     prefetchVisibleNavigationLinks();
@@ -746,30 +745,6 @@ function initAutoSubmitControls() {
                 }
                 HTMLFormElement.prototype.submit.call(form);
             });
-        });
-    });
-}
-
-function initFeedbackAssistant() {
-    const openChatButtons = document.querySelectorAll("[data-feedback-open-chat]");
-    if (!openChatButtons.length) {
-        return;
-    }
-
-    openChatButtons.forEach((openChatButton) => {
-        if (openChatButton.dataset.feedbackBound === "true") {
-            return;
-        }
-
-        openChatButton.dataset.feedbackBound = "true";
-        openChatButton.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (typeof window.openChat === "function") {
-                window.openChat();
-                return;
-            }
-            showAjaxMessage("Live chat is still loading.", "info");
         });
     });
 }
@@ -1879,6 +1854,7 @@ function initQuizUX() {
     window.showQuitModal = function() {
         const modal = document.getElementById("quit-modal") || document.querySelector("#quit-quiz-modal");
         if (modal) {
+            modal.classList.add("is-open");
             modal.style.display = "flex";
             modal.setAttribute("aria-hidden", "false");
         }
@@ -1886,6 +1862,7 @@ function initQuizUX() {
     window.hideQuitModal = function() {
         const modal = document.getElementById("quit-modal") || document.querySelector("#quit-quiz-modal");
         if (modal) {
+            modal.classList.remove("is-open");
             modal.style.display = "none";
             modal.setAttribute("aria-hidden", "true");
         }

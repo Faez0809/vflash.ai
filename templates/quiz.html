@@ -168,9 +168,6 @@
                 </nav>
             </div>
             <div class="app-topbar-actions flex items-center gap-4">
-                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                </button>
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
                 {% endif %}
@@ -226,13 +223,27 @@
 
                         <div class="mb-6 shrink-0">
                             <h2 class="text-xl font-headline font-bold text-on-surface mb-2">
-                                {% if quiz_result.accuracy >= 90 %}Masterful!
+                                {% if quiz_result.accuracy == 100 %}Perfect command!
+                                {% elif quiz_result.accuracy >= 90 %}Masterful!
+                                {% elif quiz_result.accuracy >= 80 %}Strong performance!
                                 {% elif quiz_result.accuracy >= 70 %}Great work!
                                 {% elif quiz_result.accuracy >= 50 %}Good effort.
                                 {% else %}Keep practicing!{% endif %}
                             </h2>
                             <p class="text-xs sm:text-sm text-on-surface-variant max-w-xs leading-relaxed opacity-80">
-                                You are making steady progress. Your grasp of academic vocabulary is improving.
+                                {% if quiz_result.accuracy == 100 %}
+                                    Every answer landed cleanly. Keep this pace and raise the difficulty when you are ready.
+                                {% elif quiz_result.accuracy >= 90 %}
+                                    Excellent control. Review the small gaps now while the words are still fresh.
+                                {% elif quiz_result.accuracy >= 80 %}
+                                    You are very close to mastery. One careful review can turn this into a perfect run.
+                                {% elif quiz_result.accuracy >= 70 %}
+                                    Solid progress. Focus on the missed word and the next quiz should feel easier.
+                                {% elif quiz_result.accuracy >= 50 %}
+                                    You are building the base. Review the missed meanings, then try a shorter focused quiz.
+                                {% else %}
+                                    This is useful practice data. Start with the missed words and rebuild them one by one.
+                                {% endif %}
                                 {% if quiz_result.was_quit %}<br><span class="text-error/80 text-xs">Quiz ended early</span>{% endif %}
                             </p>
                         </div>
@@ -417,7 +428,7 @@
                         <p class="text-primary text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 font-headline">Session Progress</p>
                         <h2 class="text-on-surface font-headline text-xl sm:text-2xl font-light">Question <span class="font-bold">{{ question_number }}</span> / {{ total_questions }}</h2>
                     </div>
-                    <button type="button" id="quit-quiz-btn" style="display: none;" onclick="showQuitModal()" class="btn-ghost-dark group flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg outline-none cursor-pointer">
+                    <button type="button" id="quit-quiz-btn" data-quiz-quit onclick="showQuitModal()" class="btn-ghost-dark group flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg outline-none cursor-pointer">
                         <span class="material-symbols-outlined text-[14px] sm:text-[16px]">close</span>
                         Quit
                     </button>
@@ -517,12 +528,14 @@
             function showQuitModal() {
                 var modal = document.getElementById("quit-modal");
                 if (!modal) return;
+                modal.classList.add("is-open");
                 modal.style.display = "flex";
                 modal.setAttribute("aria-hidden", "false");
             }
             function hideQuitModal() {
                 var modal = document.getElementById("quit-modal");
                 if (!modal) return;
+                modal.classList.remove("is-open");
                 modal.style.display = "none";
                 modal.setAttribute("aria-hidden", "true");
             }
@@ -531,6 +544,7 @@
             (function() {
                 var modal = document.getElementById("quit-modal");
                 if (modal) {
+                    modal.classList.remove("is-open");
                     modal.style.display = "none";
                     modal.setAttribute("aria-hidden", "true");
                 }

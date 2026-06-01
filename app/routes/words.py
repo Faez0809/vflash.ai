@@ -15,6 +15,7 @@ def register(app):
         search_query = clean_text(request.args.get("q"))
         difficulty_filter = clean_text(request.args.get("difficulty"))
         learned_filter = clean_text(request.args.get("learned"))
+        source_filter = clean_text(request.args.get("source")) or "all"
         difficult_only = request.args.get("difficult") == "1"
         favorite_only = request.args.get("favorite") == "1"
 
@@ -25,6 +26,9 @@ def register(app):
             .join(VocabularyMaster)
             .filter(UserWordProgress.user_id == current_user.id)
         )
+        if source_filter not in {"all", "searched", "curriculum"}:
+            source_filter = "all"
+
         if search_query:
             search_term = f"%{search_query}%"
             query = query.filter(
@@ -44,21 +48,39 @@ def register(app):
         if favorite_only:
             query = query.filter(UserWordProgress.is_favorite.is_(True))
 
-        user_words = query.order_by(UserWordProgress.updated_at.desc(), VocabularyMaster.word.asc()).all()
-        searched_words = (
-            SearchVocabulary.query.filter(
-                SearchVocabulary.searched_by_user_id == current_user.id,
-                SearchVocabulary.is_fully_enriched.is_(True),
-                SearchVocabulary.enrichment_score >= 0.8,
-                SearchVocabulary.definition.isnot(None),
-                SearchVocabulary.bangla_meaning.isnot(None),
-                SearchVocabulary.example_sentence.isnot(None),
-                SearchVocabulary.part_of_speech.isnot(None),
-            )
-            .order_by(SearchVocabulary.created_at.desc())
-            .limit(25)
-            .all()
+        user_words = []
+        if source_filter in {"all", "curriculum"}:
+            user_words = query.order_by(UserWordProgress.updated_at.desc(), VocabularyMaster.word.asc()).all()
+
+        searched_query = SearchVocabulary.query.filter(
+            SearchVocabulary.searched_by_user_id == current_user.id,
+            SearchVocabulary.source_type == "search",
+            SearchVocabulary.is_fully_enriched.is_(True),
+            SearchVocabulary.enrichment_score >= 0.8,
+            SearchVocabulary.definition.isnot(None),
+            SearchVocabulary.bangla_meaning.isnot(None),
+            SearchVocabulary.example_sentence.isnot(None),
+            SearchVocabulary.part_of_speech.isnot(None),
         )
+        if search_query:
+            search_term = f"%{search_query}%"
+            searched_query = searched_query.filter(
+                or_(
+                    SearchVocabulary.word.ilike(search_term),
+                    SearchVocabulary.definition.ilike(search_term),
+                    SearchVocabulary.bangla_meaning.ilike(search_term),
+                    SearchVocabulary.difficulty_estimate.ilike(search_term),
+                )
+            )
+        if difficulty_filter and difficulty_filter != "All":
+            searched_query = searched_query.filter(SearchVocabulary.difficulty_estimate == difficulty_filter)
+
+        searched_words = []
+        if source_filter == "searched" or (
+            source_filter == "all" and learned_filter == "all" and not difficult_only and not favorite_only
+        ):
+            searched_words = searched_query.order_by(SearchVocabulary.created_at.desc()).limit(25).all()
+
         available_difficulties = ["intermediate", "upper_intermediate", "advanced"]
         return render_template(
             "words.html",
@@ -74,7 +96,7 @@ def register(app):
             requested_part_of_speech=None,
             search_query=search_query,
             difficulty_filter=difficulty_filter or "All",
-            topic_filter="All",
+            source_filter=source_filter,
             learned_filter=learned_filter or "all",
             difficult_only=difficult_only,
             favorite_only=favorite_only,
@@ -100,9 +122,3 @@ def register(app):
         )
         return redirect(request.form.get("next") or request.referrer or url_for("words"))
 
-    @app.route("/words/note/<int:user_word_id>", methods=["POST"])
-    @login_required
-    def save_word_note(user_word_id):
-        UserWordProgress.query.filter_by(id=user_word_id, user_id=current_user.id).first_or_404()
-        flash("Notes are preserved in the legacy archive and will move to structured notes in the next data pass.", "info")
-        return redirect(request.form.get("next") or request.referrer or url_for("words"))

@@ -103,9 +103,6 @@
                 </nav>
             </div>
             <div class="app-topbar-actions flex items-center gap-4">
-                <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                    <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                </button>
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
                 {% endif %}

@@ -43,9 +43,6 @@
             </form>
             <nav class="nav-links nav-links-primary nav-links-primary-shell">
                 {% if current_user.is_authenticated %}
-                    <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                        <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                    </button>
                     <a class="{{ 'is-active' if request.endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a class="{{ 'is-active' if request.endpoint in ['flashcards', 'flashcards_session'] else '' }}" href="{{ url_for('flashcards') }}">Flashcards</a>
                     <a class="{{ 'is-active' if request.endpoint == 'review' else '' }}" href="{{ url_for('review') }}">Review</a>
@@ -75,9 +72,6 @@
                         </div>
                     </div>
                 {% else %}
-                    <button type="button" class="nav-chat-trigger nav-header-icon" data-feedback-open-chat aria-label="Message Faez" title="Message Faez">
-                        <span class="feedback-fab-icon"><span class="material-symbols-outlined">forum</span></span>
-                    </button>
                     <a href="{{ url_for('login') }}">Login</a>
                     <a href="{{ url_for('signup') }}">Sign up</a>
                     <a class="nav-profile-link" href="{{ url_for('login') }}" aria-label="Account">
@@ -134,87 +128,5 @@
             padding-bottom: max(0px, env(safe-area-inset-bottom));
         }
     </style>
-    <script type="text/javascript">
-        var Tawk_API = window.Tawk_API = window.Tawk_API || {};
-        var Tawk_LoadStart = window.Tawk_LoadStart = new Date();
-        var __tawkIsLoaded = false;
-
-        {% if current_user.is_authenticated %}
-        (function () {
-            var visitorName = {{ current_user.display_name|trim|tojson }};
-            var visitorEmail = {{ current_user.email|trim|lower|tojson }};
-            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            var visitor = { name: visitorName };
-            if (emailPattern.test(visitorEmail)) {
-                visitor.email = visitorEmail;
-            }
-            Tawk_API.visitor = visitor;
-        })();
-        {% endif %}
-
-        function waitForTawk(callback) {
-            if (
-                typeof Tawk_API !== "undefined" &&
-                Tawk_API.onLoad &&
-                typeof Tawk_API.showWidget === "function" &&
-                typeof Tawk_API.maximize === "function"
-            ) {
-                callback();
-            } else {
-                setTimeout(function () { waitForTawk(callback); }, 100);
-            }
-        }
-
-        function openChat() {
-            waitForTawk(function () {
-                try {
-                    Tawk_API.showWidget();
-                    Tawk_API.maximize();
-                } catch (e) {
-                    console.error("Tawk error:", e);
-                }
-            });
-        }
-
-        Tawk_API.onLoad = function () {
-            __tawkIsLoaded = true;
-
-            if (typeof Tawk_API.hideWidget === "function") {
-                Tawk_API.hideWidget();
-            }
-
-            if (typeof Tawk_API.setAttributes === "function") {
-                Tawk_API.setAttributes(
-                    {
-                        "visitor-role": {{ ("authenticated-user" if current_user.is_authenticated else "guest")|tojson }},
-                        "visitor-page": {{ (request.endpoint or "unknown")|replace("_", "-")|tojson }}
-                    },
-                    function (error) {
-                        if (error && window.console && typeof window.console.warn === "function") {
-                            window.console.warn("Tawk visitor metadata failed.", error);
-                        }
-                    }
-                );
-            }
-
-        };
-
-        if (!window.__tawkWidgetLoaded && !document.getElementById("tawkto-script")) {
-            window.__tawkWidgetLoaded = true;
-            (function () {
-                var s1 = document.createElement("script");
-                var s0 = document.getElementsByTagName("script")[0];
-                s1.id = "tawkto-script";
-                s1.async = true;
-                s1.src = "https://embed.tawk.to/69d4db892767f61c30801122/1jljnj4bo";
-                s1.charset = "UTF-8";
-                s1.setAttribute("crossorigin", "*");
-                s0.parentNode.insertBefore(s1, s0);
-            })();
-        }
-
-        window.openChat = openChat;
-        window.waitForTawk = waitForTawk;
-    </script>
 </body>
 </html>
