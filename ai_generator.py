@@ -642,10 +642,12 @@ def _post_to_groq(api_key, model, prompt, system_prompt, temperature, timeout=30
 
 def _request_vocabulary_words_from_groq(difficulty, word_count, user_custom_prompt="", avoid_words=None):
     try:
-        from app.services.groq_provider import groq_pool
-        api_key = groq_pool.get_search_key()
+        from app.services.groq_provider import groq_pool, AllWorkerKeysCoolingDown
+        api_key = groq_pool.get_worker_key()
     except ImportError:
         api_key = os.environ.get("GROQ_API_KEY")
+    except Exception:
+        api_key = os.environ.get("GROQ_API_KEY_WORKER_1") or os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -832,9 +834,11 @@ def generate_vocabulary_words(difficulty="Beginner", word_count=5, user_custom_p
 def _request_word_content_from_groq(word):
     try:
         from app.services.groq_provider import groq_pool
-        api_key = groq_pool.get_search_key()
+        api_key = groq_pool.get_worker_key()
     except ImportError:
         api_key = os.environ.get("GROQ_API_KEY")
+    except Exception:
+        api_key = os.environ.get("GROQ_API_KEY_WORKER_1") or os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -919,9 +923,11 @@ def generate_word_content(word):
 def _request_dictionary_details_from_groq(word, retry=False):
     try:
         from app.services.groq_provider import groq_pool
-        api_key = groq_pool.get_search_key()
+        api_key = groq_pool.get_worker_key()
     except ImportError:
         api_key = os.environ.get("GROQ_API_KEY")
+    except Exception:
+        api_key = os.environ.get("GROQ_API_KEY_WORKER_1") or os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured.")
@@ -1062,9 +1068,11 @@ def suggest_word_corrections(word, max_suggestions=3):
 
     try:
         from app.services.groq_provider import groq_pool
-        api_key = groq_pool.get_search_key()
+        api_key = groq_pool.get_worker_key()
     except ImportError:
         api_key = os.environ.get("GROQ_API_KEY")
+    except Exception:
+        api_key = os.environ.get("GROQ_API_KEY_WORKER_1") or os.environ.get("GROQ_API_KEY")
     model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         return []

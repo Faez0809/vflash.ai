@@ -242,7 +242,15 @@ def register(app):
             if word_source == "search_vocabulary":
                 rows = (
                     SearchVocabulary.query
-                    .filter_by(searched_by_user_id=current_user.id)
+                    .filter(
+                        SearchVocabulary.searched_by_user_id == current_user.id,
+                        SearchVocabulary.is_fully_enriched.is_(True),
+                        SearchVocabulary.enrichment_score >= 0.8,
+                        SearchVocabulary.definition.isnot(None),
+                        SearchVocabulary.bangla_meaning.isnot(None),
+                        SearchVocabulary.example_sentence.isnot(None),
+                        SearchVocabulary.part_of_speech.isnot(None),
+                    )
                     .order_by(SearchVocabulary.created_at.desc())
                     .limit(question_count)
                     .all()

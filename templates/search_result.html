@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Word Search | vflash.ai{% endblock %}
+
+{% block content %}
+<section class="search-flashcard-wrap">
+    <div class="flashcard-panel search-flashcard-panel search-direct-panel">
+        <div class="search-direct-toolbar">
+            <form class="search-page-form" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Generating word details..."]'>
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" maxlength="60" autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            <a class="search-page-back" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        </div>
+
+        {% if lookup_status == "invalid" %}
+        <article class="search-flashcard-card search-direct-card">
+            <div class="search-direct-head">
+                <div class="search-word-heading">
+                    <h1>No valid English word found</h1>
+                </div>
+                <p class="search-flashcard-meaning">
+                    We could not verify "{{ search_query }}" as a valid English word.
+                </p>
+            </div>
+
+            {% if lookup_suggestions %}
+            <div class="flashcard-back-grid search-flashcard-grid search-direct-grid">
+                <div class="flashcard-detail search-flashcard-detail-wide">
+                    <p class="stitch-label">Did you mean</p>
+                    <div class="search-suggestion-list">
+                        {% for suggestion in lookup_suggestions %}
+                            <a class="search-suggestion-chip" href="{{ url_for('search_word', q=suggestion) }}" data-async-page="true">{{ suggestion }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </article>
+        {% else %}
+        <article class="search-flashcard-card search-direct-card">
+            <div class="search-direct-head">
+                <div class="search-word-heading">
+                    <h1>{{ word.word }}</h1>
+                    {% if word.part_of_speech %}
+                        <span class="flashcard-pos">{{ word.part_of_speech }}</span>
+                    {% endif %}
+                </div>
+                <p class="search-flashcard-meaning">
+                    {{ word.meaning }}
+                </p>
+            </div>
+
+            <div class="flashcard-back-grid search-flashcard-grid search-direct-grid">
+                {% if word.bangla_meaning %}
+                <div class="flashcard-detail">
+                    <p class="stitch-label">Bangla meaning</p>
+                    <p>{{ word.bangla_meaning }}</p>
+                </div>
+                {% endif %}
+                {% if word.phonetic %}
+                <div class="flashcard-detail">
+                    <p class="stitch-label">Pronunciation</p>
+                    <p>{{ word.phonetic }}</p>
+                </div>
+                {% endif %}
+                {% if word.synonym_hint or word.synonym %}
+                <div class="flashcard-detail">
+                    <p class="stitch-label">Synonym</p>
+                    <p>{{ word.synonym_hint or word.synonym }}</p>
+                </div>
+                {% endif %}
+                {% if word.antonym_hint %}
+                    <div class="flashcard-detail">
+                        <p class="stitch-label">Antonym</p>
+                        <p>{{ word.antonym_hint }}</p>
+                    </div>
+                {% endif %}
+                {% if word.topic %}
+                <div class="flashcard-detail">
+                    <p class="stitch-label">Topic</p>
+                    <p>{{ word.topic }}</p>
+                </div>
+                {% endif %}
+                {% if word.sentence %}
+                <div class="flashcard-detail search-flashcard-detail-wide">
+                    <p class="stitch-label">Sentence</p>
+                    <p>{{ word.sentence }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </article>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

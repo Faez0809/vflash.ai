@@ -38,6 +38,15 @@ LEVEL_ALIASES = {
 }
 LEVELS = ("intermediate", "upper_intermediate", "advanced")
 HIGH_QUALITY_SCORE = 80
+def get_search_key():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+    except ImportError:
+        pass
+    return os.getenv("GROQ_API_KEY_SEARCH_DEDICATED")
+
+
 BEGINNER_WORDS = {"apple", "book", "cat", "dog", "eat", "food", "good", "happy", "house", "school", "sun", "tree", "water"}
 COMMON_CORRECTIONS = {
     "abit": "a bit",
@@ -552,8 +561,12 @@ def build_shared_enrichment_payload(word, allow_ai=True):
     if not normalized_word or not allow_ai:
         return {}
     try:
-        # Search path → use KEY1 (GROQ_API_KEY_SEARCH) with worker-key fallback
-        res = generate_enrichment_payload(normalized_word, api_key=groq_pool.get_search_key())
+        # Background enrichment path → use worker keys; dedicated search key is reserved for /search only
+        try:
+            _worker_key = groq_pool.get_worker_key()
+        except Exception:
+            _worker_key = os.environ.get("GROQ_API_KEY_WORKER_1") or os.environ.get("GROQ_API_KEY")
+        res = generate_enrichment_payload(normalized_word, api_key=_worker_key)
         return {
             "word": res["word"],
             "part_of_speech": res["part_of_speech"],
@@ -581,9 +594,9 @@ def create_search_vocabulary_from_payload(user_id, normalized_word, payload):
         word=clean_text(payload.get("word")) or normalized_word,
         normalized_word=normalized_word,
         searched_by_user_id=user_id,
-        definition=validation["definition"] if validation["valid"] else None,
+        definition=validation["definition"],
         bangla_meaning=validation["bangla_meaning"],
-        pronunciation=validation["pronunciation"] if _valid_pronunciation(validation["pronunciation"]) else None,
+        pronunciation=validation["pronunciation"],
         synonyms=validation["synonyms"],
         antonyms=validation["antonyms"],
         example_sentence=validation["example_sentence"],
@@ -1382,17 +1395,48 @@ def cache_search_vocabulary(user_id, word, payload=None):
         if suggestions:
             normalized_word = normalize_vocab_text(suggestions[0])
 
-    existing = SearchVocabulary.query.filter_by(normalized_word=normalized_word).first()
-    if existing is not None:
-        return existing
-
     payload = payload or build_shared_enrichment_payload(normalized_word, allow_ai=True)
     search_word = create_search_vocabulary_from_payload(user_id, normalized_word, payload)
-    db.session.add(search_word)
-    db.session.flush()
 
-    # If payload is successfully enriched, preserve in VocabularyMaster/VocabularyEnrichment and generate quiz cache!
-    if payload and payload.get("meaning"):
+    definition = payload.get("definition") or payload.get("meaning") or ""
+    bangla_meaning = payload.get("bangla_meaning") or ""
+    pronunciation = payload.get("pronunciation") or payload.get("phonetic") or ""
+    example_sentence = payload.get("example_sentence") or payload.get("sentence") or ""
+    synonyms = payload.get("synonyms") or payload.get("synonym") or ""
+    antonyms = payload.get("antonyms") or payload.get("antonym") or ""
+    part_of_speech = payload.get("part_of_speech") or ""
+
+    mapped_payload = {
+        "definition": definition,
+        "bangla_meaning": bangla_meaning,
+        "pronunciation": pronunciation,
+        "example_sentence": example_sentence,
+        "synonyms": synonyms,
+        "antonyms": antonyms,
+        "part_of_speech": part_of_speech,
+    }
+
+    from app.services.enrichment_engine import calculate_quality_score
+    raw_score = calculate_quality_score(normalized_word, mapped_payload)
+    score_float = raw_score / 100.0
+
+    search_word.enrichment_score = score_float
+
+    has_critical_fields = bool(
+        definition.strip() and
+        bangla_meaning.strip() and
+        example_sentence.strip() and
+        part_of_speech.strip()
+    )
+
+    is_fully_enriched = has_critical_fields and (score_float >= 0.8)
+    search_word.is_fully_enriched = is_fully_enriched
+
+    if is_fully_enriched:
+        db.session.add(search_word)
+        db.session.commit()
+
+        # If payload is successfully enriched, preserve in VocabularyMaster/VocabularyEnrichment and generate quiz cache!
         try:
             vocab = VocabularyMaster.query.filter_by(normalized_word=normalized_word).first()
             if not vocab:

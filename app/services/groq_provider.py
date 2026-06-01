@@ -1,20 +1,8 @@
 """
-Groq provider orchestration — role-based key selection with cooldown/fallback.
+Groq provider orchestration for role-based key selection.
 
-Role assignment (configured via .env):
-  SEARCH  → GROQ_API_KEY_SEARCH             (KEY1)    – search + user-facing enrichment
-  QUIZ    → GROQ_API_KEY_QUIZ               (KEY2)    – PRIMARY quiz / MCQ / distractor
-            GROQ_API_KEY_QUIZ_BACKUP_1..4   (KEY7-10) – quiz backup pool (rotate on 429)
-  WORKER  → GROQ_API_KEY_WORKER_1..4        (KEY3-6)  – background cache saturation
-
-Fallback chain:
-  SEARCH  : KEY1 → first healthy worker key  (if KEY1 is cooling down)
-  QUIZ    : KEY2 → KEY7 → KEY8 → KEY9 → KEY10 (quiz-dedicated pool, NO worker bleed)
-            → falls back to any healthy worker key only if ALL quiz keys cooling
-  WORKER  : round-robin KEY3-6, skipping keys in cooldown
-             → raises AllWorkerKeysCoolingDown if all keys are cooling
-
-Only API keys rotate; prompts / models / validation are NEVER changed.
+Direct search uses GROQ_API_KEY_SEARCH_DEDICATED only. It does not rotate,
+cool down, or fall back to quiz or worker keys.
 """
 
 import os
@@ -63,7 +51,8 @@ class _ProviderPool:
 
     def _search_key(self) -> str | None:
         return (
-            os.environ.get("GROQ_API_KEY_SEARCH")
+            os.environ.get("GROQ_API_KEY_SEARCH_PRIMARY")
+            or os.environ.get("GROQ_API_KEY_SEARCH")
             or os.environ.get("GROQ_API_KEY")
         )
 
@@ -109,7 +98,7 @@ class _ProviderPool:
           - First 429: 5 minutes (300 seconds)
           - Repeated 429 (within 15 minutes of the last one): 15 minutes (900 seconds)
         """
-        if not key:
+        if not key or key == os.getenv("GROQ_API_KEY_SEARCH_DEDICATED"):
             return
         with self._lock:
             now = time.monotonic()
@@ -142,22 +131,7 @@ class _ProviderPool:
     # ── Public key accessors ─────────────────────────────────────────────────
 
     def get_search_key(self) -> str:
-        """Return the best available key for user-facing search requests.
-
-        Primary: KEY1 (GROQ_API_KEY_SEARCH)
-        Fallback: first healthy worker key from the pool
-        Last resort: primary key even if cooling (caller must handle 429)
-        """
-        with self._lock:
-            primary = self._search_key()
-            if primary and not self._is_cooling(primary):
-                return primary
-            # Try worker keys as fallback
-            for key in self._worker_keys():
-                if not self._is_cooling(key):
-                    return key
-            # All cooling — return primary anyway; caller will handle the 429
-            return primary or ""
+        return os.getenv("GROQ_API_KEY_SEARCH_DEDICATED")
 
     def get_quiz_key(self) -> str:
         """Return the best available key for quiz generation requests.
@@ -187,12 +161,23 @@ class _ProviderPool:
         fails or becomes rate-limited, only then rotating to another key.
 
         Raises AllWorkerKeysCoolingDown when every key in the pool is in
-        its cooldown window — caller should sleep and retry later.
+        its cooldown window or capacity reservation limit is hit — 
+        caller should sleep and retry later.
         """
         with self._lock:
             keys = self._worker_keys()
             if not keys:
                 raise AllWorkerKeysCoolingDown("No worker keys configured.")
+            
+            # Capacity reservation for live search
+            healthy_worker_keys = sum(1 for k in keys if not self._is_cooling(k))
+            MIN_RESERVED_KEYS = 1
+            if healthy_worker_keys <= MIN_RESERVED_KEYS:
+                raise AllWorkerKeysCoolingDown(
+                    f"Worker capacity reservation limit reached. "
+                    f"Healthy worker keys: {healthy_worker_keys}, MIN_RESERVED_KEYS: {MIN_RESERVED_KEYS}."
+                )
+
             n = len(keys)
             
             # 1. Try to use the current index key if it is healthy
@@ -232,3 +217,13 @@ class _ProviderPool:
 # ── Module-level singleton ───────────────────────────────────────────────────
 
 groq_pool = _ProviderPool()
+
+
+def get_search_key():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+    except ImportError:
+        pass
+    return os.getenv("GROQ_API_KEY_SEARCH_DEDICATED")
+

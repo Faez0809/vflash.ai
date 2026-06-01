@@ -312,6 +312,8 @@ class SearchVocabulary(db.Model):
     difficulty_estimate = db.Column(db.String(40), nullable=True)
     source_type = db.Column(db.String(40), nullable=False, default="search")
     ai_generated = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    enrichment_score = db.Column(db.Float, nullable=True)
+    is_fully_enriched = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     searched_by_user = db.relationship("User")

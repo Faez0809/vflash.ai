@@ -37,7 +37,7 @@
                     <span class="brand-tag">AI vocabulary trainer</span>
                 {% endif %}
             </div>
-            <form class="nav-search" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Checking database...","Generating word details..."]'>
+            <form class="nav-search" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Generating word details..."]'>
                 <span class="material-symbols-outlined" aria-hidden="true">search</span>
                 <input type="search" name="q" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" value="{{ request.args.get('q', '') if request.endpoint == 'search_word' else '' }}" maxlength="60" autocomplete="off">
             </form>

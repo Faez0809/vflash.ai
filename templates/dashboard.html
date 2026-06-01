@@ -9,7 +9,7 @@
             <div class="dashboard-topbar-brand">
                 <a href="{{ url_for('dashboard') }}">vflash.ai</a>
             </div>
-            <form class="dashboard-topbar-search" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Checking database...","Generating word details..."]'>
+            <form class="dashboard-topbar-search" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Generating word details..."]'>
                 <span class="material-symbols-outlined">search</span>
                 <input type="search" name="q" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" maxlength="60" autocomplete="off">
             </form>

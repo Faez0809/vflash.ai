@@ -11,6 +11,7 @@ from app.models import (
     FlashcardSession,
     QuizHistory,
     SearchHistory,
+    SearchVocabulary,
     UserAppSession,
     UserWordProgress,
     VocabularyMaster,
@@ -473,40 +474,295 @@ def register(app):
     @app.route("/search")
     @login_required
     def search_word():
-        query_state = validate_vocabulary_query(request.args.get("q"))
-        query = clean_text(query_state["normalized"])
-        if not query_state["valid"]:
-            flash(query_state["message"] or VOCAB_QUERY_MESSAGE, "error")
+        from flask import current_app, render_template, request, session, flash, redirect, url_for
+        from flask_login import current_user
+        import os
+        import re
+        from difflib import get_close_matches
+        from datetime import datetime
+        from app.models import db, SearchVocabulary, VocabularyMaster, VocabularyEnrichment, SearchHistory
+        from app.services.enrichment_engine import generate_enrichment_payload, calculate_quality_score as engine_score
+        from app.services.vocabulary_platform import normalize_level, is_phrase, apply_enrichment_audit, normalize_vocab_text
+        try:
+            from wordfreq import top_n_list, zipf_frequency
+        except ImportError:
+            top_n_list = None
+            zipf_frequency = None
+
+        SEARCH_WORD_PATTERN = re.compile(r"^[a-z]+(?:'[a-z]+)?$")
+        INAPPROPRIATE_SEARCH_WORDS = {
+            "anal",
+            "anus",
+            "arse",
+            "asshole",
+            "bastard",
+            "bitch",
+            "bollocks",
+            "boner",
+            "bullshit",
+            "clit",
+            "cock",
+            "cocksucker",
+            "crap",
+            "cunt",
+            "dick",
+            "dildo",
+            "dyke",
+            "fag",
+            "faggot",
+            "fuck",
+            "fucker",
+            "fucking",
+            "goddamn",
+            "hell",
+            "homo",
+            "jerkoff",
+            "nigga",
+            "nigger",
+            "penis",
+            "piss",
+            "porn",
+            "pussy",
+            "rape",
+            "rapist",
+            "sex",
+            "shit",
+            "slut",
+            "twat",
+            "vagina",
+            "whore",
+        }
+
+        def normalize_query(q):
+            if not q:
+                return ""
+            return normalize_vocab_text(q)
+
+        def is_valid_english_word(q):
+            if not q or not SEARCH_WORD_PATTERN.fullmatch(q):
+                return False
+            if q in INAPPROPRIATE_SEARCH_WORDS:
+                return False
+            if len(q) > 30 or re.search(r"(.)\1{3,}", q):
+                return False
+            if zipf_frequency is None:
+                return VocabularyMaster.query.filter_by(normalized_word=q).first() is not None
+            return zipf_frequency(q, "en") >= 2.0
+
+        def suggestion_candidates():
+            candidates = {
+                row[0]
+                for row in db.session.query(VocabularyMaster.normalized_word).distinct().all()
+                if row[0] and SEARCH_WORD_PATTERN.fullmatch(row[0]) and row[0] not in INAPPROPRIATE_SEARCH_WORDS
+            }
+            candidates.update(
+                row[0]
+                for row in db.session.query(SearchVocabulary.normalized_word)
+                .filter(SearchVocabulary.enrichment_score >= 0.8, SearchVocabulary.is_fully_enriched.is_(True))
+                .distinct()
+                .all()
+                if row[0] and SEARCH_WORD_PATTERN.fullmatch(row[0]) and row[0] not in INAPPROPRIATE_SEARCH_WORDS
+            )
+            if top_n_list is not None:
+                try:
+                    candidates.update(
+                        word
+                        for word in top_n_list("en", 50000)
+                        if SEARCH_WORD_PATTERN.fullmatch(word) and word not in INAPPROPRIATE_SEARCH_WORDS
+                    )
+                except Exception as exc:
+                    current_app.logger.warning(f"Unable to load wordfreq suggestion list: {exc}")
+            return sorted(candidates)
+
+        def closest_english_suggestions(q):
+            if not q or q in INAPPROPRIATE_SEARCH_WORDS:
+                return []
+            matches = get_close_matches(q, suggestion_candidates(), n=5, cutoff=0.72)
+            return [word for word in matches if word != q and is_valid_english_word(word)][:5]
+
+        class RuntimeWord:
+            def __init__(self, payload, norm_q):
+                self.word = payload.get("word") or norm_q
+                self.part_of_speech = payload.get("part_of_speech") or ""
+                self.meaning = payload.get("definition") or ""
+                self.definition = payload.get("definition") or ""
+                self.bangla_meaning = payload.get("bangla_meaning") or ""
+                self.phonetic = payload.get("pronunciation") or ""
+                self.synonym = payload.get("synonyms") or ""
+                self.synonyms = payload.get("synonyms") or ""
+                self.synonym_hint = payload.get("synonyms") or ""
+                self.antonyms = payload.get("antonyms") or ""
+                self.antonym_hint = payload.get("antonyms") or ""
+                self.sentence = payload.get("example_sentence") or ""
+                self.example_sentence = payload.get("example_sentence") or ""
+                self.topic = payload.get("difficulty") or "general"
+
+        def create_runtime_word_object(payload, norm_q):
+            return RuntimeWord(payload, norm_q)
+
+        def calculate_quality_score(payload, norm_q):
+            raw_score = engine_score(payload.get("word") or norm_q, payload)
+            return raw_score / 100.0
+
+        def required_fields_exist(payload):
+            definition = payload.get("definition") or ""
+            bangla_meaning = payload.get("bangla_meaning") or ""
+            example_sentence = payload.get("example_sentence") or ""
+            part_of_speech = payload.get("part_of_speech") or ""
+            return bool(
+                definition.strip() and
+                bangla_meaning.strip() and
+                example_sentence.strip() and
+                part_of_speech.strip()
+            )
+
+        def generate_live_search_payload(query):
+            import app.services.groq_provider as groq_provider
+
+            api_key = groq_provider.get_search_key()
+            return generate_enrichment_payload(
+                query,
+                api_key=api_key,
+                model="llama-3.1-8b-instant",
+                timeout=12,
+            )
+
+        def persist_search_vocabulary(payload, norm_q, score):
+            try:
+                word_val = payload.get("word") or norm_q
+                definition = payload.get("definition") or ""
+                bangla_meaning = payload.get("bangla_meaning") or ""
+                pronunciation = payload.get("pronunciation") or ""
+                example_sentence = payload.get("example_sentence") or ""
+                synonyms = payload.get("synonyms") or ""
+                antonyms = payload.get("antonyms") or ""
+                part_of_speech = payload.get("part_of_speech") or ""
+                difficulty = payload.get("difficulty") or "intermediate"
+
+                existing_sv = SearchVocabulary.query.filter_by(normalized_word=norm_q).first()
+                if existing_sv:
+                    existing_sv.definition = definition
+                    existing_sv.bangla_meaning = bangla_meaning
+                    existing_sv.pronunciation = pronunciation
+                    existing_sv.synonyms = synonyms
+                    existing_sv.antonyms = antonyms
+                    existing_sv.example_sentence = example_sentence
+                    existing_sv.part_of_speech = part_of_speech
+                    existing_sv.enrichment_score = score
+                    existing_sv.is_fully_enriched = True
+                else:
+                    new_sv = SearchVocabulary(
+                        word=word_val,
+                        normalized_word=norm_q,
+                        searched_by_user_id=current_user.id,
+                        definition=definition,
+                        bangla_meaning=bangla_meaning,
+                        pronunciation=pronunciation,
+                        synonyms=synonyms,
+                        antonyms=antonyms,
+                        example_sentence=example_sentence,
+                        part_of_speech=part_of_speech,
+                        difficulty_estimate=difficulty,
+                        source_type="search",
+                        ai_generated=True,
+                        enrichment_score=score,
+                        is_fully_enriched=True
+                    )
+                    db.session.add(new_sv)
+
+                vocab = VocabularyMaster.query.filter_by(normalized_word=norm_q).first()
+                if not vocab:
+                    vocab = VocabularyMaster(
+                        word=word_val,
+                        normalized_word=norm_q,
+                        level=normalize_level(difficulty),
+                        is_phrase=is_phrase(norm_q),
+                    )
+                    db.session.add(vocab)
+                    db.session.flush()
+
+                if vocab and not vocab.enrichment:
+                    enrichment = VocabularyEnrichment(
+                        vocabulary_id=vocab.id,
+                        definition=definition,
+                        bangla_meaning=bangla_meaning,
+                        pronunciation=pronunciation,
+                        synonyms=synonyms,
+                        antonyms=antonyms,
+                        example_sentence=example_sentence,
+                        part_of_speech=part_of_speech,
+                        enrichment_quality_score=int(score * 100),
+                        generation_timestamp=datetime.utcnow(),
+                        generated_by_model=os.environ.get("GROQ_MODEL") or "llama-3.3-70b-versatile",
+                        corrected_manually=False,
+                        generated_at=datetime.utcnow(),
+                    )
+                    apply_enrichment_audit(vocab, enrichment)
+                    db.session.add(enrichment)
+                    db.session.flush()
+                    vocab.enrichment = enrichment
+
+                db.session.add(
+                    SearchHistory(
+                        user_id=current_user.id,
+                        search_query=norm_q,
+                        matched_vocabulary_id=vocab.id if vocab else None,
+                    )
+                )
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error persisting search vocabulary for '{norm_q}': {e}")
+
+        # Execute Search Request Flow
+        raw_q = request.args.get("q")
+        if not raw_q:
+            flash("Please enter a word or phrase to search.", "error")
+            return redirect(url_for("dashboard"))
+
+        query = normalize_query(raw_q)
+        if not query:
+            flash("Please enter a valid word or phrase.", "error")
             return redirect(url_for("dashboard"))
 
         session["last_search_topic"] = query
-        parsed_query = parse_vocabulary_lookup_query(query)
-        normalized_query = parsed_query["lookup_query"]
-        session["last_search_topic"] = normalized_query or query
 
-        curated = VocabularyMaster.query.filter_by(normalized_word=normalize_vocab_text(normalized_query)).first()
-        word = cache_search_vocabulary(current_user.id, normalized_query)
-        resolved_query = word.normalized_word if word else normalized_query
-        db.session.add(
-            SearchHistory(
-                user_id=current_user.id,
-                search_query=normalized_query,
-                matched_vocabulary_id=curated.id if curated else None,
+        try:
+            valid_english_word = is_valid_english_word(query)
+            if not valid_english_word:
+                return render_template(
+                    "search_result.html",
+                    word=None,
+                    search_query=query,
+                    lookup_status="invalid",
+                    lookup_suggestions=closest_english_suggestions(query),
+                    related_words=[],
+                    requested_part_of_speech=None,
+                    resolved_query=None,
+                    autocorrected_from=None,
+                )
+
+            payload = generate_live_search_payload(query)
+            rendered_word = create_runtime_word_object(payload, query)
+            score = calculate_quality_score(payload, query)
+
+            if valid_english_word and score >= 0.8 and required_fields_exist(payload):
+                persist_search_vocabulary(payload, query, score)
+
+            return render_template(
+                "search_result.html",
+                word=rendered_word,
+                search_query=query,
+                lookup_status="generated",
+                lookup_suggestions=[],
+                related_words=[],
+                requested_part_of_speech=None,
+                resolved_query=query,
+                autocorrected_from=None,
             )
-        )
-        db.session.commit()
-
-        return render_template(
-            "search.html",
-            word=word,
-            search_query=query,
-            lookup_status="exact" if word else "not_found",
-            lookup_suggestions=[],
-            related_words=[],
-            requested_part_of_speech=parsed_query["part_of_speech"],
-            resolved_query=resolved_query,
-            autocorrected_from=normalized_query if resolved_query != normalized_query else None,
-        )
+        except Exception as exc:
+            current_app.logger.exception(f"Direct AI search generation failed for '{query}': {exc}")
+            return render_template("search_unavailable.html", query=query, search_query=query)
 
     @app.route("/usage/ping", methods=["POST"])
     @login_required

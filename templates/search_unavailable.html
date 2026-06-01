@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Word Search | vflash.ai{% endblock %}
+
+{% block content %}
+<section class="search-flashcard-wrap">
+    <div class="flashcard-panel search-flashcard-panel search-direct-panel">
+        <div class="search-direct-toolbar">
+            <form class="search-page-form" action="{{ url_for('search_word') }}" method="get" data-async-page="true" data-loading-messages='["Searching...","Generating word details..."]'>
+                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <input type="search" name="q" value="{{ query or search_query }}" placeholder="Search any word, phrase, or topic" data-placeholder-full="Search any word, phrase, or topic" data-placeholder-compact="Search word, phrase, or topic" aria-label="Search any word, phrase, or topic" maxlength="60" autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            <a class="search-page-back" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        </div>
+
+        <article class="search-flashcard-card search-direct-card">
+            <div class="search-direct-head">
+                <div class="search-word-heading">
+                    <h1>{{ query or search_query }}</h1>
+                </div>
+                <p class="search-flashcard-meaning">
+                    Search service temporarily unavailable.
+                </p>
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

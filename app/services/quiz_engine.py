@@ -68,7 +68,15 @@ def _source_query(user_id, source, level):
 
 def _search_vocabulary_rows(user_id, count):
     return (
-        SearchVocabulary.query.filter_by(searched_by_user_id=user_id)
+        SearchVocabulary.query.filter(
+            SearchVocabulary.searched_by_user_id == user_id,
+            SearchVocabulary.is_fully_enriched.is_(True),
+            SearchVocabulary.enrichment_score >= 0.8,
+            SearchVocabulary.definition.isnot(None),
+            SearchVocabulary.bangla_meaning.isnot(None),
+            SearchVocabulary.example_sentence.isnot(None),
+            SearchVocabulary.part_of_speech.isnot(None),
+        )
         .order_by(SearchVocabulary.created_at.desc(), SearchVocabulary.id.desc())
         .limit(count)
         .all()
@@ -110,7 +118,15 @@ def count_quizable_vocabularies(user_id, quiz_type, level, word_source, specific
     """
     # Search vocabulary quizzes use their own pool — estimate from SearchVocabulary rows
     if word_source == "search_vocabulary" and not specific_vocabulary_ids:
-        rows = SearchVocabulary.query.filter_by(searched_by_user_id=user_id).count()
+        rows = SearchVocabulary.query.filter(
+            SearchVocabulary.searched_by_user_id == user_id,
+            SearchVocabulary.is_fully_enriched.is_(True),
+            SearchVocabulary.enrichment_score >= 0.8,
+            SearchVocabulary.definition.isnot(None),
+            SearchVocabulary.bangla_meaning.isnot(None),
+            SearchVocabulary.example_sentence.isnot(None),
+            SearchVocabulary.part_of_speech.isnot(None),
+        ).count()
         return min(rows, 20)  # conservative cap
 
     has_groq = bool(os.environ.get("GROQ_API_KEY_QUIZ") or os.environ.get("GROQ_API_KEY"))
@@ -742,14 +758,31 @@ def quiz_started_at():
 
 def generate_question_for_item(item_id, is_search, quiz_type, user_id):
     if is_search:
-        row = SearchVocabulary.query.get(item_id)
+        row = SearchVocabulary.query.filter(
+            SearchVocabulary.id == item_id,
+            SearchVocabulary.is_fully_enriched.is_(True),
+            SearchVocabulary.enrichment_score >= 0.8,
+            SearchVocabulary.definition.isnot(None),
+            SearchVocabulary.bangla_meaning.isnot(None),
+            SearchVocabulary.example_sentence.isnot(None),
+            SearchVocabulary.part_of_speech.isnot(None),
+        ).first()
         if not row:
             return None
         meaning = _clean(row.definition) or "Definition is being prepared."
         bangla = _clean(row.bangla_meaning)
         answer_word = row.word
         # Get distractor candidates from SearchVocabulary first, then VocabularyMaster
-        other_rows = SearchVocabulary.query.filter(SearchVocabulary.searched_by_user_id == user_id, SearchVocabulary.id != item_id).limit(10).all()
+        other_rows = SearchVocabulary.query.filter(
+            SearchVocabulary.searched_by_user_id == user_id,
+            SearchVocabulary.id != item_id,
+            SearchVocabulary.is_fully_enriched.is_(True),
+            SearchVocabulary.enrichment_score >= 0.8,
+            SearchVocabulary.definition.isnot(None),
+            SearchVocabulary.bangla_meaning.isnot(None),
+            SearchVocabulary.example_sentence.isnot(None),
+            SearchVocabulary.part_of_speech.isnot(None),
+        ).limit(10).all()
         
         if quiz_type == "fill_blank":
             prompt = (_clean(row.example_sentence) or f"____ means {meaning}").replace(answer_word, "____", 1)

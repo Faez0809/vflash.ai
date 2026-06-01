@@ -27,7 +27,7 @@ def _extract_json_text(content):
             return "\n".join(lines[1:-1]).strip()
     return content
 
-def generate_enrichment_payload(word, level=None, api_key=None):
+def generate_enrichment_payload(word, level=None, api_key=None, timeout=30, model=None):
     """
     Centralized service for ALL AI vocabulary enrichment generation.
     Used by both global search and flashcards.
@@ -43,13 +43,24 @@ def generate_enrichment_payload(word, level=None, api_key=None):
     if api_key is None:
         try:
             from app.services.groq_provider import groq_pool
-            api_key = groq_pool.get_search_key()
+            # Background callers that pass api_key=None get a worker key.
+            # The /search route always passes api_key explicitly (dedicated key) — never reaches here.
+            try:
+                api_key = groq_pool.get_worker_key()
+            except Exception:
+                api_key = (
+                    os.environ.get("GROQ_API_KEY_WORKER_1")
+                    or os.environ.get("GROQ_API_KEY_SEARCH")
+                    or os.environ.get("GROQ_API_KEY")
+                )
         except ImportError:
             api_key = (
-                os.environ.get("GROQ_API_KEY_SEARCH")
+                os.environ.get("GROQ_API_KEY_WORKER_1")
+                or os.environ.get("GROQ_API_KEY_SEARCH")
                 or os.environ.get("GROQ_API_KEY")
             )
-    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    if not model:
+        model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     if not api_key:
         raise RuntimeError("No Groq API key configured (GROQ_API_KEY_SEARCH / GROQ_API_KEY).")
 
@@ -107,7 +118,7 @@ Strict Output Rules:
         ],
     }
 
-    response = requests.post(GROQ_API_URL, headers=headers, json=json_data, timeout=30)
+    response = requests.post(GROQ_API_URL, headers=headers, json=json_data, timeout=timeout)
 
     # Detect rate-limiting specifically so callers can rotate keys
     if response.status_code == 429:

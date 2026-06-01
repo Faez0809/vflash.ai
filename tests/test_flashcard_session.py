@@ -51,7 +51,7 @@ def user_id(app):
 def populate_vocab(level, count, needs_admin_review=False):
     vocab_list = []
     for i in range(count):
-        v = VocabularyMaster(word=f"word{i}", level=level, needs_admin_review=needs_admin_review)
+        v = VocabularyMaster(word=f"word{i}", normalized_word=f"word{i}", level=level, needs_admin_review=needs_admin_review)
         db.session.add(v)
         vocab_list.append(v)
     db.session.commit()

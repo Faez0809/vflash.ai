@@ -46,7 +46,15 @@ def register(app):
 
         user_words = query.order_by(UserWordProgress.updated_at.desc(), VocabularyMaster.word.asc()).all()
         searched_words = (
-            SearchVocabulary.query.filter_by(searched_by_user_id=current_user.id)
+            SearchVocabulary.query.filter(
+                SearchVocabulary.searched_by_user_id == current_user.id,
+                SearchVocabulary.is_fully_enriched.is_(True),
+                SearchVocabulary.enrichment_score >= 0.8,
+                SearchVocabulary.definition.isnot(None),
+                SearchVocabulary.bangla_meaning.isnot(None),
+                SearchVocabulary.example_sentence.isnot(None),
+                SearchVocabulary.part_of_speech.isnot(None),
+            )
             .order_by(SearchVocabulary.created_at.desc())
             .limit(25)
             .all()
