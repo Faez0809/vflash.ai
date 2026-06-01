@@ -7,6 +7,91 @@
 <style>
     .page-shell { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
+    .admin-guidance {
+        margin: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        background: rgba(13,15,15,0.42);
+        padding: 1rem 1.5rem;
+        color: #c0c8c7;
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+    .admin-action-note {
+        margin: 0;
+        color: #8a9291;
+        font-size: 0.76rem;
+        line-height: 1.5;
+    }
+    .admin-field-label {
+        display: grid;
+        gap: 0.35rem;
+        color: #c0c8c7;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .admin-field-label input,
+    .admin-field-label select,
+    .admin-field-label textarea {
+        letter-spacing: 0;
+        text-transform: none;
+        font-weight: 500;
+    }
+    .admin-action-grid {
+        display: grid;
+        gap: 0.65rem;
+    }
+    @media (max-width: 760px) {
+        .admin-shell header .h-16 {
+            height: auto;
+            min-height: 4rem;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+            align-items: flex-start;
+        }
+        .admin-shell header h1 {
+            font-size: 1.15rem;
+            line-height: 1.15;
+        }
+        .admin-shell header .flex.items-center.gap-3 {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .admin-shell header a.rounded-2xl {
+            max-width: 9.5rem;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .admin-shell details > summary {
+            align-items: flex-start;
+            gap: 0.9rem;
+            padding: 1rem;
+        }
+        .admin-shell details > summary h2 {
+            font-size: 1.15rem;
+            line-height: 1.2;
+        }
+        .admin-guidance {
+            padding: 0.85rem 1rem;
+        }
+        .admin-shell form,
+        .admin-shell .grid {
+            min-width: 0;
+        }
+        .admin-shell input,
+        .admin-shell select,
+        .admin-shell textarea,
+        .admin-shell button {
+            min-width: 0;
+            max-width: 100%;
+        }
+        .admin-shell td,
+        .admin-shell th {
+            white-space: normal;
+        }
+    }
 </style>
 <div class="tw-scope admin-shell min-h-screen bg-[#121414] text-[#e2e2e2] font-['Inter']">
     <header class="sticky top-0 z-40 border-b border-white/5 bg-[#121414]/90 backdrop-blur-xl">
@@ -145,7 +230,8 @@
                 </div>
                 <span class="text-xs text-[#c0c8c7]">{{ enrichment_total }} rows</span>
             </summary>
-            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 md:grid-cols-[1fr_180px_180px_auto]">
+            <p class="admin-guidance">Review and correct AI vocabulary enrichment. Regeneration improves definitions, examples, and quiz/search quality for the affected vocabulary.</p>
+            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 md:grid-cols-[1fr_180px_180px_auto]" data-async-page="true" data-loading-messages='["Filtering enrichment cache..."]'>
                 <input name="enrichment_q" value="{{ enrichment_q }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none" placeholder="Search enrichment cache">
                 <select name="level_filter" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
                     <option value="">All levels</option>
@@ -196,37 +282,63 @@
                             <td class="px-6 py-5 text-sm text-[#e2e2e2]">{{ enrichment.enrichment_quality_score }}</td>
                             <td class="px-6 py-5 text-xs text-[#dec38f]">{{ enrichment.audit_flags or 'clean' }}</td>
                             <td class="px-6 py-5">
-                                <form method="post" action="{{ url_for('admin_edit_enrichment', enrichment_id=enrichment.id) }}" class="grid grid-cols-2 gap-2 m-0">
+                                <form method="post" action="{{ url_for('admin_edit_enrichment', enrichment_id=enrichment.id) }}" class="grid grid-cols-2 gap-2 m-0" data-async-page="true" data-loading-messages='["Saving enrichment correction..."]'>
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
-                                    <input name="word" value="{{ enrichment.vocabulary.word }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Vocabulary word">
-                                    <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
+                                    <label class="admin-field-label">
+                                        Word text
+                                        <input name="word" value="{{ enrichment.vocabulary.word }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Vocabulary word">
+                                    </label>
+                                    <label class="admin-field-label">
+                                        Level
+                                        <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
                                         {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
                                         <option value="{{ level }}" {% if enrichment.vocabulary.level == level %}selected{% endif %}>{{ level|replace('_', ' ')|title }}</option>
                                         {% endfor %}
-                                    </select>
-                                    <textarea name="definition" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">{{ enrichment.definition or '' }}</textarea>
-                                    <input name="bangla_meaning" value="{{ enrichment.bangla_meaning or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Bangla meaning">
-                                    <input name="pronunciation" value="{{ enrichment.pronunciation or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Pronunciation">
-                                    <input name="synonyms" value="{{ enrichment.synonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Synonym">
-                                    <input name="antonyms" value="{{ enrichment.antonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Antonym">
-                                    <textarea name="example_sentence" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Example sentence">{{ enrichment.example_sentence or '' }}</textarea>
+                                        </select>
+                                    </label>
+                                    <label class="admin-field-label col-span-2">
+                                        Definition
+                                        <textarea name="definition" rows="2" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">{{ enrichment.definition or '' }}</textarea>
+                                    </label>
+                                    <label class="admin-field-label">
+                                        Bangla meaning
+                                        <input name="bangla_meaning" value="{{ enrichment.bangla_meaning or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Bangla meaning">
+                                    </label>
+                                    <label class="admin-field-label">
+                                        Pronunciation
+                                        <input name="pronunciation" value="{{ enrichment.pronunciation or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Pronunciation">
+                                    </label>
+                                    <label class="admin-field-label">
+                                        Synonym
+                                        <input name="synonyms" value="{{ enrichment.synonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Synonym">
+                                    </label>
+                                    <label class="admin-field-label">
+                                        Antonym
+                                        <input name="antonyms" value="{{ enrichment.antonyms or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Antonym">
+                                    </label>
+                                    <label class="admin-field-label col-span-2">
+                                        Example sentence
+                                        <textarea name="example_sentence" rows="2" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Example sentence">{{ enrichment.example_sentence or '' }}</textarea>
+                                    </label>
                                     <label class="col-span-2 flex items-center gap-2 text-xs text-[#c0c8c7]">
                                         <input type="checkbox" name="needs_admin_review" value="1" {% if enrichment.vocabulary.needs_admin_review %}checked{% endif %}>
                                         Needs admin review
                                     </label>
                                     <input name="review_reason" value="{{ enrichment.vocabulary.review_reason or '' }}" class="col-span-2 rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Review reason">
-                                    <button type="submit" class="col-span-2 rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Save Manual Correction</button>
+                                    <button type="submit" class="col-span-2 rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Save enrichment changes</button>
                                 </form>
                             </td>
                             <td class="px-6 py-5">
-                                <form method="post" action="/admin/enrichments/{{ enrichment.id }}/regenerate" class="m-0 grid gap-2">
+                                <form method="post" action="/admin/enrichments/{{ enrichment.id }}/regenerate" class="m-0 grid gap-2" data-async-page="true" data-loading-messages='["Regenerating enrichment with AI..."]'>
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
                                     <textarea name="admin_prompt" rows="2" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Optional admin prompt"></textarea>
-                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Regenerate With AI</button>
+                                    <p class="admin-action-note">Creates fresh AI content for this word and re-runs quality checks.</p>
+                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Regenerate content</button>
                                 </form>
-                                <form method="post" action="{{ url_for('admin_delete_vocabulary', vocabulary_id=enrichment.vocabulary.id) }}" class="m-0">
+                                <form method="post" action="{{ url_for('admin_delete_vocabulary', vocabulary_id=enrichment.vocabulary.id) }}" class="m-0" data-async-page="true" data-loading-messages='["Deleting vocabulary entry..."]'>
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
-                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Delete Word</button>
+                                    <p class="admin-action-note mt-3">Removes this word from vocabulary, progress, and flashcard links.</p>
+                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Delete vocabulary</button>
                                 </form>
                             </td>
                         </tr>
@@ -249,7 +361,8 @@
                 </div>
                 <span class="text-xs text-[#c0c8c7]">{{ review_flag_total }} rows</span>
             </summary>
-            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 sm:grid-cols-[1fr_1fr_auto]">
+            <p class="admin-guidance">Resolve vocabulary that was flagged during validation. Use Edit when the word text is wrong, Reassign when only the level is wrong, Approve when the flag is harmless, and Delete when the entry should not appear in study flows.</p>
+            <form method="get" class="grid gap-3 border-b border-white/5 px-6 py-4 sm:grid-cols-[1fr_1fr_auto]" data-async-page="true" data-loading-messages='["Filtering correction queue..."]'>
                 <select name="flag_status" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-3 text-sm text-[#e2e2e2] outline-none">
                     {% for status in ['pending', 'approved', 'edited', 'reassigned', 'deleted', 'all'] %}
                     <option value="{{ status }}" {% if flag_status == status %}selected{% endif %}>{{ status|title }}</option>
@@ -271,18 +384,34 @@
                         <span class="ml-2 text-xs text-[#dec38f]">{{ flag.flag_type }}</span>
                         <span class="ml-2 text-xs text-[#8a9291]">{{ flag.status }}</span>
                     </summary>
-                    <form method="post" action="{{ url_for('admin_review_flag_action', flag_id=flag.id) }}" class="mt-4 grid gap-2 md:grid-cols-4">
+                    <form method="post" action="{{ url_for('admin_review_flag_action', flag_id=flag.id) }}" class="mt-4 admin-action-grid" data-async-page="true" data-loading-messages='["Applying correction queue action..."]'>
                         <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
-                        <input name="word" value="{{ flag.vocabulary.word if flag.vocabulary else flag.corrected_word or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Correct word">
-                        <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
-                            {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
-                            <option value="{{ level }}" {% if (flag.vocabulary and flag.vocabulary.level == level) or flag.level == level %}selected{% endif %}>{{ level }}</option>
-                            {% endfor %}
-                        </select>
-                        <button name="action" value="edit" class="rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Edit</button>
-                        <button name="action" value="approve" class="rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#e2e2e2] bg-transparent cursor-pointer">Approve</button>
-                        <button name="action" value="reassign" class="rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Reassign</button>
-                        <button name="action" value="delete" class="rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Delete</button>
+                        <div class="grid gap-2 md:grid-cols-2">
+                            <label class="admin-field-label">
+                                Correct word text
+                                <input name="word" value="{{ flag.vocabulary.word if flag.vocabulary else flag.corrected_word or '' }}" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Correct spelling or phrase">
+                            </label>
+                            <label class="admin-field-label">
+                                Target level
+                                <select name="level" class="rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none">
+                                    {% for level in ['intermediate', 'upper_intermediate', 'advanced'] %}
+                                    <option value="{{ level }}" {% if (flag.vocabulary and flag.vocabulary.level == level) or flag.level == level %}selected{% endif %}>{{ level|replace('_', ' ')|title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                        </div>
+                        <div class="grid gap-2 md:grid-cols-4">
+                            <button name="action" value="edit" class="rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer" title="Save the word text and selected level, then mark this flag edited.">Save text edit</button>
+                            <button name="action" value="reassign" class="rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer" title="Keep the word text but move it to the selected level.">Move level only</button>
+                            <button name="action" value="approve" class="rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#e2e2e2] bg-transparent cursor-pointer" title="Mark the flag resolved without changing the vocabulary.">Approve as valid</button>
+                            <button name="action" value="delete" class="rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer" title="Delete this vocabulary entry and remove linked progress/session references.">Delete entry</button>
+                        </div>
+                        <div class="grid gap-2 md:grid-cols-4">
+                            <p class="admin-action-note">Edit: changes text and level.</p>
+                            <p class="admin-action-note">Move: changes only level.</p>
+                            <p class="admin-action-note">Approve: no vocabulary change.</p>
+                            <p class="admin-action-note">Delete: removes the entry.</p>
+                        </div>
                     </form>
                     {% if flag.notes %}<p class="mt-3 mb-0 text-xs text-[#c0c8c7]">{{ flag.notes }}</p>{% endif %}
                 </details>
@@ -303,6 +432,7 @@
                 </div>
                 <p class="text-xs text-[#c0c8c7] m-0 hidden md:block">{{ user_total }} users. Restricted users cannot log in or use the app.</p>
             </summary>
+            <p class="admin-guidance">Manage account access and learning state. Restrict blocks app access, restore re-enables the account, and reset clears that user&apos;s learning journey.</p>
 
             <div class="overflow-x-auto no-scrollbar">
                 <table class="w-full min-w-[1100px]">
@@ -345,20 +475,23 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-5">
-                                <form method="post" action="{{ url_for('admin_update_user_restriction', user_id=row.user.id) }}" class="space-y-2 m-0">
+                                <form method="post" action="{{ url_for('admin_update_user_restriction', user_id=row.user.id) }}" class="space-y-2 m-0" data-async-page="true" data-loading-messages='["Updating user access..."]'>
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
                                     {% if row.user.is_restricted %}
                                     <input type="hidden" name="action" value="unrestrict">
-                                    <button type="submit" class="w-full rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Restore</button>
+                                    <p class="admin-action-note">Restores sign-in and app access.</p>
+                                    <button type="submit" class="w-full rounded-xl bg-[#2d5f5d] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b9ece9] border-none cursor-pointer">Restore access</button>
                                     {% else %}
                                     <input type="hidden" name="action" value="restrict">
                                     <textarea name="restricted_reason" rows="2" class="w-full rounded-xl border border-white/10 bg-[#0d0f0f] px-3 py-2 text-xs text-[#e2e2e2] outline-none" placeholder="Reason (optional)"></textarea>
-                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Restrict</button>
+                                    <p class="admin-action-note">Blocks this user from signing in or using the app.</p>
+                                    <button type="submit" class="w-full rounded-xl bg-[#93000a] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffdad6] border-none cursor-pointer">Restrict access</button>
                                     {% endif %}
                                 </form>
-                                <form method="post" action="{{ url_for('admin_reset_learning_journey', user_id=row.user.id) }}" class="mt-2 m-0">
+                                <form method="post" action="{{ url_for('admin_reset_learning_journey', user_id=row.user.id) }}" class="mt-2 m-0" data-async-page="true" data-loading-messages='["Resetting learning journey..."]'>
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
-                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Reset Learning Journey</button>
+                                    <p class="admin-action-note">Clears saved progress and learning history for this user.</p>
+                                    <button type="submit" class="w-full rounded-xl bg-[#dec38f]/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#dec38f] border border-[#dec38f]/20 cursor-pointer">Reset learning</button>
                                 </form>
                                 {% if row.last_seen_at %}
                                 <p class="text-[10px] text-[#8a9291] mt-2 mb-0">Last seen {{ row.last_seen_at.strftime('%Y-%m-%d %H:%M') }}</p>

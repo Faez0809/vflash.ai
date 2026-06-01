@@ -19,7 +19,6 @@ from app.models import (
     db,
 )
 from app.services.learning_content import (
-    ensure_starter_pack_for_user,
     get_reference_vocabulary_candidates,
     resolve_vocabulary_lookup,
     touch_user_word_interaction,
@@ -63,170 +62,6 @@ def register(app):
         fresh_words = get_reference_vocabulary_candidates()
         cache.set(search_cache_key, fresh_words, timeout=SEARCH_CACHE_TTL_SECONDS)  # Global-only cache with finite TTL.
         return fresh_words
-
-    def get_onboarding_tips(endpoint):
-        tips_by_endpoint = {
-            "dashboard": [
-                {
-                    "icon": "neurology",
-                    "title": "Start here",
-                    "body": "Generate your first word set.",
-                    "href": url_for("dashboard") + "#generate-section",
-                    "label": "Generate words",
-                },
-                {
-                    "icon": "menu_book",
-                    "title": "Read the guide",
-                    "body": "See the learning flow in one place.",
-                    "href": url_for("user_manual"),
-                    "label": "Open manual",
-                },
-                {
-                    "icon": "style",
-                    "title": "Open Word Lists",
-                    "body": "Your saved words will appear here.",
-                    "href": url_for("words"),
-                    "label": "Open Word Lists",
-                },
-            ],
-            "words": [
-                {
-                    "icon": "style",
-                    "title": "No words yet?",
-                    "body": "Generate a study set first.",
-                    "href": url_for("dashboard") + "#generate-section",
-                    "label": "Generate words",
-                },
-                {
-                    "icon": "menu_book",
-                    "title": "Use this page",
-                    "body": "Check meanings and manage saved words.",
-                    "href": url_for("user_manual"),
-                    "label": "Read manual",
-                },
-            ],
-            "flashcards": [
-                {
-                    "icon": "amp_stories",
-                    "title": "Study with cards",
-                    "body": "Learn one word at a time.",
-                    "href": url_for("flashcards"),
-                    "label": "Open flashcards",
-                },
-                {
-                    "icon": "play_arrow",
-                    "title": "Need a set first?",
-                    "body": "Generate words, then come back here.",
-                    "href": url_for("dashboard") + "#generate-section",
-                    "label": "Generate first set",
-                },
-            ],
-            "flashcards_session": [
-                {
-                    "icon": "touch_app",
-                    "title": "How to use this",
-                    "body": "Mark each word as learned, known, or difficult.",
-                    "href": url_for("user_manual"),
-                    "label": "See study guide",
-                },
-            ],
-            "review": [
-                {
-                    "icon": "history",
-                    "title": "Review daily",
-                    "body": "Revisit words that are due today.",
-                    "href": url_for("review"),
-                    "label": "Open review",
-                },
-                {
-                    "icon": "menu_book",
-                    "title": "Need help?",
-                    "body": "See how review fits into your routine.",
-                    "href": url_for("user_manual"),
-                    "label": "Read manual",
-                },
-            ],
-            "review_session": [
-                {
-                    "icon": "task_alt",
-                    "title": "Finish the queue",
-                    "body": "Go through due words one by one.",
-                    "href": url_for("user_manual"),
-                    "label": "See review tips",
-                },
-            ],
-            "quiz": [
-                {
-                    "icon": "quiz",
-                    "title": "Check your progress",
-                    "body": "Use quizzes after studying.",
-                    "href": url_for("quiz"),
-                    "label": "Start a quiz",
-                },
-                {
-                    "icon": "menu_book",
-                    "title": "Need help first?",
-                    "body": "See quiz types and when to use them.",
-                    "href": url_for("user_manual"),
-                    "label": "Open manual",
-                },
-            ],
-            "quiz_start": [
-                {
-                    "icon": "lightbulb",
-                    "title": "Quick tip",
-                    "body": "Use the quiz to learn, not only to score.",
-                    "href": url_for("user_manual"),
-                    "label": "See quiz guide",
-                },
-            ],
-            "profile": [
-                {
-                    "icon": "person",
-                    "title": "Set your defaults",
-                    "body": "Update your nickname, focus, and daily goal.",
-                    "href": url_for("profile"),
-                    "label": "Update profile",
-                },
-                {
-                    "icon": "insights",
-                    "title": "Track progress",
-                    "body": "See your activity and quiz progress here.",
-                    "href": url_for("user_manual"),
-                    "label": "Learn more",
-                },
-            ],
-            "search_word": [
-                {
-                    "icon": "search",
-                    "title": "Search anything",
-                    "body": "Find a meaning without starting a full session.",
-                    "href": url_for("user_manual"),
-                    "label": "See search tips",
-                },
-            ],
-        }
-        return tips_by_endpoint.get(
-            endpoint,
-            [
-                {
-                    "icon": "menu_book",
-                    "title": "Quick help",
-                    "body": "Open the user manual for a short guide to the main vflash.ai workflow.",
-                    "href": url_for("user_manual"),
-                    "label": "Open manual",
-                }
-            ],
-        )
-
-    @app.context_processor
-    def inject_onboarding_context():
-        return {
-            "show_onboarding_nudge": False,
-            "onboarding_tips": [],
-            "onboarding_seconds_left": 0,
-            "onboarding_minutes_left": 0,
-        }
 
     def build_quiz_profile_metrics(quiz_history):
         total_attempts = len(quiz_history)
@@ -305,11 +140,6 @@ def register(app):
     @app.route("/")
     def index():
         return redirect(url_for("dashboard" if current_user.is_authenticated else "login"))
-
-    @app.route("/manual")
-    @login_required
-    def user_manual():
-        return render_template("manual.html")
 
     @app.route("/dashboard")
     @login_required

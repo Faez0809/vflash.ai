@@ -341,7 +341,7 @@ def register(app):
             return redirect(url_for("admin_dashboard"))
 
         db.session.commit()
-        return redirect(url_for("admin_dashboard"))
+        return redirect(request.referrer or url_for("admin_dashboard"))
 
     @app.route("/admin/users/<int:user_id>/reset-learning", methods=["POST"])
     @admin_required
@@ -353,7 +353,7 @@ def register(app):
         user = User.query.get_or_404(user_id)
         reset_learning_journey(user.id)
         flash(f"{user.email}'s learning journey has been reset.", "success")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(request.referrer or url_for("admin_dashboard"))
 
     @app.route("/admin/enrichments/<int:enrichment_id>/edit", methods=["POST"])
     @admin_required
@@ -431,4 +431,4 @@ def register(app):
         except Exception:
             db.session.rollback()
             flash("Could not delete that vocabulary word safely.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(request.referrer or url_for("admin_dashboard"))

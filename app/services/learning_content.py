@@ -680,16 +680,7 @@ def touch_user_word_interaction(user_word, interaction_day=None):
     return True
 
 
-def _starter_seed_items():
-    selection = (
-        FALLBACK_VOCABULARY["Intermediate"][:4]
-        + FALLBACK_VOCABULARY["Advanced"][:4]
-        + FALLBACK_VOCABULARY["Beginner"][:4]
-    )
-    return [dict(item) for item in selection]
-
-
-def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_difficulty="Intermediate"):
+def upsert_word_from_payload(item, fallback_topic="Vocabulary", fallback_difficulty="Intermediate"):
     normalized_word = clean_text(item.get("word")).lower()
     if not normalized_word:
         return None
@@ -755,60 +746,6 @@ def upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_diffi
     setattr(word, "antonym_hint", _clean_relation_candidate(curated_payload.get("antonym"), normalized_word, allow_phrase=True) or _clean_relation_candidate(relations.get("antonym"), normalized_word, allow_phrase=True) or None)
     setattr(word, "lookup_pending", False)
     return word
-
-
-def ensure_starter_pack_for_user(user_id, preferred_focus=""):
-    existing_count = (
-        UserWord.query.join(Word, UserWord.word_id == Word.id)
-        .filter(UserWord.user_id == user_id, Word.is_valid.is_(True))
-        .count()
-    )
-    if existing_count:
-        return {"created": False, "session_id": None, "added_count": 0}
-
-    seed_items = _starter_seed_items()
-    starter_prompt = clean_text(preferred_focus) or "Starter vocabulary"
-    study_session = StudySession(
-        user_id=user_id,
-        difficulty="Intermediate",
-        word_count=len(seed_items),
-        custom_prompt=starter_prompt,
-        created_at=date.today(),
-    )
-    db.session.add(study_session)
-    db.session.flush()
-
-    added_count = 0
-    existing_word_ids = {
-        row[0]
-        for row in db.session.query(UserWord.word_id).filter(UserWord.user_id == user_id).all()
-    }
-    for item in seed_items:
-        word = upsert_word_from_payload(item, fallback_topic="Starter Pack", fallback_difficulty="Intermediate")
-        if word is None:
-            continue
-
-        if word.id in existing_word_ids:
-            continue
-
-        db.session.add(
-            UserWord(
-                user_id=user_id,
-                word_id=word.id,
-                session_id=study_session.id,
-                added_date=date.today(),
-                learned=False,
-                already_known=False,
-                is_difficult=False,
-            )
-        )
-        existing_word_ids.add(word.id)
-        added_count += 1
-
-    db.session.commit()
-    if added_count:
-        invalidate_word_list_cache()
-    return {"created": added_count > 0, "session_id": study_session.id if added_count else None, "added_count": added_count}
 
 
 def find_cached_study_session(user_id, difficulty, word_count, custom_prompt=""):

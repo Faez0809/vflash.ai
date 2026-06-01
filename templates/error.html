@@ -16,8 +16,8 @@
             {% else %}
                 <a href="{{ url_for('login') }}" class="error-action error-action-primary">Return to login</a>
             {% endif %}
-            <a href="{{ url_for('user_manual') if current_user.is_authenticated else url_for('login') }}" class="error-action error-action-secondary">
-                {% if current_user.is_authenticated %}Open user manual{% else %}Open sign in{% endif %}
+            <a href="{{ url_for('profile') if current_user.is_authenticated else url_for('signup') }}" class="error-action error-action-secondary">
+                {% if current_user.is_authenticated %}Open profile{% else %}Create account{% endif %}
             </a>
         </div>
     </div>

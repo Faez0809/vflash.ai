@@ -698,7 +698,15 @@ function initAsyncPageForms() {
             }
 
             const method = String(form.getAttribute("method") || "GET").toUpperCase();
-            const formData = new FormData(form);
+            let formData;
+            try {
+                formData = new FormData(form, event.submitter || undefined);
+            } catch (error) {
+                formData = new FormData(form);
+                if (event.submitter?.name) {
+                    formData.append(event.submitter.name, event.submitter.value || "");
+                }
+            }
             const messages = parseLoadingMessages(form.dataset.loadingMessages);
 
             setFormPending(form, true);
@@ -788,6 +796,11 @@ function initPasswordToggles() {
     }
 
     buttons.forEach((button) => {
+        if (button.dataset.passwordToggleBound === "true") {
+            return;
+        }
+        button.dataset.passwordToggleBound = "true";
+
         const inputId = button.getAttribute("data-password-toggle-button");
         const target = inputId ? document.getElementById(inputId) : null;
         if (!target) {
@@ -798,10 +811,16 @@ function initPasswordToggles() {
         const closedIcon = button.querySelector("[data-eye-closed]");
 
         button.addEventListener("click", () => {
+            const selectionStart = target.selectionStart;
+            const selectionEnd = target.selectionEnd;
             const shouldShow = target.type === "password";
             target.type = shouldShow ? "text" : "password";
             button.setAttribute("aria-pressed", shouldShow ? "true" : "false");
             button.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
+            target.focus({ preventScroll: true });
+            if (selectionStart !== null && selectionEnd !== null) {
+                target.setSelectionRange(selectionStart, selectionEnd);
+            }
             if (openIcon) {
                 openIcon.style.display = shouldShow ? "none" : "inline-flex";
             }

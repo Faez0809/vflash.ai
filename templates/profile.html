@@ -39,6 +39,10 @@
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('admin_dashboard') }}" class="hidden md:inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary no-underline transition-all hover:bg-primary/15 hover:brightness-110">Admin Panel</a>
                 {% endif %}
+                <a href="{{ url_for('logout') }}" class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#ffb4ab]/20 bg-[#93000a]/20 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#ffb4ab] no-underline transition-all hover:bg-[#93000a]/30">
+                    <span class="material-symbols-outlined text-[1rem]">logout</span>
+                    <span>Sign Out</span>
+                </a>
                 <a href="{{ url_for('profile') }}" class="flex items-center gap-3 text-primary no-underline hover:brightness-125 transition-all outline-none">
                     <span class="text-sm font-semibold tracking-wide hidden sm:block">{{ current_user.display_name }}</span>
                     <div class="w-8 h-8 rounded-full bg-surface-container-low border border-primary/30 flex items-center justify-center text-primary shadow-sm" title="Profile">
@@ -74,6 +78,10 @@
                 <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
                     <div class="max-w-2xl">
                         <h1 class="font-headline text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-0">Your learning progress and settings.</h1>
+                        <a href="{{ url_for('logout') }}" class="mt-5 inline-flex items-center gap-2 rounded-2xl border border-[#ffb4ab]/20 bg-[#93000a]/20 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-[#ffb4ab] no-underline transition-all hover:bg-[#93000a]/30">
+                            <span class="material-symbols-outlined text-[1rem]">logout</span>
+                            <span>Emergency Sign Out</span>
+                        </a>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 min-w-[280px]">
                         <div class="rounded-2xl border border-white/[0.06] bg-black/20 p-4">
@@ -103,6 +111,7 @@
                     <div class="mb-4">
                         <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Curriculum</p>
                         <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Level Progress</h2>
+                        <p class="mt-2 mb-0 text-xs text-on-surface-variant">Progress is calculated from words marked as Learned.</p>
                     </div>
                     <div class="space-y-4">
                         {% for item in curriculum_progress %}
@@ -137,11 +146,7 @@
                             <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Email</dt>
                             <dd class="m-0 text-sm md:text-base text-on-surface break-all">{{ current_user.email }}</dd>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
-                                <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Study Sessions</dt>
-                                <dd class="m-0 text-2xl font-headline text-on-surface">{{ total_sessions }}</dd>
-                            </div>
+                        <div class="grid grid-cols-1 gap-4">
                             <div class="rounded-2xl border border-white/[0.05] bg-[#0d0f0f] p-4">
                                 <dt class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Saved Words</dt>
                                 <dd class="m-0 text-2xl font-headline text-on-surface">{{ total_words }}</dd>
@@ -241,14 +246,10 @@
                             <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.visits_last_7_days }}</strong>
                         </article>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
                             <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Longest Session</p>
                             <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.longest_session_minutes }}m</strong>
-                        </div>
-                        <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
-                            <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Interactions</p>
-                            <strong class="text-lg font-headline text-on-surface">{{ usage_metrics.total_interactions }}</strong>
                         </div>
                         <div class="rounded-2xl border border-white/[0.05] bg-black/20 p-4">
                             <p class="text-[10px] uppercase tracking-[0.18em] text-outline font-bold mb-2">Last Seen</p>
@@ -283,27 +284,21 @@
             </div>
 
             <div class="space-y-6">
+                {% if current_user.is_admin %}
                 <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
                     <div class="mb-4">
-                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Help</p>
-                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Learning Support</h2>
-                        <p class="mt-2 mb-0 text-sm text-on-surface-variant">Find the guide, adjust your settings, or jump to admin tools if your account has access.</p>
+                        <p class="text-[10px] font-bold tracking-[0.22em] text-primary uppercase mb-2">Admin</p>
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-0">Admin Tools</h2>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <a href="{{ url_for('user_manual') }}" class="rounded-2xl border border-white/[0.06] bg-[#0d0f0f] p-4 no-underline text-on-surface">
-                            <span class="material-symbols-outlined text-primary mb-2">menu_book</span>
-                            <strong class="block">Open User Guide</strong>
-                            <small class="text-on-surface-variant">Quick help for study, review, and quiz.</small>
-                        </a>
-                        {% if current_user.is_admin %}
+                    <div class="grid grid-cols-1 gap-3">
                         <a href="{{ url_for('admin_dashboard') }}" class="rounded-2xl border border-primary/20 bg-primary/10 p-4 no-underline text-on-surface">
                             <span class="material-symbols-outlined text-primary mb-2">shield_person</span>
                             <strong class="block">Admin Panel</strong>
                             <small class="text-on-surface-variant">Manage users and enrichment quality.</small>
                         </a>
-                        {% endif %}
                     </div>
                 </section>
+                {% endif %}
 
                 <section class="rounded-3xl border border-white/[0.05] bg-surface-container-low p-6 shadow-2xl">
                     <div class="mb-4">

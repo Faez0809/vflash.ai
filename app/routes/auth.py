@@ -5,7 +5,6 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.models import User, db
-from app.services.learning_content import ensure_starter_pack_for_user
 
 
 def register(app):
@@ -180,12 +179,13 @@ def register(app):
                 )
                 db.session.add(user)
                 db.session.commit()
-                starter_pack = ensure_starter_pack_for_user(user.id)
-                if starter_pack["created"]:
-                    flash("Account created successfully. Starter vocabulary is ready for you.", "success")
-                else:
-                    flash("Account created successfully. Please log in.", "success")
-                return redirect(url_for("login"))
+                login_user(user, remember=True)
+                clear_password_reset_state()
+                session.pop("is_admin", None)
+                session.pop("admin_email", None)
+                session.pop("admin_csrf_token", None)
+                flash("Account created successfully.", "success")
+                return redirect(url_for("dashboard"))
 
         return render_template("signup.html")
 

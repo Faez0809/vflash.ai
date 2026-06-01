@@ -20,14 +20,14 @@
     {% set body_class = 'dashboard-page' %}
 {% elif request.endpoint == 'search_word' %}
     {% set body_class = 'search-page tw-dark-page' %}
-{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual'] %}
+{% elif request.endpoint in ['words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard'] %}
     {% set body_class = 'tw-dark-page' %}
 {% endif %}
 <body class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
     <!--app-shell-start-->
     <div data-app-shell data-body-class="{{ body_class }}" {% if current_user.is_authenticated %}data-usage-endpoint="{{ url_for('usage_ping') }}" data-quiz-warmup-endpoint="{{ url_for('quiz_warmup') }}"{% endif %}>
 
-    {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'user_manual', 'search_word'] %}
+    {% if request.endpoint not in ['login', 'signup', 'forgot_password', 'dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'admin_logout', 'admin_update_user_restriction', 'search_word'] %}
     <header class="site-header">
         <div class="site-header-glow"></div>
         <div class="container nav-shell">
@@ -95,7 +95,7 @@
     </header>
     {% endif %}
 
-    <main class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'user_manual', 'search_word'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
+    <main class="{% if request.endpoint in ['login', 'signup', 'forgot_password'] %}auth-page-shell{% elif request.endpoint in ['dashboard', 'words', 'flashcards', 'flashcards_session', 'review', 'review_session', 'quiz', 'quiz_start', 'profile', 'admin_dashboard', 'search_word'] %}dashboard-page-shell{% else %}container page-shell{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <section class="flash-stack">
