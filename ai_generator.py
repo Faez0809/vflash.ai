@@ -846,13 +846,13 @@ def _request_word_content_from_groq(word):
     prompt = f"""
 You are a professional bilingual English-Bangla dictionary editor for intermediate and advanced learners.
 
-Word: {word}
+Word or phrase: {word}
 
 Provide:
-- The most common modern part of speech for this word
-- A natural, concise, dictionary-quality English definition appropriate for intermediate/advanced learners
-- A natural native Bangla meaning with educational quality; avoid literal or awkward translation
-- One natural real-world English example sentence that uses the word in context
+- The most common modern part of speech for this word or phrase, including "phrasal verb" when appropriate
+- One or two common learner-useful meanings only, written as concise dictionary-style English
+- A standard understandable Bangla meaning that matches the selected common meaning(s); avoid literal, overly literary, or robotic translation
+- One natural real-world English example sentence that uses the exact word or phrase in context
 - Clean readable pronunciation in English letters only, hyphenated by syllable when useful
 - One or more relevant synonyms as a comma-separated string
 - One relevant antonym when a true antonym exists; otherwise use an empty string
@@ -871,14 +871,17 @@ Return ONLY JSON:
 }}
 
 Rules:
-- Give the most common modern dictionary meaning.
+- Support valid common phrasal verbs and learner-useful multi-word expressions.
+- Give the most common modern dictionary meaning, or at most two genuinely common meanings separated clearly.
+- Do not include obscure senses or academic overload.
 - Keep the part of speech consistent with the meaning.
 - Never use robotic or placeholder text like "a curated vocabulary item" or "a simple meaning for {word}".
 - Never repeat the word itself as the definition.
 - English definitions must be natural, concise, polished, and not childish.
-- Bangla must sound native and useful for a Bangla-speaking student.
+- Bangla must sound native, standard, and useful for a Bangla-speaking student, similar to a modern learner dictionary.
 - Pronunciation must not contain IPA, slashes, brackets, stress marks, symbols, or malformed phonetic garbage.
-- Example sentence must be readable, contextual, and level appropriate.
+- Example sentence must be readable, contextual, level appropriate, and natural in everyday spoken or written English.
+- Avoid unnecessarily complex, robotic, or textbook-like sentence structures.
 - If a true synonym or antonym does not exist, return an empty string for that field.
 """
 
@@ -935,13 +938,13 @@ def _request_dictionary_details_from_groq(word, retry=False):
     prompt = f"""
 You are a professional English dictionary API.
 
-Provide COMPLETE and accurate data for the word: '{word}'.
+Provide COMPLETE and accurate data for the word or phrase: '{word}'.
 
 Return ONLY valid JSON:
 {{
 "word": "exact word",
-"part_of_speech": "noun/verb/adjective/etc",
-"meaning": "clear definition",
+"part_of_speech": "noun/verb/adjective/phrasal verb/etc",
+"meaning": "clear definition; maximum two common meanings",
 "sentence": "example sentence using the SAME word",
 "synonyms": ["word1", "word2"],
 "pronunciation": "simple readable phonetic spelling",
@@ -951,13 +954,17 @@ Return ONLY valid JSON:
 
 Rules:
 - ALL fields are REQUIRED and must be non-empty
-- Sentence MUST contain the word exactly
+- Valid common phrasal verbs and multi-word expressions are acceptable English entries
+- Meaning must contain one or two common learner-useful meanings only; avoid obscure senses
+- Bangla must be standard, natural, and dictionary-like for Bangla-speaking learners
+- Sentence MUST contain the exact word or phrase
+- Sentence should sound natural and familiar, not robotic or overly academic
 - Synonyms must be real words
 - Pronunciation must be phonetically accurate, use simple English letters only, and be broken into hyphen-separated syllables
 - Do NOT use IPA symbols like / /, [ ], or stress marks such as ˈ
 - Pronunciation must reflect real spoken English, not a spelling-based guess
 - The pronunciation should be easy for non-native speakers to read
-- If input is NOT a valid English word -> DO NOT generate fake data
+- If input is NOT a valid English word or common English phrase -> DO NOT generate fake data
 - Instead return:
 {{
   "status": "invalid",

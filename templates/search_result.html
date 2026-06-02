@@ -47,18 +47,31 @@
                         <span class="flashcard-pos">{{ word.part_of_speech }}</span>
                     {% endif %}
                 </div>
-                <p class="search-flashcard-meaning">
-                    {{ word.meaning }}
-                </p>
             </div>
 
+            {% if word.meaning_pairs %}
+            <div class="search-meaning-pairs" aria-label="Meanings">
+                {% for pair in word.meaning_pairs %}
+                    {% if pair.english and pair.bangla %}
+                    <section class="search-meaning-pair">
+                        <p class="search-meaning-count">
+                            {% if word.meaning_pairs|length > 1 %}Meaning {{ loop.index }}{% else %}Meaning{% endif %}
+                        </p>
+                        <div class="search-meaning-row">
+                            <p class="search-meaning-label">English</p>
+                            <p class="search-meaning-text">{{ pair.english }}</p>
+                        </div>
+                        <div class="search-meaning-row">
+                            <p class="search-meaning-label">Bangla</p>
+                            <p class="search-meaning-text search-meaning-bangla">{{ pair.bangla }}</p>
+                        </div>
+                    </section>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="flashcard-back-grid search-flashcard-grid search-direct-grid">
-                {% if word.bangla_meaning %}
-                <div class="flashcard-detail">
-                    <p class="stitch-label">Bangla meaning</p>
-                    <p>{{ word.bangla_meaning }}</p>
-                </div>
-                {% endif %}
                 {% if word.phonetic %}
                 <div class="flashcard-detail">
                     <p class="stitch-label">Pronunciation</p>
@@ -76,12 +89,6 @@
                         <p class="stitch-label">Antonym</p>
                         <p>{{ word.antonym_hint }}</p>
                     </div>
-                {% endif %}
-                {% if word.topic %}
-                <div class="flashcard-detail">
-                    <p class="stitch-label">Topic</p>
-                    <p>{{ word.topic }}</p>
-                </div>
                 {% endif %}
                 {% if word.sentence %}
                 <div class="flashcard-detail search-flashcard-detail-wide">

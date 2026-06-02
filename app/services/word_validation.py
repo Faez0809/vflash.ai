@@ -8,7 +8,11 @@ from app.services.stats import clean_text, get_vocabulary_suggestions
 
 
 WORD_PATTERN = re.compile(r"^[a-z]+(?:[a-z'-]*[a-z]+)?$")
-PARTS_OF_SPEECH = {"noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "interjection"}
+PHRASE_PATTERN = re.compile(r"^[a-z]+(?:[a-z'-]*[a-z]+)?(?:\s+[a-z]+(?:[a-z'-]*[a-z]+)?){1,3}$")
+PARTS_OF_SPEECH = {
+    "noun", "verb", "adjective", "adverb", "pronoun", "preposition",
+    "conjunction", "interjection", "phrasal verb", "idiom", "phrase",
+}
 TOPIC_STOPWORDS = {
     "a",
     "an",
@@ -45,6 +49,16 @@ LOW_CONFIDENCE_PREFIXES = (
     "a simple meaning for ",
     "simple meaning for ",
 )
+COMMON_PHRASAL_PARTICLES = {
+    "about", "across", "after", "along", "around", "away", "back", "by", "down",
+    "for", "forward", "in", "into", "off", "on", "out", "over", "through",
+    "to", "together", "up", "with",
+}
+COMMON_PHRASAL_VERBS = {
+    "break down", "bring up", "call off", "carry on", "come across", "do up",
+    "find out", "get off", "give up", "go on", "look after", "look up",
+    "make up", "put off", "take off", "take over", "turn down",
+}
 
 
 def normalize_word(value):
@@ -56,6 +70,29 @@ def normalize_single_word(value):
     if not normalized or " " in normalized or not WORD_PATTERN.fullmatch(normalized):
         return ""
     return normalized
+
+
+def normalize_word_or_phrase(value):
+    normalized = normalize_word(value)
+    normalized = re.sub(r"[^a-z\s'-]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip(" '-")
+    if WORD_PATTERN.fullmatch(normalized) or PHRASE_PATTERN.fullmatch(normalized):
+        return normalized
+    return ""
+
+
+def looks_like_common_phrase(value):
+    normalized = normalize_word_or_phrase(value)
+    if not normalized or " " not in normalized:
+        return False
+    if normalized in COMMON_PHRASAL_VERBS:
+        return True
+    tokens = normalized.split()
+    return (
+        2 <= len(tokens) <= 4
+        and len(tokens[0]) >= 3
+        and any(token in COMMON_PHRASAL_PARTICLES for token in tokens[1:])
+    )
 
 
 @lru_cache(maxsize=1)
@@ -140,7 +177,7 @@ def topic_relevance(topic_hint, payload):
 
 
 def has_consistent_meaning(word_text, payload):
-    normalized_word = normalize_single_word(word_text)
+    normalized_word = normalize_word_or_phrase(word_text)
     meaning = clean_text((payload or {}).get("meaning")).lower()
     sentence = clean_text((payload or {}).get("sentence")).lower()
     part_of_speech = clean_text((payload or {}).get("part_of_speech")).lower()
@@ -161,7 +198,7 @@ def has_consistent_meaning(word_text, payload):
 
 
 def validate_word_payload(word_text, payload=None, topic_hint=""):
-    normalized_word = normalize_single_word(word_text)
+    normalized_word = normalize_word_or_phrase(word_text)
     if not normalized_word:
         return {
             "normalized_word": "",
@@ -173,7 +210,7 @@ def validate_word_payload(word_text, payload=None, topic_hint=""):
             "suggestions": [],
         }
 
-    spelling_valid = is_valid_english_word(normalized_word)
+    spelling_valid = is_valid_english_word(normalized_word) if " " not in normalized_word else looks_like_common_phrase(normalized_word)
     meaning_valid = has_consistent_meaning(normalized_word, payload or {})
     topic_check = topic_relevance(topic_hint, payload or {})
     topic_valid = topic_check["is_relevant"]

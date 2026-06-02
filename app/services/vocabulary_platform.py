@@ -37,7 +37,7 @@ LEVEL_ALIASES = {
     "advanced": "advanced",
 }
 LEVELS = ("intermediate", "upper_intermediate", "advanced")
-HIGH_QUALITY_SCORE = 80
+HIGH_QUALITY_SCORE = 85
 def get_search_key():
     try:
         from dotenv import load_dotenv
@@ -172,12 +172,13 @@ def normalize_and_validate_word(raw_word, level=None, allow_ai=True):
         flags.append("malformed_word")
     if _has_repeated_fragments(tokens):
         flags.append("repeated_fragments")
-    if len(tokens) > 1 and any(len(token) <= 2 for token in tokens):
+    common_phrase_particles = {"by", "in", "on", "to", "up", "off", "out", "over", "down", "after", "away", "back"}
+    if len(tokens) > 1 and any(len(token) <= 2 and token not in common_phrase_particles for token in tokens):
         flags.append("suspicious_ocr")
         flags.append("corrupted_phrase")
-    if len(tokens) > 3:
+    if len(tokens) > 4:
         flags.append("corrupted_phrase")
-    if len(tokens) > 1 and len(tokens[0]) >= 4 and re.fullmatch(r"[a-z][a-z'-]*", tokens[0]):
+    if len(tokens) > 1 and len(tokens[0]) >= 4 and len(tokens) > 4 and re.fullmatch(r"[a-z][a-z'-]*", tokens[0]):
         corrected = tokens[0]
         confidence = max(confidence, 0.9)
         flags.append("malformed_word")
@@ -1451,7 +1452,7 @@ def cache_search_vocabulary(user_id, word, payload=None):
     if not normalized_word:
         return None
     tokens = normalized_word.split()
-    if len(tokens) > 1 and len(tokens[0]) >= 4 and re.fullmatch(r"[a-z][a-z'-]*", tokens[0]):
+    if len(tokens) > 4 and len(tokens[0]) >= 4 and re.fullmatch(r"[a-z][a-z'-]*", tokens[0]):
         normalized_word = tokens[0]
     elif _looks_corrupted(normalized_word):
         suggestions = suggest_word_corrections(normalized_word, max_suggestions=1)
@@ -1492,7 +1493,7 @@ def cache_search_vocabulary(user_id, word, payload=None):
         part_of_speech.strip()
     )
 
-    is_fully_enriched = has_critical_fields and (score_float >= 0.8)
+    is_fully_enriched = has_critical_fields and (score_float >= 0.85)
     search_word.is_fully_enriched = is_fully_enriched
 
     if is_fully_enriched:

@@ -317,7 +317,7 @@ def register(app):
         from difflib import get_close_matches
         from datetime import datetime
         from app.models import db, SearchVocabulary, VocabularyMaster, VocabularyEnrichment, SearchHistory
-        from app.services.enrichment_engine import generate_enrichment_payload, calculate_quality_score as engine_score
+        from app.services.enrichment_engine import build_meaning_pairs, generate_enrichment_payload, calculate_quality_score as engine_score
         from app.services.vocabulary_platform import normalize_level, is_phrase, apply_enrichment_audit, normalize_vocab_text
         try:
             from wordfreq import top_n_list, zipf_frequency
@@ -326,6 +326,17 @@ def register(app):
             zipf_frequency = None
 
         SEARCH_WORD_PATTERN = re.compile(r"^[a-z]+(?:'[a-z]+)?$")
+        SEARCH_PHRASE_PATTERN = re.compile(r"^[a-z]+(?:'[a-z]+)?(?:\s+[a-z]+(?:'[a-z]+)?){1,3}$")
+        COMMON_PHRASAL_PARTICLES = {
+            "about", "across", "after", "along", "around", "away", "back", "by", "down",
+            "for", "forward", "in", "into", "off", "on", "out", "over", "through",
+            "to", "together", "up", "with",
+        }
+        COMMON_PHRASAL_VERBS = {
+            "break down", "bring up", "call off", "carry on", "come across", "do up",
+            "find out", "get off", "give up", "go on", "look after", "look up",
+            "make up", "put off", "take off", "take over", "turn down",
+        }
         INAPPROPRIATE_SEARCH_WORDS = {
             "anal",
             "anus",
@@ -375,11 +386,24 @@ def register(app):
             return normalize_vocab_text(q)
 
         def is_valid_english_word(q):
-            if not q or not SEARCH_WORD_PATTERN.fullmatch(q):
+            if not q:
                 return False
-            if q in INAPPROPRIATE_SEARCH_WORDS:
+            if any(token in INAPPROPRIATE_SEARCH_WORDS for token in q.split()):
                 return False
-            if len(q) > 30 or re.search(r"(.)\1{3,}", q):
+            if len(q) > 60 or re.search(r"(.)\1{3,}", q):
+                return False
+            if " " in q:
+                tokens = q.split()
+                if not SEARCH_PHRASE_PATTERN.fullmatch(q) or len(tokens) > 4:
+                    return False
+                if q in COMMON_PHRASAL_VERBS:
+                    return True
+                return (
+                    len(tokens[0]) >= 3
+                    and any(token in COMMON_PHRASAL_PARTICLES for token in tokens[1:])
+                    and not any(len(token) == 1 for token in tokens)
+                )
+            if not SEARCH_WORD_PATTERN.fullmatch(q):
                 return False
             if zipf_frequency is None:
                 return VocabularyMaster.query.filter_by(normalized_word=q).first() is not None
@@ -432,6 +456,11 @@ def register(app):
                 self.sentence = payload.get("example_sentence") or ""
                 self.example_sentence = payload.get("example_sentence") or ""
                 self.topic = payload.get("difficulty") or "general"
+                self.meaning_pairs = build_meaning_pairs(
+                    self.definition,
+                    self.bangla_meaning,
+                    raw_pairs=payload.get("meaning_pairs"),
+                )
 
         def create_runtime_word_object(payload, norm_q):
             return RuntimeWord(payload, norm_q)
@@ -582,7 +611,7 @@ def register(app):
             rendered_word = create_runtime_word_object(payload, query)
             score = calculate_quality_score(payload, query)
 
-            if valid_english_word and score >= 0.8 and required_fields_exist(payload):
+            if valid_english_word and score >= 0.85 and required_fields_exist(payload):
                 persist_search_vocabulary(payload, query, score)
 
             return render_template(
